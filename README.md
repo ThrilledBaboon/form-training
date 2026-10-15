@@ -42,6 +42,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 - Global deadline-based timer with pause/resume, reset, skip and ±15 seconds; optional foreground sound/vibration and supported screen wake lock.
 - Editable, duplicable, reorderable routines and programmes; targets per set; weekly schedules; dated plans with independent snapshots; groups for supersets, trisets, circuits, dropsets and custom arrangements; group rest rules.
 - Searchable exercise library with custom exercises, aliases, equipment/category/movement, primary and secondary muscles, editable contribution multipliers, notes, tags and archiving.
+- Share individual exercises, routines, whole programmes or your library as FORM library files. Preview imports, reuse matching exercises, keep existing records and opt into shared weekly schedules. Notes and target weights are excluded from exports unless selected; personal workout history, measurements and settings are always excluded.
 - Exercise histories, real-data charts, rep/load/date filters, comparable tracking types, volume, effort context, conservative explainable recommendations, Epley/Brzycki estimated maxes, percentage tables and derived PRs.
 - Multiple daily bodyweight entries, editing/undo, raw readings, trailing averages, weekly/monthly summaries and an optional goal.
 - Original selectable front/back anatomical SVG, transparent muscle set contributions and relative volume scores, daily trends and equal-period comparisons, drill-down to source sets, configurable scales, separate recent-training/recovery estimate and accessible list alternative.
@@ -58,6 +59,14 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 5. Visit **Settings & data → Export JSON backup** and keep that file somewhere independent of this browser.
 
 For historical entries, log a session, finish it, then correct its start and end dates/times in **Details**. Incomplete sets remain visible but do not count towards completed training analytics.
+
+## Share and receive library content
+
+Open **Exercise library** or **Routines & plans** for **Share library** and **Import to library**. Individual exercise/routine cards have a share icon; programmes have one inside **Programmes**. Review the content, optionally include library notes/descriptions or target weights, and choose **Download library file**. A **Share file** button also appears when the browser supports sharing files through the device's share sheet.
+
+Send the downloaded file to another FORM user. They choose **Import to library**, select the file, review the additions and matches, then **Add to library**. Routine and programme exports include the exercises and muscle mappings they need. A single routine is shared independently of its programme; a programme includes all its routines. Shared schedules apply to newly added routines only when the recipient opts in.
+
+Library imports add content without replacing existing data. Repeated files keep existing imports, including subsequent local edits. Matching exercise definitions are reused by normalised name/equipment and compatible tracking, unilateral and bodyweight settings; their existing mappings and notes are retained. Routines with identical content in the same programme are reused; different targets produce a separate routine. FORM library files are distinct from full backups. Other apps' exports need conversion; Apple Health integration and weight-file import are not implemented.
 
 ## Verification
 

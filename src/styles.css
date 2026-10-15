@@ -5508,3 +5508,81 @@ select {
 .reset-confirm-form {
   margin-top: 20px;
 }
+.library-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.routines-toolbar {
+  flex-wrap: wrap;
+}
+.library-options {
+  display: grid;
+  gap: 14px;
+  margin-block: 20px;
+}
+.library-callout {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-alt);
+}
+.library-detail {
+  margin-block: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  overflow-wrap: anywhere;
+}
+.library-detail summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.library-detail summary > span {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.library-targets,
+.library-programme {
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.library-targets:last-child {
+  border-bottom: 0;
+}
+.library-targets ol {
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.library-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.library-schedule {
+  margin-block: 20px;
+}
+.library-import-list {
+  list-style: none;
+  padding: 0;
+}
+.library-import-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-block: 10px;
+}
+.library-import-list small {
+  display: block;
+  color: var(--muted);
+}
+@media (max-width: 600px) {
+  .page-title > .library-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

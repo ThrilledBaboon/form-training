@@ -26,7 +26,13 @@ Invalid JSON, unsupported schemas, duplicate IDs/mappings, invalid fields and br
 
 ## Recovery snapshots
 
-Before each import, FORM saves a versioned snapshot in **Local recovery snapshots**. Download a snapshot and import the downloaded JSON to restore it. These snapshots are in the same IndexedDB storage as workouts; clearing browser/site data removes them too. They are not independent backups and do not survive all storage failures. Keep exported files.
+Before each full-backup import, FORM saves a versioned snapshot in **Local recovery snapshots**. Download a snapshot and import the downloaded JSON to restore it. These snapshots are in the same IndexedDB storage as workouts; clearing browser/site data removes them too. They are not independent backups and do not survive all storage failures. Keep exported files.
+
+## Library sharing files
+
+Use **Share library** / **Import to library** in Exercise library or Routines & plans to exchange templates with other FORM users. These version 1 library files contain only exercises, muscle mappings, routines and programmes. They cannot restore workout history, measurements, preferences or timers, and are not full backups. Notes/descriptions and target weights are opt-in export choices.
+
+Library imports validate file structure, identifiers, references and compatible metrics before adding anything. The 10 MB limit and collection limits reject oversized files. Matching definitions and repeated imports are kept without overwriting local edits; new identifiers and references are mapped together. New routine schedules are optional. All additions happen in one transaction and roll back together on failure. Existing personal records, settings and recovery snapshots are retained; additive library imports do not create a full-backup recovery snapshot.
 
 ## Accidental edits and deletion
 

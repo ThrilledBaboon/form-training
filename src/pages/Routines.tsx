@@ -29,6 +29,7 @@ import {
   Empty,
 } from '../components/ui';
 import { ExercisePicker, trackingLabel } from './Exercises';
+import { LibraryActions, ShareLibraryButton } from '../components/LibrarySharing';
 const newRoutine = (): Routine => ({
   id: uid(),
   sortOrder: Date.now(),
@@ -638,13 +639,16 @@ export function Routines() {
         title="Your training, by design."
         description="Build a rhythm you can come back to."
         action={
-          <Button onClick={() => setEditor('new')}>
-            <Plus size={17} />
-            Create routine
-          </Button>
+          <div className="inline-actions library-actions">
+            <LibraryActions />
+            <Button onClick={() => setEditor('new')}>
+              <Plus size={17} />
+              Create routine
+            </Button>
+          </div>
         }
       />
-      <div className="toolbar">
+      <div className="toolbar routines-toolbar">
         <select
           aria-label="Filter programme"
           value={programme}
@@ -747,6 +751,10 @@ export function Routines() {
                   </AsyncButton>
                 </div>
                 <div className="card-actions">
+                  <ShareLibraryButton
+                    selection={{ kind: 'routine', id: r.id }}
+                    label={`Share routine ${r.name}`}
+                  />
                   <Button variant="ghost" onClick={() => setEditor(r)}>
                     <Pencil size={15} />
                     Edit
@@ -922,6 +930,10 @@ export function Routines() {
                 <strong>{p.name}</strong>
                 <small>{p.notes}</small>
               </span>
+              <ShareLibraryButton
+                selection={{ kind: 'programme', id: p.id }}
+                label={`Share programme ${p.name}`}
+              />
               <Button
                 variant="ghost"
                 aria-label={`Rename ${p.name}`}

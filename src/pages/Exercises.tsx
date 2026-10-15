@@ -11,6 +11,7 @@ import {
 import { useApp } from '../lib/context';
 import { db } from '../lib/db';
 import { saveExercise } from '../lib/actions';
+import { LibraryActions, ShareLibraryButton } from '../components/LibrarySharing';
 import {
   uid,
   now,
@@ -327,10 +328,13 @@ export function Exercises() {
         title="Exercise library"
         description={`${data.exercises.filter((e) => !e.archived).length} exercises. Unlimited ways to make them yours.`}
         action={
-          <Button onClick={() => setEditor('new')}>
-            <Plus size={17} />
-            Create exercise
-          </Button>
+          <div className="inline-actions library-actions">
+            <LibraryActions />
+            <Button onClick={() => setEditor('new')}>
+              <Plus size={17} />
+              Create exercise
+            </Button>
+          </div>
         }
       />
       <Card className="filter-card">
@@ -413,6 +417,10 @@ export function Exercises() {
               <span>{e.restSeconds}s rest</span>
             </div>
             <div className="card-actions">
+              <ShareLibraryButton
+                selection={{ kind: 'exercise', id: e.id }}
+                label={`Share exercise ${e.name}`}
+              />
               <Button variant="secondary" onClick={() => setEditor(e)}>
                 Edit
               </Button>

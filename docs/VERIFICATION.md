@@ -4,6 +4,14 @@ Verified locally and published on 15 October 2026. Local checks used macOS, Node
 
 Initial-release checks: **54/54 unit and IndexedDB integration tests**, **36/36 production browser checks at the root path**, and **36/36 at the repository subpath**, with TypeScript/production builds and formatting checks passing. Each initial browser run comprises twelve checks across three browser/viewport projects; the accessibility check scans sixteen screen/theme combinations per project.
 
+## Library sharing update
+
+Sharing is available for individual exercises, routines, programmes and the complete active library. Programme/routine dependencies are included; full history and measurements are excluded by the file schema. Notes/descriptions and target loads are opt-in. Imports preview matches and additions, retain existing definitions, remap dependencies, preserve local edits on repeated import and apply shared weekly schedules only on request. Device file sharing is offered where the browser reports support, with a downloadable-file fallback.
+
+Local verification passed **99/99 unit/storage tests**, **66/66 production browser checks at the root path**, formatting and the TypeScript/production build. Thirteen new unit/storage checks cover private-data exclusion, opt-in notes/loads, exercise/routine/programme dependency selection, malformed files/references/metrics, duplicate matching, schedule choices, remapped groups/items, preservation of active/history/measurements/preferences/timers, repeated imports after local edits and transaction rollback on storage failure. Nine new browser checks exercise preview/cancel/import/reload/start, all four export scopes, downloaded-file contents, repeat/invalid-file handling, both accessible themes, focus restoration and 320px layouts across desktop/mobile Chromium and phone-sized WebKit.
+
+Tests use synthetic templates and isolated databases/browser profiles; no personal records are shared or cleared. Native share-sheet delivery needs a physical-device check. Apple Health integration and weight-file import remain outside this update.
+
 ## Scheduled-session suggestions update
 
 The **Suggest session** card on Overview previews the next scheduled or weekly routine, compares its targets with the last completed session of that routine, explains weight/rep/hold decisions and starts a reviewed copy. The saved routine, planned targets and historical sets remain intact. The calculation rules and matching boundaries are documented in [calculations](CALCULATIONS.md#suggest-a-complete-session).
