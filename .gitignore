@@ -1,0 +1,18 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+.local/
+.DS_Store
+*.log
+
+*.tsbuildinfo
+
+# Personal data exports are never source assets.
+form-backup-*.json
+form-recovery-*.json
+form-sessions.csv
+form-sets.csv
+form-bodyweight.csv
+form-exercise-history.csv
+form-exercises.csv

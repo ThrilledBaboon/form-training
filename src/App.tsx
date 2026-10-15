@@ -1,0 +1,472 @@
+import { Component, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useRegisterSW } from 'virtual:pwa-register/react';
+import {
+  LayoutDashboard,
+  Dumbbell,
+  CalendarDays,
+  Layers,
+  BookOpen,
+  TrendingUp,
+  Activity,
+  Scale,
+  Trophy,
+  Settings as SettingsIcon,
+  History as HistoryIcon,
+  Menu,
+  X,
+  ArrowUpRight,
+  ShieldCheck,
+  Sun,
+  Moon,
+  Search,
+  CheckCircle2,
+  AlertCircle,
+  WifiOff,
+  ChevronRight,
+} from 'lucide-react';
+import { readData } from './lib/db';
+import { saveSettings } from './lib/actions';
+import { AppContext, go, type Run } from './lib/context';
+import { Today } from './pages/Today';
+import { Workout, History } from './pages/Workout';
+import { Exercises } from './pages/Exercises';
+import { Routines } from './pages/Routines';
+import { Progress, Records } from './pages/Progress';
+import { Muscles } from './pages/Muscles';
+import { Calendar } from './pages/Calendar';
+import { Weight } from './pages/Weight';
+import { Settings } from './pages/Settings';
+import { Button, Empty } from './components/ui';
+import { RestTimer } from './components/Timer';
+const navigation = [
+  {
+    label: 'TRAIN',
+    items: [
+      ['today', 'Overview', LayoutDashboard],
+      ['workout', 'Active workout', Dumbbell],
+      ['routines', 'Routines & plans', Layers],
+      ['history', 'Workout history', HistoryIcon],
+    ],
+  },
+  {
+    label: 'UNDERSTAND',
+    items: [
+      ['progress', 'Exercise progress', TrendingUp],
+      ['muscles', 'Muscle insights', Activity],
+      ['calendar', 'Training calendar', CalendarDays],
+      ['weight', 'Bodyweight', Scale],
+      ['records', 'Personal records', Trophy],
+    ],
+  },
+  {
+    label: 'YOUR WORKSPACE',
+    items: [
+      ['exercises', 'Exercise library', BookOpen],
+      ['settings', 'Settings & data', SettingsIcon],
+    ],
+  },
+] as const;
+export class ErrorBoundary extends Component<{ children: ReactNode }, { error?: string }> {
+  state: { error?: string } = {};
+  static getDerivedStateFromError(error: Error) {
+    return { error: error.message };
+  }
+  render() {
+    if (this.state.error)
+      return (
+        <div className="fatal-error">
+          <h1>FORM needs a fresh start.</h1>
+          <p>A display error occurred. Your saved database has not been cleared.</p>
+          <pre>{this.state.error}</pre>
+          <Button onClick={() => location.reload()}>Reload the app</Button>
+        </div>
+      );
+    return this.props.children;
+  }
+}
+export default function App() {
+  const result = useLiveQuery(async () => {
+    try {
+      return { data: await readData(), error: undefined };
+    } catch (error) {
+      return { data: undefined, error: String(error) };
+    }
+  }, []);
+  const data = result?.data;
+  const [pending, setPending] = useState(0);
+  const [hash, setHash] = useState(location.hash || '#/today');
+  const [menu, setMenu] = useState(false);
+  const [notice, setNotice] = useState<{
+    message: string;
+    undo?: () => Promise<unknown>;
+    error?: boolean;
+  }>();
+  const [online, setOnline] = useState(navigator.onLine);
+  const toast = useCallback(
+    (message: string, undo?: () => Promise<unknown>) => setNotice({ message, undo }),
+    [],
+  );
+  const run: Run = useCallback(async function <T>(
+    action: () => Promise<T>,
+    success?: string,
+  ): Promise<T | undefined> {
+    setPending((n) => n + 1);
+    try {
+      const result = await action();
+      if (success) setNotice({ message: success });
+      return result;
+    } catch (error) {
+      setNotice({ message: error instanceof Error ? error.message : String(error), error: true });
+      return undefined;
+    } finally {
+      setPending((n) => n - 1);
+    }
+  }, []);
+  const {
+    needRefresh: [needRefresh],
+    offlineReady: [offlineReady],
+    updateServiceWorker,
+  } = useRegisterSW();
+  useEffect(() => {
+    const onHash = () => {
+      setHash(location.hash || '#/today');
+      setMenu(false);
+      window.scrollTo(0, 0);
+    };
+    const onNetwork = () => setOnline(navigator.onLine);
+    window.addEventListener('hashchange', onHash);
+    window.addEventListener('online', onNetwork);
+    window.addEventListener('offline', onNetwork);
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('online', onNetwork);
+      window.removeEventListener('offline', onNetwork);
+    };
+  }, []);
+  useEffect(() => {
+    if (!notice || notice.error || notice.undo) return;
+    const t = setTimeout(() => setNotice(undefined), 6000);
+    return () => clearTimeout(t);
+  }, [notice]);
+  useEffect(() => {
+    if (!data) return;
+    const media = matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      document.documentElement.dataset.theme =
+        data.settings.theme === 'system' ? (media.matches ? 'dark' : 'light') : data.settings.theme;
+      document.documentElement.classList.toggle('reduced-motion', data.settings.reducedMotion);
+    };
+    apply();
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
+  }, [data?.settings.theme, data?.settings.reducedMotion]);
+  useEffect(() => {
+    if (!menu) return;
+    const previous = document.activeElement as HTMLElement;
+    const aside = document.querySelector('.sidebar') as HTMLElement;
+    const focusable = () =>
+      [...aside.querySelectorAll<HTMLElement>('a,button')].filter(
+        (el) => el.getClientRects().length,
+      );
+    focusable()[0]?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const close = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenu(false);
+      if (e.key === 'Tab') {
+        const elements = focusable(),
+          first = elements[0],
+          last = elements.at(-1);
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', close);
+    return () => {
+      window.removeEventListener('keydown', close);
+      document.body.style.overflow = previousOverflow;
+      previous?.focus();
+    };
+  }, [menu]);
+
+  if (result?.error)
+    return (
+      <div className="fatal-error">
+        <AlertCircle size={32} />
+        <h1>Your data store is unavailable.</h1>
+        <p>
+          FORM could not open browser storage. Check that storage is allowed and free space is
+          available, then retry. No successful save is being claimed.
+        </p>
+        <pre>{result.error}</pre>
+        <Button onClick={() => location.reload()}>Retry</Button>
+      </div>
+    );
+  if (!data)
+    return (
+      <div className="app-loading">
+        <span className="wordmark">
+          FORM<span>●</span>
+        </span>
+        <p>Opening your training workspace…</p>
+      </div>
+    );
+  const route = hash.replace(/^#\/?/, '').split('?')[0] || 'today';
+  const active = data.sessions.find((s) => s.status === 'active');
+  const current =
+    navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
+  let page: ReactNode;
+  switch (route) {
+    case 'today':
+      page = <Today />;
+      break;
+    case 'workout':
+      page = <Workout />;
+      break;
+    case 'routines':
+      page = <Routines key={hash} />;
+      break;
+    case 'history':
+      page = <History key={hash} />;
+      break;
+    case 'exercises':
+      page = <Exercises />;
+      break;
+    case 'progress':
+      page = <Progress key={hash} />;
+      break;
+    case 'muscles':
+      page = <Muscles key={hash} />;
+      break;
+    case 'calendar':
+      page = <Calendar key={hash} />;
+      break;
+    case 'weight':
+      page = <Weight />;
+      break;
+    case 'records':
+      page = <Records />;
+      break;
+    case 'settings':
+      page = <Settings />;
+      break;
+    default:
+      page = (
+        <Empty
+          title="A little off track"
+          action={<Button onClick={() => go('today')}>Back to overview</Button>}
+        >
+          This page does not exist. Your training workspace is one tap away.
+        </Empty>
+      );
+  }
+  return (
+    <AppContext.Provider value={{ data, run, toast, pending: pending > 0 }}>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('main-content')?.focus();
+        }}
+      >
+        Skip to content
+      </a>
+      <div className="app-shell">
+        {menu && (
+          <button
+            className="sidebar-overlay"
+            aria-label="Close navigation"
+            onClick={() => setMenu(false)}
+          />
+        )}
+        <aside
+          role={menu ? 'dialog' : undefined}
+          aria-modal={menu || undefined}
+          aria-label={menu ? 'Navigation' : undefined}
+          className={`sidebar ${menu ? 'open' : ''}`}
+        >
+          <a href="#/today" className="brand">
+            <span className="brand-symbol">
+              F<span />
+            </span>
+            <span className="wordmark">
+              FORM<span>●</span>
+            </span>
+          </a>
+          {menu && (
+            <Button
+              className="sidebar-close"
+              variant="ghost"
+              aria-label="Close navigation menu"
+              onClick={() => setMenu(false)}
+            >
+              <X size={20} />
+            </Button>
+          )}
+          <div className="workspace-label">
+            <span className="workspace-dot" />
+            PERSONAL TRAINING
+          </div>
+          <nav aria-label="Main navigation">
+            {navigation.map((section) => (
+              <div className="nav-section" key={section.label}>
+                <span className="nav-label">{section.label}</span>
+                {section.items.map(([id, label, Icon]) => (
+                  <a
+                    key={id}
+                    href={`#/${id}`}
+                    aria-current={route === id ? 'page' : undefined}
+                    className={route === id ? 'active' : ''}
+                  >
+                    <Icon size={18} />
+                    <span>{label}</span>
+                    {id === 'workout' && active && <i className="live-dot" />}
+                  </a>
+                ))}
+              </div>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="local-note">
+              <ShieldCheck size={20} />
+              <strong>Just you and your progress.</strong>
+              <p>Your workouts stay on this device.</p>
+              <a href="#/settings">
+                Keep a backup <ArrowUpRight size={13} />
+              </a>
+            </div>
+            <div className="sidebar-profile">
+              <span>Y</span>
+              <div>
+                <strong>Your workspace</strong>
+                <small>Personal · local storage</small>
+              </div>
+              <SettingsIcon size={16} />
+            </div>
+          </div>
+        </aside>
+        <div className="main-column" inert={menu}>
+          <header className="topbar">
+            <div className="topbar-location">
+              <Button
+                variant="ghost"
+                className="mobile-menu"
+                aria-label={menu ? 'Close menu' : 'Open menu'}
+                aria-expanded={menu}
+                onClick={() => setMenu(!menu)}
+              >
+                {menu ? <X size={20} /> : <Menu size={20} />}
+              </Button>
+              <span>Workspace</span>
+              <ChevronRight size={13} />
+              <strong>{current}</strong>
+            </div>
+            <div className="topbar-actions">
+              <span className="save-status">
+                <i className={online ? '' : 'offline'} />
+                {pending ? 'Saving…' : online ? 'On-device storage' : 'You’re offline'}
+              </span>
+              <button
+                className="icon-button"
+                aria-label="Open exercise search"
+                onClick={() => go('exercises')}
+              >
+                <Search size={18} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Toggle colour theme"
+                onClick={() =>
+                  void run(() =>
+                    saveSettings({
+                      theme: document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark',
+                    }),
+                  )
+                }
+              >
+                {document.documentElement.dataset.theme === 'dark' ? (
+                  <Sun size={18} />
+                ) : (
+                  <Moon size={18} />
+                )}
+              </button>
+              <span className="avatar">Y</span>
+            </div>
+          </header>
+          <main id="main-content" tabIndex={-1} key={route}>
+            {page}
+          </main>
+          <footer className="app-footer">
+            <span>MADE FOR YOUR NEXT PERSONAL BEST.</span>
+            <span>FORM · Your training, in focus.</span>
+          </footer>
+        </div>
+      </div>
+      <nav className="mobile-nav" aria-label="Mobile navigation">
+        {[
+          ['today', 'Today', LayoutDashboard],
+          ['workout', 'Train', Dumbbell],
+          ['routines', 'Plans', Layers],
+          ['muscles', 'Muscles', Activity],
+        ].map(([id, label, Icon]) => {
+          const I = Icon as typeof Dumbbell;
+          return (
+            <a key={id as string} className={route === id ? 'active' : ''} href={`#/${id}`}>
+              <I size={21} />
+              <span>{label as string}</span>
+            </a>
+          );
+        })}
+        <button onClick={() => setMenu(!menu)} aria-expanded={menu}>
+          <Menu size={21} />
+          <span>More</span>
+        </button>
+      </nav>
+      <RestTimer />
+      {notice && (
+        <div
+          className={`toast ${notice.error ? 'error' : ''}`}
+          role={notice.error ? 'alert' : 'status'}
+        >
+          {notice.error ? <AlertCircle size={19} /> : <CheckCircle2 size={19} />}
+          <span>{notice.message}</span>
+          {notice.undo && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                const undo = notice.undo!;
+                setNotice(undefined);
+                void run(undo, 'Change undone');
+              }}
+            >
+              Undo
+            </Button>
+          )}
+          <Button variant="ghost" aria-label="Dismiss message" onClick={() => setNotice(undefined)}>
+            <X size={16} />
+          </Button>
+        </div>
+      )}
+      {needRefresh && (
+        <div className="update-banner">
+          <span>A new version is ready. Your records are saved.</span>
+          <Button variant="secondary" onClick={() => void updateServiceWorker(true)}>
+            Update & reload
+          </Button>
+        </div>
+      )}
+      {offlineReady && (
+        <span className="sr-only" role="status">
+          FORM is cached for offline use.
+        </span>
+      )}
+    </AppContext.Provider>
+  );
+}
