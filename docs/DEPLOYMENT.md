@@ -1,10 +1,12 @@
 # GitHub Pages deployment
 
-The local-first app is ready for static hosting. `.github/workflows/pages.yml` is manually triggered only; pushing the code runs verification but does not publish the app. The recorded deployment status is in [verification notes](VERIFICATION.md).
+Published at **[FORM](https://thrilledbaboon.github.io/form-training/)** from the public [source repository](https://github.com/ThrilledBaboon/form-training). The first [deployment](https://github.com/ThrilledBaboon/form-training/actions/runs/38800980991) succeeded on 15 October 2026, after [CI verification](https://github.com/ThrilledBaboon/form-training/actions/runs/38800587905) passed.
+
+`.github/workflows/pages.yml` is manually triggered only; pushing the code runs verification but does not publish an update. To publish changes, push to `main`, wait for **Verify FORM**, then run **Deploy FORM to Pages** on `main`. The recorded hosted checks are in [verification notes](VERIFICATION.md).
 
 ## Before publishing
 
-1. Export a JSON backup of any locally recorded workouts. The eventual hosted origin has separate browser data.
+1. Export a JSON backup of any locally recorded workouts. The hosted origin has separate browser data.
 2. Review current [GitHub Pages limits and permitted uses](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) and your repository visibility. The website will be publicly reachable; records remain in each visitor's own local database.
 3. Verify no personal export, screenshot, reference video, test artefact or secret has been added. `dist`, `node_modules`, `.local` and browser-test outputs are ignored. The committed source contains general exercise templates only.
 4. Create/select your repository and push the reviewed code when ready. No credentials are required in frontend source.
@@ -18,7 +20,7 @@ The local-first app is ready for static hosting. `.github/workflows/pages.yml` i
 
 The workflow sets `BASE_PATH` to `/<repository-name>/` for a project site and `/` for a `<owner>.github.io` repository, builds and uploads `dist`. It requests only the Pages deployment permissions. For a custom domain, change `BASE_PATH` to `/` and configure Pages/DNS separately.
 
-The app uses `#/route` navigation, so refreshing a view does not request a nonexistent server-side route. Vite assets, manifest start URL/scope and service worker operate relative to the configured base. The actual hosted URL and environment-specific service-worker scope still need verification after publication.
+The app uses `#/route` navigation, so refreshing a view does not request a nonexistent server-side route. Vite assets, manifest start URL/scope and service worker operate relative to the configured base. The live HTTPS site, repository-prefixed assets and manifest, worker scope (`https://thrilledbaboon.github.io/form-training/`) and offline reload were verified after the first deployment. Repeat the hosted checks after changing the repository name, domain, base path or caching configuration.
 
 ## Local production and subpath verification
 

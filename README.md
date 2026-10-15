@@ -2,6 +2,8 @@
 
 An original mobile-first, local-first gym tracker built with React, TypeScript, Vite, Dexie/IndexedDB and Recharts. No account, server, telemetry, paid API or runtime network dependency. Exercise and routine templates are included; **no workout history or bodyweight measurements are fabricated**.
 
+[Open FORM](https://thrilledbaboon.github.io/form-training/) · [Source repository](https://github.com/ThrilledBaboon/form-training)
+
 ## Run locally
 
 On this Mac, double-click **Start FORM.command**, or run:
@@ -28,7 +30,7 @@ pnpm preview --port 4173
 
 If this network cannot connect to registry.npmjs.org, use `pnpm install --registry=https://registry.yarnpkg.com`. The committed lockfile contains package integrity hashes and does not depend on the temporary local transport used during the initial build.
 
-**Use the same browser, host and port consistently.** `127.0.0.1`, `localhost`, development, production and a future hosted domain are different browser origins with separate data. Before moving to another origin/device/browser, export JSON and import it there. Source-code pushes do not transfer workouts.
+**Use the same browser, host and port consistently.** `127.0.0.1`, `localhost`, development, production and the hosted domain are different browser origins with separate data. Before moving to another origin/device/browser, export JSON and import it there. Source-code pushes do not transfer workouts.
 
 ## What you can use
 

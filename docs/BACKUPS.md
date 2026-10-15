@@ -9,7 +9,7 @@
 
 The app can start a download, but cannot verify that a file was actually retained on your disk. It therefore labels the timestamp **last file export requested**. CSV is for analysis and does not restore the complete database.
 
-Your workouts belong to the browser origin: scheme + hostname + port. Development (`127.0.0.1:5173`), production preview (`127.0.0.1:4173`), `localhost`, GitHub Pages and another browser/device do not automatically share history. A future GitHub push transfers source code only. Export locally and import on the hosted site when you move.
+Your workouts belong to the browser origin: scheme + hostname + port. Development (`127.0.0.1:5173`), production preview (`127.0.0.1:4173`), `localhost`, GitHub Pages and another browser/device do not automatically share history. A GitHub push transfers source code only. Export locally and import on the hosted site when you move.
 
 ## Restore a JSON file
 

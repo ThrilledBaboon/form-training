@@ -1,6 +1,6 @@
 # Implementation and verification record
 
-Verified locally on 15 October 2026, on macOS with Node.js 24 and pnpm 11. The production build is available locally. GitHub publication is now authorized and sign-in is complete. The initial push, hosted CI and first deployment are being prepared. No published URL has been verified yet.
+Verified locally and published on 15 October 2026. Local checks used macOS, Node.js 24 and pnpm 11. The public [source repository](https://github.com/ThrilledBaboon/form-training) and live HTTPS app at **[FORM](https://thrilledbaboon.github.io/form-training/)** are available. GitHub CI and Pages deployment succeeded, followed by checks against the actual hosted site.
 
 Recorded checks: **54/54 unit and IndexedDB integration tests**, **36/36 production browser checks at the root path**, and **36/36 at the repository subpath**, with TypeScript/production builds and formatting checks passing. Each browser run comprises twelve checks across three browser/viewport projects; the accessibility check scans sixteen screen/theme combinations per project.
 
@@ -24,7 +24,9 @@ Production browser checks run in desktop Chromium, phone-sized Chromium and phon
 
 The suite also tests offline navigation and set completion after service-worker caching, makes no external network requests during private logging, visits every main route at narrow widths, and checks the unknown route. Automated axe WCAG A/AA checks cover eight core screens in both light and dark themes. These checks are useful coverage, not a complete accessibility certification.
 
-The same browser suite runs against `/` and a `/form-test/` production base to exercise repository-relative assets, hash routing, service-worker scope and offline reload. GitHub Actions configuration is provided for later CI and a manually triggered Pages deployment; neither workflow has been executed on GitHub.
+The same browser suite runs against `/` and a `/form-test/` production base to exercise repository-relative assets, hash routing, service-worker scope and offline reload. [GitHub CI](https://github.com/ThrilledBaboon/form-training/actions/runs/38800587905) passed formatting, all **54 unit/storage tests**, the production subpath build and all **36 browser checks** on Linux. The manually triggered [Pages deployment](https://github.com/ThrilledBaboon/form-training/actions/runs/38800980991) also succeeded.
+
+After deployment, **14/14 targeted browser checks passed against the public HTTPS URL**, using desktop Chromium and phone-sized WebKit in isolated profiles. These cover empty states, browser close/reopen recovery, logging/timer/finish/analytics, JSON replacement and repeated merge, offline reload/logging, all routes and dark/narrow layouts, and absence of external requests during logging. Separate HTTP/browser checks confirmed successful responses for the root, app script/CSS, manifest, icons and service worker; manifest start URL/scope and the active worker resolve under `/form-training/`. No personal browser data was used or transferred by these checks.
 
 For exact commands, see the [README](../README.md) and [deployment guide](DEPLOYMENT.md). Playwright produces its ignored HTML report and failure traces locally. Screenshots are test fixtures, not personal records.
 
@@ -44,9 +46,9 @@ For exact commands, see the [README](../README.md) and [deployment guide](DEPLOY
 - Virtualised or paginated archive storage and worker-based analytics. The app loads its dataset into memory; substantially larger histories need further profiling and possibly a storage/query redesign.
 - Real-world measurement of physiological muscle activation, recovery or growth. The app deliberately provides transparent contribution and recent-training estimates instead.
 
-## Blocked and deployment status
+## Deployment status
 
-No missing permission or tool blocks local use. The initial local-first build is complete, and publication has been requested. GitHub sign-in is complete. The initial push, CI and Pages deployment are pending. Follow the exact Pages settings and hosted smoke checks in the deployment guide. Record the actual URL and hosted results after deployment; a local build does not establish that the public site works.
+The app is published through GitHub Pages with HTTPS enforced. Source code is public; workout history remains in each browser's IndexedDB and is not committed or uploaded by the app. No deployment blocker remains. Updates require a push followed by a manual **Deploy FORM to Pages** run, as described in the deployment guide. Physical-device checks listed above remain outstanding.
 
 ## Data durability
 
