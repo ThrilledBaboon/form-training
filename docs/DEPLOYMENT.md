@@ -4,6 +4,8 @@ Published at **[FORM](https://thrilledbaboon.github.io/form-training/)** from th
 
 The workout streak and confirmed data-reset update was [deployed successfully](https://github.com/ThrilledBaboon/form-training/actions/runs/38805692280) on 15 October 2026 after [CI](https://github.com/ThrilledBaboon/form-training/actions/runs/38805197566) passed all 69 unit/storage tests and 48 browser checks. Ten additional checks passed against the live site in Chromium and WebKit, including reset/export/restore and offline logging. See the [verification record](VERIFICATION.md) for scope and limitations.
 
+The latest **Suggest session** update was [deployed successfully](https://github.com/ThrilledBaboon/form-training/actions/runs/38810274123) on 15 October 2026 after [CI](https://github.com/ThrilledBaboon/form-training/actions/runs/38809759416) passed all 86 unit/storage tests and 57 browser checks. Sixteen targeted checks passed against the hosted site, including the new preview/start/reload/resume flow, rest-day scheduling and first-session baselines.
+
 `.github/workflows/pages.yml` is manually triggered only; pushing the code runs verification but does not publish an update. To publish changes, push to `main`, wait for **Verify FORM**, then run **Deploy FORM to Pages** on `main`. The recorded hosted checks are in [verification notes](VERIFICATION.md).
 
 ## Before publishing
