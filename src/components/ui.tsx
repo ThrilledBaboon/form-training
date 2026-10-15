@@ -129,29 +129,40 @@ export function Modal({
   children,
   onClose,
   wide = false,
+  className = '',
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const d = ref.current!;
+    const previous = document.activeElement as HTMLElement | null;
     d.showModal();
-    return () => d.close();
+    return () => {
+      d.close();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+    };
   }, []);
   return (
     <dialog
       ref={ref}
-      className={`modal ${wide ? 'wide' : ''}`}
-      onCancel={onClose}
+      className={`modal ${wide ? 'wide' : ''} ${className}`}
+      aria-labelledby={titleId}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
     >
       <div className="modal-header">
-        <h2>{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <Button variant="ghost" aria-label="Close dialog" onClick={onClose}>
           <X size={20} />
         </Button>

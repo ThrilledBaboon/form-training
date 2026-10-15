@@ -32,6 +32,19 @@ Before each import, FORM saves a versioned snapshot in **Local recovery snapshot
 
 Sets, archived exercises, bodyweight entries, routines, plans and removed sessions offer context-appropriate Undo. Destructive session, routine, measurement and replacement operations require visible confirmation. Session/exercise/set/measurement edits cause records and charts to recalculate. Archive exercises to retain their stable identity and full history.
 
+## Reset all FORM data
+
+For a single mistaken workout, open it in **Workout history** and use **Delete session**. Use the following full reset when you want a fresh start:
+
+1. Open **Settings & data → Start fresh → Reset all data**.
+2. Choose **Export backup before resetting** if you want an independent copy, and check the download completed.
+3. Type the exact word **RESET**. Until then, **Permanently reset FORM** is disabled. Cancel closes the dialog without changing records.
+4. Select **Permanently reset FORM**. A success message appears after the database transaction completes.
+
+Reset removes workouts, sets, measurements, custom exercises/mappings, routines/programmes/plans, preferences, timers and **all local recovery snapshots**. It restores the original starter exercises/routines and default preferences, without sample workouts. Streaks and analytics return to empty states. If any reset write fails, the entire transaction rolls back.
+
+This affects the FORM database at the current browser origin. Other browser profiles, devices and origins have separate data; downloaded files are retained. Offline application files are retained. Reset has no Undo or hidden recovery copy: use an exported JSON file with **Replace** to restore previous records.
+
 ## Offline and storage limitations
 
 Browser storage can be cleared manually, evicted under storage pressure, removed by private browsing or lost with the browser profile. Requesting durable storage may reduce eviction risk where supported; it is not a separate copy. If storage fails, the app shows an error and does not claim the write succeeded.

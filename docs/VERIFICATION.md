@@ -2,7 +2,17 @@
 
 Verified locally and published on 15 October 2026. Local checks used macOS, Node.js 24 and pnpm 11. The public [source repository](https://github.com/ThrilledBaboon/form-training) and live HTTPS app at **[FORM](https://thrilledbaboon.github.io/form-training/)** are available. GitHub CI and Pages deployment succeeded, followed by checks against the actual hosted site.
 
-Recorded checks: **54/54 unit and IndexedDB integration tests**, **36/36 production browser checks at the root path**, and **36/36 at the repository subpath**, with TypeScript/production builds and formatting checks passing. Each browser run comprises twelve checks across three browser/viewport projects; the accessibility check scans sixteen screen/theme combinations per project.
+Initial-release checks: **54/54 unit and IndexedDB integration tests**, **36/36 production browser checks at the root path**, and **36/36 at the repository subpath**, with TypeScript/production builds and formatting checks passing. Each initial browser run comprises twelve checks across three browser/viewport projects; the accessibility check scans sixteen screen/theme combinations per project.
+
+## Workout streak and reset update
+
+Local verification for the streak/reset update passed **69/69 unit/storage tests** and **48/48 production browser checks at the root path**, plus formatting and TypeScript/production builds.
+
+- Streaks count distinct finished-workout dates, start with 5 rest days, earn 1 per additional workout day and cap the rest bank at 7. Tests cover duplicate same-day workouts, empty/unfinished/future records, rest exhaustion, historical corrections, leap days, year boundaries and both daylight-saving transitions.
+- Browser checks exercise the flame/dashboard entry points, protected-rest calendar, month navigation, selected-day history links, deletion/undo recalculation, both accessible themes, Escape/focus restoration and midnight updates without reloading.
+- Reset requires the exact word `RESET`, can be cancelled, offers an independent JSON export and restores the starter library/default preferences. Storage tests verify every table is cleared, including timer/recovery data, and a failed reset rolls back all changes. Browser checks reset an isolated profile, reopen it and restore its exported backup.
+
+The database schema remains version 2. Streaks are derived from existing history, so this update does not require a data migration or reset. Test records and screenshots are isolated from personal browser profiles and are not committed as production history.
 
 ## Implemented and tested
 

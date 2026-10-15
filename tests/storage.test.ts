@@ -1,7 +1,7 @@
-import { beforeEach, afterEach, describe, it, expect } from 'vitest';
+import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import Dexie from 'dexie';
 import { TrainingDB, readData } from '../src/lib/db';
-import { uid, now, type WorkoutSet } from '../src/lib/model';
+import { uid, now, defaults, type WorkoutSet } from '../src/lib/model';
 import {
   startSession,
   addExercise,
@@ -16,6 +16,7 @@ import {
   saveSettings,
   applySuggestedTargets,
   substituteExercise,
+  resetAllData,
 } from '../src/lib/actions';
 import { parseBackup, serialise, importBackup, importPreview, csvExport } from '../src/lib/backup';
 let db: TrainingDB;
@@ -38,6 +39,65 @@ async function session() {
   return { id, sets, data };
 }
 describe('durable data operations', () => {
+  it('resets all records, snapshots and preferences atomically to the original starter library', async () => {
+    const original = await readData(db);
+    const { sets } = await session();
+    await updateSet(sets[0].id, { loadKg: 60, reps: 8 }, db);
+    await completeSet(sets[0].id, db);
+    await saveSettings({ theme: 'dark', goalKg: 80 }, db);
+    await db.bodyweights.put({ id: uid(), at: now(), kg: 85, notes: 'Test' });
+    await db.programmes.put({ id: 'custom-programme', name: 'Custom', notes: '' });
+    await db.exercises.put({ ...original.exercises[0], id: 'custom-exercise', name: 'Custom' });
+    await db.routines.put({ ...original.routines[0], id: 'custom-routine', name: 'Custom' });
+    await db.plans.put({
+      id: 'rest-plan',
+      name: 'Rest',
+      date: '2026-10-15',
+      status: 'rest',
+      items: [],
+      groups: [],
+      notes: '',
+    });
+    await db.backups.put({
+      id: 'recovery',
+      createdAt: now(),
+      reason: 'Test',
+      json: serialise(await readData(db)),
+    });
+    await resetAllData(db);
+    const fresh = await readData(db);
+    for (const records of [
+      fresh.sessions,
+      fresh.sets,
+      fresh.bodyweights,
+      fresh.programmes,
+      fresh.plans,
+    ])
+      expect(records).toHaveLength(0);
+    expect(await db.backups.count()).toBe(0);
+    expect(await db.timers.count()).toBe(0);
+    expect(fresh.settings).toEqual(defaults);
+    expect(fresh.exercises.map((e) => e.id).sort()).toEqual(
+      original.exercises.map((e) => e.id).sort(),
+    );
+    expect(fresh.routines.map((r) => r.id).sort()).toEqual(
+      original.routines.map((r) => r.id).sort(),
+    );
+    expect(fresh.mappings).toHaveLength(original.mappings.length);
+    await db.close();
+    await db.open();
+    expect((await readData(db)).sessions).toHaveLength(0);
+  });
+  it('rolls back the reset if restoring defaults fails, preserving the history and snapshots', async () => {
+    await session();
+    await db.backups.put({ id: 'keep', createdAt: now(), reason: 'Test', json: '{}' });
+    const before = await readData(db);
+    const failure = vi.spyOn(db.settings, 'put').mockRejectedValueOnce(new Error('Storage full'));
+    await expect(resetAllData(db)).rejects.toThrow('Storage full');
+    failure.mockRestore();
+    expect(await readData(db)).toEqual(before);
+    expect(await db.backups.count()).toBe(1);
+  });
   it('populates original exercises and templates without fake training data', async () => {
     const d = await readData(db);
     expect(d.exercises.length).toBeGreaterThan(25);

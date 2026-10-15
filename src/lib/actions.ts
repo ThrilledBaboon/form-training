@@ -10,6 +10,7 @@ import {
   BodyweightSchema,
   SettingsSchema,
   PlanSchema,
+  defaults,
   type Exercise,
   type Mapping,
   type Routine,
@@ -21,6 +22,17 @@ import {
 } from './model';
 import { exerciseHistory, recommendation, toKg } from './calc';
 import { readData } from './db';
+import { catalogue } from './catalogue';
+export async function resetAllData(database = db) {
+  const starter = catalogue();
+  await database.transaction('rw', database.tables, async () => {
+    for (const table of database.tables) await table.clear();
+    await database.exercises.bulkAdd(starter.exercises);
+    await database.mappings.bulkAdd(starter.mappings);
+    await database.routines.bulkAdd(starter.routines);
+    await database.settings.put({ ...defaults });
+  });
+}
 export async function saveExercise(exercise: Exercise, mappings: Mapping[], database = db) {
   ExerciseSchema.parse(exercise);
   if (exercise.repMax < exercise.repMin) throw Error('Maximum reps must be at least the minimum.');

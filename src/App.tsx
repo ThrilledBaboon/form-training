@@ -39,6 +39,7 @@ import { Weight } from './pages/Weight';
 import { Settings } from './pages/Settings';
 import { Button, Empty } from './components/ui';
 import { RestTimer } from './components/Timer';
+import { StreakTrigger, WorkoutStreakDialog, useWorkoutStreak } from './components/WorkoutStreak';
 const navigation = [
   {
     label: 'TRAIN',
@@ -94,6 +95,8 @@ export default function App() {
     }
   }, []);
   const data = result?.data;
+  const streak = useWorkoutStreak(data);
+  const [streakOpen, setStreakOpen] = useState(false);
   const [pending, setPending] = useState(0);
   const [hash, setHash] = useState(location.hash || '#/today');
   const [menu, setMenu] = useState(false);
@@ -132,6 +135,7 @@ export default function App() {
     const onHash = () => {
       setHash(location.hash || '#/today');
       setMenu(false);
+      setStreakOpen(false);
       window.scrollTo(0, 0);
     };
     const onNetwork = () => setOnline(navigator.onLine);
@@ -267,7 +271,16 @@ export default function App() {
       );
   }
   return (
-    <AppContext.Provider value={{ data, run, toast, pending: pending > 0 }}>
+    <AppContext.Provider
+      value={{
+        data,
+        run,
+        toast,
+        pending: pending > 0,
+        streak,
+        openStreak: () => setStreakOpen(true),
+      }}
+    >
       <a
         className="skip-link"
         href="#main-content"
@@ -380,6 +393,7 @@ export default function App() {
               >
                 <Search size={18} />
               </button>
+              <StreakTrigger />
               <button
                 className="icon-button"
                 aria-label="Toggle colour theme"
@@ -430,6 +444,7 @@ export default function App() {
         </button>
       </nav>
       <RestTimer />
+      {streakOpen && <WorkoutStreakDialog onClose={() => setStreakOpen(false)} />}
       {notice && (
         <div
           className={`toast ${notice.error ? 'error' : ''}`}

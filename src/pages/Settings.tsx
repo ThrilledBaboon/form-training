@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../lib/context';
 import { db } from '../lib/db';
-import { saveSettings } from '../lib/actions';
+import { saveSettings, resetAllData } from '../lib/actions';
 import {
   parseBackup,
   importPreview,
@@ -38,11 +38,13 @@ import {
   Modal,
 } from '../components/ui';
 export function Settings() {
-  const { data, run, toast } = useApp();
+  const { data, run, toast, pending } = useApp();
   const s = data.settings;
   const [importing, setImporting] = useState<Backup | null>(null);
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const [storage, setStorage] = useState<string>('');
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetWord, setResetWord] = useState('');
   const backups = useLiveQuery(() => db.backups.orderBy('createdAt').reverse().toArray());
   const patch = (p: Partial<Preferences>) => void run(() => saveSettings(p));
   const numeric = (key: keyof Preferences, label: string, min: number, max: number, step = 1) => (
@@ -364,6 +366,24 @@ export function Settings() {
           </p>
         )}
       </Card>
+      <Card className="reset-data-card">
+        <SectionTitle title="Start fresh" sub="Reset FORM’s data in this browser." />
+        <p>
+          Remove your training history, measurements, custom exercises, routines, plans, preferences
+          and local recovery snapshots. The starter exercise library and routines will be restored.
+          Export a backup first if you want to keep a copy.
+        </p>
+        <Button
+          variant="danger"
+          onClick={() => {
+            setResetWord('');
+            setResetOpen(true);
+          }}
+        >
+          <Trash2 size={16} />
+          Reset all data
+        </Button>
+      </Card>
       <div className="settings-footer">
         <strong className="wordmark">
           FORM<span>●</span>
@@ -375,6 +395,62 @@ export function Settings() {
         </p>
         <span>Version 1.0 · Database schema 2</span>
       </div>
+      {resetOpen && (
+        <Modal title="Reset all FORM data?" onClose={() => setResetOpen(false)}>
+          <p>
+            This removes all FORM records and preferences in this browser, including your active
+            workout, rest timer and local recovery snapshots. It restores the original exercise
+            library and starter routines. This cannot be undone without an exported backup.
+          </p>
+          <p>
+            Only FORM’s data at this site address is removed. Downloaded files and data in other
+            browser profiles or devices stay where they are. The app’s offline files are kept.
+          </p>
+          <p className="callout">
+            Current data: {data.sessions.length} workouts · {data.sets.length} sets ·{' '}
+            {data.bodyweights.length} bodyweight readings · {backups?.length || 0} recovery
+            snapshots.
+          </p>
+          <AsyncButton variant="secondary" onAction={() => run(() => exportJSON())}>
+            <Download size={16} />
+            Export backup before resetting
+          </AsyncButton>
+          <form
+            className="reset-confirm-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (resetWord !== 'RESET' || pending) return;
+              void run(async () => {
+                await resetAllData();
+                setResetOpen(false);
+                setResetWord('');
+                toast('FORM has been reset. Your starter library is ready.');
+              });
+            }}
+          >
+            <Field
+              label="Type RESET to confirm"
+              hint="Deletes all FORM data in this browser. Exported files are kept."
+            >
+              <input
+                value={resetWord}
+                onChange={(e) => setResetWord(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+            </Field>
+            <div className="modal-actions">
+              <Button variant="secondary" type="button" onClick={() => setResetOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="danger" type="submit" disabled={resetWord !== 'RESET'}>
+                Permanently reset FORM
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
       {importing && (
         <Modal title="Review your backup" onClose={() => setImporting(null)} wide>
           <p>

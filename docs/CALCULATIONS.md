@@ -65,3 +65,11 @@ Default half-life: 48 hours. Larger/more recent logged contributions raise the e
 Raw bodyweight records are shown individually. A trailing seven-day average includes available records up to the reading, from local midnight six calendar days earlier through the current timestamp; multiple daily readings count individually. No points are invented. Weekly/monthly summary cards use readings in the preceding 7/30 days. Goal distance is absolute kg difference, converted for display. No goal-date prediction is made.
 
 Calendar dates use the browser's local timezone; stored timestamps retain their ISO instant. Counts, working sets, duration or external volume determine daily intensity with an editable cap. Consistency view uses completed-workout presence. A separate planned rest day is neutral. Planned sessions and weekly template suggestions are distinct from actual completed workouts.
+
+## Workout streak and rest-day bank
+
+The streak counts distinct local workout start dates. A finished session must contain at least one completed set; active, cancelled, empty and future sessions/sets do not qualify. Multiple qualifying workouts on one date count once and do not earn extra rest credit. A session crossing midnight belongs to its local start date, consistently with the training calendar.
+
+A new streak starts with 5 rest days. Each additional workout day in the same streak adds 1 rest day, capped at a balance of 7. At local midnight, a day without a qualifying workout spends 1 rest day. Rest protects the streak but does not increase its workout-day count. Today remains open: when the balance reaches zero, a workout today can still extend the streak. If an uncovered day ends, the next workout starts a new streak with the initial allowance.
+
+The monthly view shows green workout days, purple automatically protected rest days, and a today marker. Planned rest days do not bypass the bank or add credit. The longest streak and all historical segments derive from current records. Edits, deletions, undo and imports recalculate them rather than maintaining a separate counter. Calendar-day arithmetic uses local date components and UTC ordinals so daylight-saving days are not assumed to be 24 hours. The display refreshes at local midnight and when the app regains focus or visibility.

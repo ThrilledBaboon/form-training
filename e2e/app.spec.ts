@@ -2,6 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import AxeBuilder from '@axe-core/playwright';
+import { fixture } from '../tests/fixtures';
 const base = process.env.TEST_SUBPATH || '/';
 const errors: string[] = [];
 test.beforeEach(async ({ page }) => {
@@ -46,6 +48,192 @@ async function logBench(page: Page) {
     page.getByRole('button', { name: 'Undo completion of Barbell bench press set 1', exact: true }),
   ).toBeVisible();
 }
+async function importStreakHistory(page: Page, days: string[]) {
+  const data = fixture();
+  const session = data.sessions[0];
+  const set = data.sets[0];
+  data.sessions = days.map((day, i) => ({
+    ...session,
+    id: `streak-session-${i}`,
+    startAt: new Date(day + 'T08:00:00').toISOString(),
+    endAt: new Date(day + 'T09:00:00').toISOString(),
+  }));
+  data.sets = data.sessions.map((session, i) => ({
+    ...set,
+    id: `streak-set-${i}`,
+    sessionId: session.id,
+    completedAt: session.endAt,
+  }));
+  await navigate(page, 'settings');
+  await page.getByLabel('Choose a JSON backup', { exact: true }).setInputFiles({
+    name: 'test-streak-history.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({ app: 'FORM', schemaVersion: 2, exportedAt: new Date().toISOString(), data }),
+    ),
+  });
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Import method').selectOption('replace');
+  page.once('dialog', (d) => d.accept());
+  await dialog.getByRole('button', { name: 'Confirm replace import' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+test('workout streak counts finished workout days once, survives reload and opens from the dashboard', async ({
+  page,
+}) => {
+  await blankWorkout(page);
+  await logBench(page);
+  await expect(
+    page.getByRole('button', { name: 'Open workout streak, 0 workout days' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Finish workout', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Open workout streak, 1 workout day' }),
+  ).toBeVisible();
+  await navigate(page, 'today');
+  await page.locator('.streak-card').click();
+  await expect(page.getByRole('dialog', { name: 'Workout streak', exact: true })).toBeVisible();
+  await expect(page.getByTestId('streak-count')).toHaveText('1');
+  await expect(page.getByTestId('streak-rest-balance')).toHaveText('5');
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await blankWorkout(page);
+  await logBench(page);
+  await page.getByRole('button', { name: 'Finish workout', exact: true }).click();
+  await expect(page.locator('.page-title p')).toContainText('Completed');
+  await page.reload();
+  await page.getByRole('button', { name: 'Open workout streak, 1 workout day' }).click();
+  await expect(page.getByTestId('streak-rest-balance')).toHaveText('5');
+  await expect(page.locator('.streak-day.workout')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /2 completed workouts/ })).toHaveCount(1);
+});
+test('streak calendar shows protected rest, month navigation, history corrections and accessible themes', async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date('2026-10-15T12:00:00') });
+  await page.goto(base);
+  await importStreakHistory(page, ['2026-10-10', '2026-10-13', '2026-10-14']);
+  for (const theme of ['light', 'dark']) {
+    if ((await page.locator('html').getAttribute('data-theme')) !== theme) {
+      await page.getByRole('button', { name: 'Toggle colour theme' }).click();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+    }
+    await page.getByRole('button', { name: 'Open workout streak, 3 workout days' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Workout streak', exact: true });
+    await expect(page.getByTestId('streak-rest-balance')).toHaveText('5');
+    await expect(dialog.locator('.streak-day.workout')).toHaveCount(3);
+    await expect(dialog.locator('.streak-day.rest')).toHaveCount(2);
+    await dialog.getByRole('button', { name: /11 October 2026, protected rest day/ }).click();
+    await expect(
+      dialog.getByText('1 rest day used to protect your streak', { exact: true }),
+    ).toBeVisible();
+    await dialog.getByRole('button', { name: 'Previous streak month' }).click();
+    await expect(dialog.getByRole('heading', { name: 'September 2026' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Next streak month' }).click();
+    await expect(dialog.getByRole('heading', { name: 'October 2026' })).toBeVisible();
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+    await page.screenshot({
+      path: `test-results/streak-${theme}-${test.info().project.name}.png`,
+      fullPage: false,
+    });
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Open workout streak, 3 workout days' }),
+    ).toBeFocused();
+  }
+  await page.getByRole('button', { name: 'Open workout streak, 3 workout days' }).click();
+  await page.getByRole('button', { name: /13 October 2026, 1 completed workout/ }).click();
+  await page.getByRole('button', { name: 'View workouts on selected streak day' }).click();
+  await expect(page).toHaveURL(/#\/calendar\?date=2026-10-13$/);
+  await page.getByRole('link', { name: /COMPLETED Upper session/ }).click();
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Delete session', exact: true }).click();
+  await page.getByRole('button', { name: 'Open workout streak, 2 workout days' }).click();
+  await expect(page.getByTestId('streak-rest-balance')).toHaveText('3');
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Open workout streak, 3 workout days' }),
+  ).toBeVisible();
+});
+test('streak rest balance and expiry update at local midnight without a reload', async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date('2026-10-15T23:59:30') });
+  await page.goto(base);
+  await importStreakHistory(page, ['2026-10-10']);
+  await page.getByRole('button', { name: 'Open workout streak, 1 workout day' }).click();
+  await expect(page.getByTestId('streak-rest-balance')).toHaveText('1');
+  await page.clock.fastForward(31_000);
+  await expect(page.getByTestId('streak-rest-balance')).toHaveText('0');
+  await expect(page.getByTestId('streak-count')).toHaveText('1');
+  await expect(page.getByText('No rest days left. Train today to keep your streak.')).toBeVisible();
+  await page.clock.fastForward(86_400_000);
+  await expect(page.getByTestId('streak-count')).toHaveText('0');
+  await expect(page.locator('.streak-best')).toContainText('1 workout day');
+});
+test('reset requires typed confirmation, keeps a downloadable backup and restores a clean start', async ({
+  page,
+}) => {
+  await blankWorkout(page);
+  await logBench(page);
+  await page.getByRole('button', { name: 'Finish workout', exact: true }).click();
+  await expect(page.locator('.page-title p')).toContainText('Completed');
+  await navigate(page, 'today');
+  await blankWorkout(page);
+  await logBench(page);
+  await navigate(page, 'settings');
+  await page.getByRole('button', { name: 'Reset all data', exact: true }).click();
+  let dialog = page.getByRole('dialog', { name: 'Reset all FORM data?' });
+  await expect(dialog.getByRole('button', { name: 'Permanently reset FORM' })).toBeDisabled();
+  await dialog.getByLabel('Type RESET to confirm', { exact: true }).fill('reset');
+  await expect(dialog.getByRole('button', { name: 'Permanently reset FORM' })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Open workout streak, 1 workout day' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Reset all data', exact: true }).click();
+  dialog = page.getByRole('dialog', { name: 'Reset all FORM data?' });
+  const download = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Export backup before resetting' }).click();
+  const backupPath = await (await download).path();
+  expect(backupPath).toBeTruthy();
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+  expect(results.violations).toEqual([]);
+  await dialog.getByLabel('Type RESET to confirm', { exact: true }).fill('RESET');
+  await dialog.getByRole('button', { name: 'Permanently reset FORM' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByText('FORM has been reset. Your starter library is ready.')).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Open workout streak, 0 workout days' }),
+  ).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Rest timer' })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByText('No file backup exported yet', { exact: true })).toBeVisible();
+  await navigate(page, 'history');
+  await expect(page.getByText('A blank page, with potential', { exact: true })).toBeVisible();
+  await navigate(page, 'workout');
+  await expect(page.getByRole('heading', { name: 'Your next session awaits.' })).toBeVisible();
+  await navigate(page, 'settings');
+  await page.getByLabel('Choose a JSON backup', { exact: true }).setInputFiles(backupPath!);
+  dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Import method').selectOption('replace');
+  page.once('dialog', (d) => d.accept());
+  await dialog.getByRole('button', { name: 'Confirm replace import' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Open workout streak, 1 workout day' }),
+  ).toBeVisible();
+  await navigate(page, 'workout');
+  await expect(
+    page.getByRole('button', { name: 'Undo completion of Barbell bench press set 1', exact: true }),
+  ).toBeVisible();
+});
 test('starts with honest empty states and no fake charts', async ({ page }) => {
   await expect(page.getByText('Your story starts with a set')).toBeVisible();
   await expect(page.getByText('Earn your first personal record')).toBeVisible();
