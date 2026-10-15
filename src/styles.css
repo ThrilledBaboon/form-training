@@ -5033,6 +5033,121 @@ select {
   color: var(--green);
   flex: none;
 }
+.session-suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 22px;
+}
+.session-suggestion-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-alt);
+  color: var(--green);
+}
+.session-suggestion-card > div {
+  flex: 1;
+  min-width: 0;
+}
+.session-suggestion-card h2 {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+.session-suggestion-card p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.session-suggestion-card > .button {
+  flex-shrink: 0;
+}
+.session-suggestion-heading,
+.session-exercise-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.session-suggestion-heading h3 {
+  margin-top: 10px;
+  font-size: 22px;
+}
+.session-suggestion-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.session-exercise-suggestions {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0;
+}
+.session-exercise-suggestion {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+}
+.session-exercise-heading h4 {
+  font-size: 16px;
+  margin: 0;
+}
+.session-exercise-suggestion > p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+.session-target-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+.session-target-comparison > div {
+  min-width: 0;
+}
+.session-target-comparison > div > span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  color: var(--muted);
+}
+.session-target-comparison ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+.session-target-comparison li,
+.session-target-comparison p {
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .session-suggestion-card {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .session-suggestion-card > .button {
+    width: 100%;
+  }
+  .session-suggestion-card h2 {
+    font-size: 16px;
+  }
+  .session-target-comparison li {
+    font-size: 11px;
+  }
+  .session-exercise-suggestion {
+    padding: 14px;
+  }
+}
 .streak-modal {
   --streak-dot-size: 42px;
   width: min(548px, calc(100vw - 28px));

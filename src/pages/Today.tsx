@@ -44,6 +44,7 @@ import { TrendChart } from '../components/Chart';
 import { muscleName } from '../lib/model';
 import { BodyweightForm } from './Weight';
 import { StreakCard } from '../components/WorkoutStreak';
+import { SessionSuggestionCard } from '../components/SessionSuggestion';
 export function Today() {
   const { data, run } = useApp();
   const [days, setDays] = useState(7);
@@ -230,6 +231,7 @@ export function Today() {
           </p>
         </Card>
       </div>
+      <SessionSuggestionCard />
       <StreakCard />
       <div className="metric-grid">
         <Metric

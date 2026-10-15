@@ -17,7 +17,10 @@ import {
   applySuggestedTargets,
   substituteExercise,
   resetAllData,
+  startSuggestedSession,
 } from '../src/lib/actions';
+import { sessionChoices, suggestSession } from '../src/lib/suggestions';
+import { sessionFixture } from './session-fixture';
 import { parseBackup, serialise, importBackup, importPreview, csvExport } from '../src/lib/backup';
 let db: TrainingDB;
 beforeEach(async () => {
@@ -39,6 +42,65 @@ async function session() {
   return { id, sets, data };
 }
 describe('durable data operations', () => {
+  it('starts reviewed targets atomically while preserving the plan, routine and completed history', async () => {
+    const data = sessionFixture();
+    await db.routines.bulkPut(data.routines);
+    await db.plans.bulkPut(data.plans);
+    await db.sessions.bulkPut(data.sessions);
+    await db.sets.bulkPut(data.sets);
+    const at = Date.parse('2026-10-15T15:00:00Z');
+    const suggestion = suggestSession(data, sessionChoices(data, at)[0], at);
+    const id = await startSuggestedSession(suggestion, db);
+    const created = (await db.sessions.get(id))!;
+    const sets = await db.sets.where('sessionId').equals(id).toArray();
+    expect(created).toMatchObject({
+      status: 'active',
+      routineId: data.routines[0].id,
+      planId: data.plans[0].id,
+    });
+    expect(sets.filter((s) => s.exerciseId === data.plans[0].items[0].exerciseId)).toHaveLength(3);
+    expect(
+      sets
+        .filter((s) => s.exerciseId === data.plans[0].items[0].exerciseId)
+        .every((s) => s.loadKg === 62.5 && s.reps === 8 && !s.completed),
+    ).toBe(true);
+    expect(
+      sets
+        .filter((s) => s.exerciseId === data.plans[0].items[1].exerciseId)
+        .every((s) => s.reps === 10),
+    ).toBe(true);
+    expect(await db.plans.get(data.plans[0].id)).toEqual({ ...data.plans[0], status: 'started' });
+    expect(await db.routines.get(data.routines[0].id)).toEqual(data.routines[0]);
+    expect(await db.sessions.get('s1')).toEqual(data.sessions[0]);
+    expect(
+      (await db.sets.where('sessionId').equals('s1').toArray()).sort((a, b) =>
+        a.id.localeCompare(b.id),
+      ),
+    ).toEqual([...data.sets].sort((a, b) => a.id.localeCompare(b.id)));
+    await expect(startSuggestedSession(suggestion, db)).rejects.toThrow('active workout');
+    expect(await db.sessions.where('status').equals('active').count()).toBe(1);
+  });
+  it('does not silently prefill a reviewed baseline or warm-up from an unrelated exercise history', async () => {
+    const data = sessionFixture();
+    data.sessions[0].routineId = 'another-routine';
+    data.plans[0].items[0].sets = [
+      { label: 'warmup', reps: 5 },
+      { label: 'working', reps: 8 },
+    ];
+    await db.sessions.bulkPut(data.sessions);
+    await db.sets.bulkPut(data.sets);
+    await db.plans.bulkPut(data.plans);
+    const at = Date.parse('2026-10-15T15:00:00Z');
+    const suggestion = suggestSession(data, sessionChoices(data, at)[0], at);
+    expect(suggestion.previous).toBeUndefined();
+    const id = await startSuggestedSession(suggestion, db);
+    const sets = await db.sets.where('sessionId').equals(id).toArray();
+    expect(
+      sets
+        .filter((s) => s.exerciseId === data.plans[0].items[0].exerciseId)
+        .every((s) => s.loadKg === 0),
+    ).toBe(true);
+  });
   it('resets all records, snapshots and preferences atomically to the original starter library', async () => {
     const original = await readData(db);
     const { sets } = await session();

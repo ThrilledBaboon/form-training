@@ -23,6 +23,7 @@ import {
 import { exerciseHistory, recommendation, toKg } from './calc';
 import { readData } from './db';
 import { catalogue } from './catalogue';
+import type { SessionSuggestion } from './suggestions';
 export async function resetAllData(database = db) {
   const starter = catalogue();
   await database.transaction('rw', database.tables, async () => {
@@ -84,6 +85,7 @@ export function exerciseItem(e: Exercise): Item {
 export async function startSession(
   source?: Routine | Plan,
   database: TrainingDB = db,
+  options: { prefillHistory?: boolean } = {},
 ): Promise<string> {
   const data = await readData(database);
   const t = now();
@@ -94,7 +96,10 @@ export async function startSession(
     .filter((b) => b.at <= t)
     .sort((a, b) => b.at.localeCompare(a.at))[0]?.kg;
   const sets: WorkoutSet[] = items.flatMap((item) => {
-    const previous = exerciseHistory(data, item.exerciseId, item.tracking)[0]?.sets.at(-1);
+    const previous =
+      options.prefillHistory === false
+        ? undefined
+        : exerciseHistory(data, item.exerciseId, item.tracking)[0]?.sets.at(-1);
     return item.sets.map((p, order) => ({
       id: uid(),
       sessionId,
@@ -136,6 +141,9 @@ export async function startSession(
     if (source && 'date' in source) await database.plans.update(source.id, { status: 'started' });
   });
   return sessionId;
+}
+export async function startSuggestedSession(suggestion: SessionSuggestion, database = db) {
+  return startSession(suggestion.source, database, { prefillHistory: false });
 }
 export async function addExercise(sessionId: string, exercise: Exercise, database = db) {
   return insertExercise(sessionId, exercise, database);

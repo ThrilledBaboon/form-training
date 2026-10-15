@@ -4,6 +4,12 @@ Verified locally and published on 15 October 2026. Local checks used macOS, Node
 
 Initial-release checks: **54/54 unit and IndexedDB integration tests**, **36/36 production browser checks at the root path**, and **36/36 at the repository subpath**, with TypeScript/production builds and formatting checks passing. Each initial browser run comprises twelve checks across three browser/viewport projects; the accessibility check scans sixteen screen/theme combinations per project.
 
+## Scheduled-session suggestions update
+
+The **Suggest session** card on Overview previews the next scheduled or weekly routine, compares its targets with the last completed session of that routine, explains weight/rep/hold decisions and starts a reviewed copy. The saved routine, planned targets and historical sets remain intact. The calculation rules and matching boundaries are documented in [calculations](CALCULATIONS.md#suggest-a-complete-session).
+
+Local verification passed **86/86 unit/storage tests**, **57/57 production browser checks at the root path**, formatting and the TypeScript/production build. Fifteen new calculation tests cover plan/weekly selection, rest days, completion status, matching routine/tracking/duplicate exercise occurrences, weight and rep progression, effort/failure/decline holds, incomplete history, units, timestamp offsets, future completions and recalculation after corrections. Two additional storage tests verify reviewed-session creation, active-workout exclusion, preservation of original records and absence of hidden history prefills. The nine new browser checks cover the review/start/reload/resume flow, both accessible themes, Escape/focus restoration, weekly rest-day handling, first-session baselines and an empty routine library across Chromium and WebKit.
+
 ## Workout streak and reset update
 
 Local verification for the streak/reset update passed **69/69 unit/storage tests** and **48/48 production browser checks at the root path**, plus formatting and TypeScript/production builds.

@@ -36,6 +36,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 
 - Dashboard with real training totals, weekly consistency, latest sessions, records, exercise progression highlights, bodyweight trends and muscle contributions.
 - Workout-day streak with an earned rest-day bank, longest streak and a selectable monthly calendar. Open it from the flame in the top bar or the overview card.
+- **Suggest session** on Overview reviews the next scheduled/weekly routine against its last completed session, shows proposed weight or rep increases and starts an editable copy after review. Saved routines and history remain intact.
 - Blank workouts and routine-based workouts; persistent active session and immediately saved set edits; refresh recovery; idempotent set completion; previous-session copying; adding, reordering and substituting exercises; set duplication/deletion/undo; editable historical workouts; session and set notes, optional effort and manual calories.
 - Weighted, bodyweight, externally loaded bodyweight, assisted, timed and distance exercises; partial reps; warm-ups, working/failure/PR/custom set labels; optional RPE or RIR; canonical kg/metres/seconds.
 - Global deadline-based timer with pause/resume, reset, skip and ±15 seconds; optional foreground sound/vibration and supported screen wake lock.
