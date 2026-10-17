@@ -1,4 +1,6 @@
+import { WorkspaceSchema, defaultWorkspace } from './workspace-model';
 import { z } from 'zod';
+import { dateKey } from './calc';
 import { validateCompletion } from './actions';
 import { db, readData, type TrainingDB } from './db';
 import { FoodDataSchema, emptyFood, foodTables, validateFood } from './food-model';
@@ -19,12 +21,12 @@ import {
 } from './model';
 const BackupSchema = z.object({
   app: z.literal('FORM'),
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
   exportedAt: z.string().datetime({ offset: true }),
   manifest: z
     .object({
       format: z.enum(['FORM complete backup', 'FORM category export']),
-      version: z.literal(3),
+      version: z.literal(4),
       categories: z.array(z.string()),
       requested: z.array(z.string()).optional(),
       attachments: z.number().int().nonnegative(),
@@ -32,6 +34,7 @@ const BackupSchema = z.object({
     .optional(),
   scope: z.enum(['complete', 'categories']).default('complete'),
   data: z.object({
+    workspace: WorkspaceSchema.optional(),
     exercises: z.array(ExerciseSchema).max(10000),
     mappings: z.array(MappingSchema).max(200000),
     routines: z.array(RoutineSchema).max(10000),
@@ -65,16 +68,22 @@ export function serialise(data: Data) {
   const output = JSON.stringify(
     {
       app: 'FORM',
-      schemaVersion: 3,
+      schemaVersion: 4,
       exportedAt: now(),
       scope: 'complete',
       manifest: {
         format: 'FORM complete backup',
-        version: 3,
-        categories: [...entities, 'settings', 'timer', ...foodTables, 'foodSettings'],
+        version: 4,
+        categories: [...entities, 'workspace', 'settings', 'timer', ...foodTables, 'foodSettings'],
         attachments: food.foodFiles.length,
       },
-      data: { ...data, foodFileIds: undefined, sessions, food },
+      data: {
+        ...data,
+        workspace: data.workspace ?? defaultWorkspace(),
+        foodFileIds: undefined,
+        sessions,
+        food,
+      },
     },
     null,
     2,
@@ -101,17 +110,30 @@ export function parseBackup(input: string): Backup {
   ) {
     value = {
       ...value,
-      schemaVersion: 3,
+      schemaVersion: 4,
       scope: 'complete',
       manifest: undefined,
       data: { ...(value as { data?: object }).data, food: structuredClone(emptyFood) },
+    };
+  }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'schemaVersion' in value &&
+    value.schemaVersion === 3
+  ) {
+    const old = value as { manifest?: object };
+    value = {
+      ...value,
+      schemaVersion: 4,
+      manifest: old.manifest ? { ...old.manifest, version: 4 } : undefined,
     };
   }
   const parsed = BackupSchema.safeParse(value);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw Error(
-      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2 or 3 backup.`,
+      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2, 3 or 4 backup.`,
     );
   }
   const b = parsed.data;
@@ -126,6 +148,8 @@ export function parseBackup(input: string): Backup {
     if (new Set(ids).size !== ids.length) throw Error(`Duplicate identifiers inside ${key}.`);
   }
   const exercises = new Set(d.exercises.map((e) => e.id));
+  if (d.workspace?.setups.some((s) => !exercises.has(s.exerciseId)))
+    throw Error('An equipment setup references a missing exercise.');
   const programmes = new Set(d.programmes.map((p) => p.id));
   const routines = new Set(d.routines.map((p) => p.id));
   const sessions = new Map(d.sessions.map((s) => [s.id, s]));
@@ -185,6 +209,14 @@ export function importPreview(backup: Backup, current: Data) {
   });
   return [
     ...gym,
+    {
+      table: 'workspace pages',
+      total: backup.data.workspace?.pages.length ?? 0,
+      duplicates:
+        backup.data.workspace?.pages.filter((p) =>
+          current.workspace?.pages.some((c) => c.id === p.id),
+        ).length ?? 0,
+    },
     ...foodTables.map((key) => {
       const existing = new Set(
         key === 'foodFiles' && current.foodFileIds
@@ -226,6 +258,7 @@ export async function importBackup(
     });
     if (mode === 'replace') {
       for (const key of entities) await database.table(key).clear();
+      await database.workspaces.put(data.workspace ?? defaultWorkspace());
       await database.settings.clear();
       await database.timers.clear();
       for (const key of entities)
@@ -298,6 +331,28 @@ export async function importBackup(
         Object.assign(combined, { [key]: [...combined[key], ...incoming] });
       }
       validateFood(combined);
+      if (data.workspace) {
+        const workspace = structuredClone(before.workspace ?? defaultWorkspace());
+        workspace.pages.push(
+          ...data.workspace.pages.filter((p) => !workspace.pages.some((c) => c.id === p.id)),
+        );
+        workspace.setups.push(
+          ...data.workspace.setups.filter((p) => !workspace.setups.some((c) => c.id === p.id)),
+        );
+        workspace.imports.push(
+          ...data.workspace.imports.filter((p) => !workspace.imports.some((c) => c.id === p.id)),
+        );
+        if (
+          options.restorePreferences &&
+          (checked.scope === 'complete' || checked.manifest?.categories.includes('workspace'))
+        ) {
+          workspace.systems = data.workspace.systems;
+          workspace.homePageId = data.workspace.homePageId;
+          workspace.pasteDraft = data.workspace.pasteDraft;
+        }
+        workspace.revision++;
+        await database.workspaces.put(WorkspaceSchema.parse(workspace));
+      }
       if (options.restorePreferences) {
         const includes = (key: string) =>
           checked.scope === 'complete' || checked.manifest?.categories.includes(key);
@@ -345,16 +400,17 @@ export function csvExport(data: Data, kind: 'sessions' | 'sets' | 'bodyweight' |
     ]);
   if (kind === 'sessions')
     return csv([
-      ['id', 'name', 'start', 'end', 'status', 'notes', 'rpe', 'energy'],
+      ['id', 'name', 'start', 'end', 'status', 'notes', 'rpe', 'energy', 'date_only'],
       ...data.sessions.map((s) => [
         s.id,
         s.name,
-        s.startAt,
-        s.endAt,
+        s.dateOnly ? dateKey(s.startAt) : s.startAt,
+        s.dateOnly ? undefined : s.endAt,
         s.status,
         s.notes,
         s.rpe,
         s.energy,
+        s.dateOnly ?? false,
       ]),
     ]);
   if (kind === 'exercises')
@@ -378,7 +434,10 @@ export function csvExport(data: Data, kind: 'sessions' | 'sets' | 'bodyweight' |
         s.exerciseId,
         data.exercises.find((e) => e.id === s.exerciseId)?.name,
         s.sessionId,
-        data.sessions.find((x) => x.id === s.sessionId)?.startAt,
+        (() => {
+          const session = data.sessions.find((x) => x.id === s.sessionId);
+          return session?.dateOnly ? dateKey(session.startAt) : session?.startAt;
+        })(),
         s.id,
         data.sessions.find((x) => x.id === s.sessionId)?.items.find((i) => i.id === s.itemId)
           ?.tracking,
@@ -411,6 +470,9 @@ export function csvExport(data: Data, kind: 'sessions' | 'sets' | 'bodyweight' |
       'completed',
       'completed_at',
       'notes',
+      'partial_reps',
+      'setup_name',
+      'load_convention',
     ],
     ...data.sets.map((s) => [
       s.id,
@@ -425,12 +487,15 @@ export function csvExport(data: Data, kind: 'sessions' | 'sets' | 'bodyweight' |
       s.distanceM,
       s.rpe,
       s.rir,
-      s.restSeconds,
+      s.restUnknown ? undefined : s.restSeconds,
       s.label,
       s.customLabel,
       s.completed,
-      s.completedAt,
+      data.sessions.find((x) => x.id === s.sessionId)?.dateOnly ? undefined : s.completedAt,
       s.notes,
+      s.partialReps,
+      s.setup?.name,
+      s.setup?.basis,
     ]),
   ]);
 }

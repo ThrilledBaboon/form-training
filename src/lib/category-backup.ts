@@ -14,6 +14,7 @@ import {
 } from './food-model';
 import { serialise, parseBackup, csv } from './backup';
 export const dataCategories = {
+  workspace: 'Pages, systems, equipment & import drafts',
   workouts: 'Workouts & exercise history',
   exercises: 'Exercise library',
   routines: 'Routines & programmes',
@@ -33,6 +34,7 @@ export const dataCategories = {
 } as const;
 export type DataCategory = keyof typeof dataCategories;
 export const gymCategories: DataCategory[] = [
+  'workspace',
   'workouts',
   'exercises',
   'routines',
@@ -111,6 +113,9 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
     source[key].forEach((r) => addFood(key, r.id));
   for (const category of selected)
     switch (category) {
+      case 'workspace':
+        result.workspace = structuredClone(data.workspace);
+        break;
       case 'workouts':
         result.sessions = structuredClone(data.sessions);
         result.sets = structuredClone(data.sets);
@@ -189,6 +194,7 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
       p.items.map((i) => i.exerciseId),
     ),
   );
+  for (const setup of result.workspace?.setups ?? []) exerciseIds.add(setup.exerciseId);
   for (const id of exerciseIds) {
     if (!result.exercises.some((e) => e.id === id)) {
       const e = data.exercises.find((e) => e.id === id);
@@ -198,6 +204,7 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
       if (!result.mappings.some((x) => x.id === m.id)) result.mappings.push(structuredClone(m));
   }
   const file = JSON.parse(serialise(result));
+  if (!selected.includes('workspace')) delete file.data.workspace;
   file.scope = 'categories';
   file.manifest.format = 'FORM category export';
   file.manifest.requested = selected;
@@ -206,6 +213,7 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
       .filter(([key, value]) => key !== 'food' && Array.isArray(value) && value.length)
       .map(([key]) => key),
     ...foodTables.filter((key) => target[key].length),
+    ...(selected.includes('workspace') ? ['workspace'] : []),
     ...(selected.includes('preferences') ? ['settings', 'timer'] : []),
     ...(selected.includes('foodPreferences') ? ['foodSettings'] : []),
   ];

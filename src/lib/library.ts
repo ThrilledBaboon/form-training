@@ -156,8 +156,13 @@ export function createLibrary(
         groups: r.groups.map((g) => ({ ...g, notes: options.notes ? g.notes : '' })),
         items: r.items.map((i) => ({
           ...i,
+          setup: undefined,
           notes: options.notes ? i.notes : '',
-          sets: i.sets.map((s) => ({ ...s, loadKg: options.loads ? s.loadKg : undefined })),
+          sets: i.sets.map((s) => ({
+            ...s,
+            notes: options.notes ? s.notes : undefined,
+            loadKg: options.loads ? s.loadKg : undefined,
+          })),
         })),
       })),
     },

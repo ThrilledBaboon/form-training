@@ -26,21 +26,32 @@ import {
 import { trackingLabel } from './Exercises';
 import { type Exercise } from '../lib/model';
 import { TrendChart } from '../components/Chart';
+import { AddToPage } from '../components/WorkspaceControls';
 import { FoodTrainingContext } from '../components/FoodOverview';
 export function Progress() {
   const { data } = useApp();
   const query = new URLSearchParams(location.hash.split('?')[1]);
   const [id, setId] = useState(query.get('exercise') || data.exercises[0]?.id || '');
-  const [days, setDays] = useState(90);
-  const [metric, setMetric] = useState('volume');
-  const [historyTracking, setHistoryTracking] = useState('');
-  const [repMin, setRepMin] = useState('');
-  const [repMax, setRepMax] = useState('');
-  const [loadMin, setLoadMin] = useState('');
-  const [loadMax, setLoadMax] = useState('');
-  const [includeWarmup, setIncludeWarmup] = useState(false);
-  const [since, setSince] = useState('');
-  const [until, setUntil] = useState('');
+  const [days, setDays] = useState(Number(query.get('days') ?? 90));
+  const [metric, setMetric] = useState(query.get('metric') || 'volume');
+  const [historyTracking, setHistoryTracking] = useState(query.get('tracking') || '');
+  const [repMin, setRepMin] = useState(query.get('repMin') || '');
+  const [repMax, setRepMax] = useState(query.get('repMax') || '');
+  const [loadMin, setLoadMin] = useState(
+    query.has('loadMinKg')
+      ? String(fromKg(Number(query.get('loadMinKg')), data.settings.unit))
+      : '',
+  );
+  const [loadMax, setLoadMax] = useState(
+    query.has('loadMaxKg')
+      ? String(fromKg(Number(query.get('loadMaxKg')), data.settings.unit))
+      : '',
+  );
+  const [includeWarmup, setIncludeWarmup] = useState(query.get('warmup') === '1');
+  const [since, setSince] = useState(query.get('from') || '');
+  const [until, setUntil] = useState(query.get('to') || '');
+  const [setupId, setSetupId] = useState(query.get('setup') || '');
+  const [basis, setBasis] = useState(query.get('basis') || '');
   const exercise = data.exercises.find((e) => e.id === id);
   const expected = historyTracking || exercise?.tracking;
   const historicalTypes = [
@@ -66,6 +77,8 @@ export function Progress() {
         .filter(
           (s) =>
             s.exerciseId === id &&
+            (!setupId || s.setup?.id === setupId) &&
+            (!basis || (s.setup?.basis ?? 'unspecified') === basis) &&
             s.completed &&
             (includeWarmup || s.label !== 'warmup') &&
             (!repMin || (s.reps || 0) >= +repMin) &&
@@ -77,16 +90,15 @@ export function Progress() {
           includeWarmup && s.label === 'warmup' ? { ...s, label: 'working' as const } : s,
         ),
     }),
-    [data, id, repMin, repMax, loadMin, loadMax, includeWarmup, expected],
+    [data, id, repMin, repMax, loadMin, loadMax, includeWarmup, expected, setupId, basis],
   );
   const history = useMemo(
     () =>
       exerciseHistory(filteredData, id).filter(
         (h) =>
           (!days || Date.parse(h.session.startAt) >= Date.now() - days * 86400000) &&
-          (!since || h.session.startAt >= new Date(since).toISOString()) &&
-          (!until ||
-            h.session.startAt < new Date(new Date(until).getTime() + 86400000).toISOString()),
+          (!since || h.session.startAt >= new Date(since + 'T00:00:00').toISOString()) &&
+          (!until || h.session.startAt < new Date(until + 'T23:59:59.999').toISOString()),
       ),
     [filteredData, id, days, since, until],
   );
@@ -120,7 +132,14 @@ export function Progress() {
           : metric === 'duration'
             ? 'seconds'
             : 'metres';
-  const chart = [...history].reverse().map((h) => ({
+  const incompatible =
+    ['volume', 'bestLoad', 'bestMax'].includes(metric) &&
+    new Set(
+      history.flatMap((h) =>
+        h.sets.map((s) => (s.setup?.id ?? 'legacy') + ':' + (s.setup?.basis ?? 'unspecified')),
+      ),
+    ).size > 1;
+  const chart = [...(incompatible ? [] : history)].reverse().map((h) => ({
     date: dateLabel(h.session.startAt),
     value:
       metric === 'sets'
@@ -139,8 +158,54 @@ export function Progress() {
         eyebrow="PROGRESS YOU CAN SEE"
         title="One session at a time."
         description="Look back with context. Look ahead with a plan."
+        action={
+          <AddToPage
+            type="exercise"
+            config={{
+              exerciseId: id,
+              tracking: expected as Exercise['tracking'],
+              metric: metric as import('../lib/workspace-model').WidgetConfig['metric'],
+              includeWarmup,
+              repMin: repMin ? +repMin : undefined,
+              repMax: repMax ? +repMax : undefined,
+              loadMinKg: loadMin ? toKg(+loadMin, data.settings.unit) : undefined,
+              loadMaxKg: loadMax ? toKg(+loadMax, data.settings.unit) : undefined,
+              setupId: setupId || undefined,
+              basis: (basis || undefined) as import('../lib/workspace-model').WidgetConfig['basis'],
+              range: { days, from: since || undefined, to: until || undefined },
+            }}
+          />
+        }
       />
+      {incompatible && (
+        <p className="callout">
+          These readings use different setups or load conventions. Choose an equipment context
+          before comparing loads.
+        </p>
+      )}
       <Card className="filter-card">
+        <Field label="Equipment context">
+          <select value={setupId} onChange={(e) => setSetupId(e.target.value)}>
+            <option value="">All setups</option>
+            {data.workspace?.setups
+              .filter((s) => s.exerciseId === id)
+              .map((s) => (
+                <option value={s.id} key={s.id}>
+                  {s.name} {s.gym}
+                </option>
+              ))}
+          </select>
+        </Field>
+        <Field label="Recorded load convention">
+          <select value={basis} onChange={(e) => setBasis(e.target.value)}>
+            <option value="">All conventions</option>
+            {['unspecified', 'total', 'per_dumbbell', 'per_side'].map((b) => (
+              <option key={b} value={b}>
+                {b.replaceAll('_', ' ')}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Exercise">
           <select
             value={id}
@@ -200,7 +265,7 @@ export function Progress() {
         <Metric
           label="Best load"
           value={
-            history.length
+            history.length && !incompatible
               ? fmt(fromKg(Math.max(...history.map((h) => h.bestLoad)), data.settings.unit))
               : '—'
           }
@@ -210,7 +275,7 @@ export function Progress() {
         />
         <Metric
           label="Estimated 1RM"
-          value={bestMax ? fmt(fromKg(bestMax, data.settings.unit)) : '—'}
+          value={!incompatible && bestMax ? fmt(fromKg(bestMax, data.settings.unit)) : '—'}
           unit={data.settings.unit}
           icon={<Trophy size={18} />}
           foot={`${data.settings.formula === 'epley' ? 'Epley' : 'Brzycki'} · weighted sets of 1–12 reps`}
@@ -512,7 +577,7 @@ export function Progress() {
           {records.length ? (
             <div className="record-table">
               {records.map((r) => (
-                <a href={`#/history?session=${r.sessionId}`} key={r.kind}>
+                <a href={`#/history?session=${r.sessionId}`} key={r.kind + r.contextKey}>
                   <span>
                     <strong>{r.kind}</strong>
                     <small>{dateLabel(r.at)}</small>
@@ -571,12 +636,13 @@ export function Records() {
       </Card>
       <div className="record-grid">
         {filtered.map((r) => (
-          <Card key={r.exerciseId + r.kind} className="personal-record">
+          <Card key={r.exerciseId + r.kind + r.contextKey} className="personal-record">
             <span className="record-medal">
               <Trophy size={22} />
             </span>
             <span className="eyebrow">{r.kind}</span>
             <h3>{r.exercise}</h3>
+            {r.context && <p className="muted">{r.context}</p>}
             <div className="record-value">
               {fmt(r.unit === 'kg' ? fromKg(r.value, data.settings.unit) : r.value)}{' '}
               <small>{r.unit === 'kg' ? data.settings.unit : r.unit}</small>

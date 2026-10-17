@@ -1,26 +1,8 @@
 import { z } from 'zod';
+import { SetupSnapshotSchema, type Workspace } from './workspace-model';
 import type { FoodData } from './food-model';
-export const MUSCLES = [
-  'chest',
-  'front_delts',
-  'side_delts',
-  'rear_delts',
-  'triceps',
-  'biceps',
-  'forearms',
-  'upper_back',
-  'traps',
-  'lats',
-  'erectors',
-  'abs',
-  'obliques',
-  'glutes',
-  'quads',
-  'hamstrings',
-  'adductors',
-  'abductors',
-  'calves',
-] as const;
+import { MUSCLES, trackingTypes } from './constants';
+export { MUSCLES, trackingTypes } from './constants';
 export type Muscle = (typeof MUSCLES)[number];
 export const muscleName = (s: string) =>
   ({
@@ -34,14 +16,6 @@ export const muscleName = (s: string) =>
     traps: 'Trapezius',
     abductors: 'Hip abductors',
   })[s] || s.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase());
-export const trackingTypes = [
-  'weighted',
-  'bodyweight',
-  'loaded_bodyweight',
-  'assisted',
-  'duration',
-  'distance',
-] as const;
 export const uid = () => crypto.randomUUID();
 export const now = () => new Date().toISOString();
 const id = z.string().min(1).max(200);
@@ -85,6 +59,7 @@ export const GroupSchema = z.object({
   betweenSeconds: num.max(3600).optional(),
 });
 export const PlannedSetSchema = z.object({
+  notes: text.optional(),
   groupId: id.optional(),
   reps: num.max(10000).optional(),
   loadKg: num.optional(),
@@ -99,6 +74,8 @@ export const ItemSchema = z.object({
   exerciseId: id,
   name: z.string().max(150),
   tracking: z.enum(trackingTypes),
+  setup: SetupSnapshotSchema.optional(),
+  restUnknown: z.boolean().optional(),
   includeBodyweight: z.boolean().default(false),
   notes: text,
   groupId: id.optional(),
@@ -144,6 +121,8 @@ export const PlanSchema = z.object({
 export const SessionSchema = z.object({
   id,
   name: z.string().trim().min(1).max(150),
+  dateOnly: z.boolean().optional(),
+  importId: id.optional(),
   startAt: date,
   endAt: date.optional(),
   status: z.enum(['active', 'completed', 'cancelled']),
@@ -159,6 +138,9 @@ export const SessionSchema = z.object({
 });
 export const SetSchema = z.object({
   id,
+  setup: SetupSnapshotSchema.optional(),
+  partialReps: num.max(10000).optional(),
+  restUnknown: z.boolean().optional(),
   groupId: id.optional(),
   sessionId: id,
   itemId: id,
@@ -247,6 +229,7 @@ export const defaults: Settings = {
   weekTarget: 4,
 };
 export type Data = {
+  workspace?: Workspace;
   food?: FoodData;
   /** Lightweight UI reads omit image payloads; backups always use a complete read. */
   foodFileIds?: string[];

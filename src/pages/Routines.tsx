@@ -1,3 +1,4 @@
+import { LinkButton as PasteLink } from '../components/ui';
 import { useState } from 'react';
 import {
   Plus,
@@ -634,6 +635,7 @@ export function Routines() {
   const [planEdit, setPlanEdit] = useState<Plan | null>(null);
   return (
     <>
+      <PasteLink to="paste-workouts">Paste workout notes</PasteLink>
       <PageTitle
         eyebrow="GO IN WITH A PLAN"
         title="Your training, by design."

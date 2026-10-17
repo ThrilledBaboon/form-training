@@ -1,3 +1,5 @@
+import { WorkoutSetup } from './EquipmentSetups';
+import { LinkButton as WorkspaceLink } from '../components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Plus,
@@ -51,6 +53,7 @@ import {
   fromKg,
   toKg,
   dateLabel,
+  dateKey,
   completedSessions,
   personalRecords,
   muscleContributions,
@@ -78,6 +81,11 @@ function SetRow({ set, item, index }: { set: WorkoutSet; item: Item; index: numb
   const patch = (p: Partial<WorkoutSet>) => void run(() => updateSet(set.id, p));
   return (
     <>
+      {set.setup && (
+        <small className="set-context">
+          {set.setup.name} · {set.setup.basis.replaceAll('_', ' ')}
+        </small>
+      )}
       <div className={`set-row ${set.completed ? 'completed' : ''}`}>
         <span className="set-number">{set.label === 'warmup' ? 'W' : index + 1}</span>
         <select
@@ -97,7 +105,11 @@ function SetRow({ set, item, index }: { set: WorkoutSet; item: Item; index: numb
             compact
             label={`${label} ${item.tracking === 'assisted' ? 'assistance' : 'load'} (${unit})`}
             value={set.loadKg === undefined ? undefined : fromKg(set.loadKg, unit)}
-            step={data.settings.weightIncrement}
+            step={
+              set.setup?.incrementKg
+                ? fromKg(set.setup.incrementKg, unit)
+                : data.settings.weightIncrement
+            }
             onChange={(n) => patch({ loadKg: n === undefined ? undefined : toKg(n, unit) })}
           />
         ) : item.tracking === 'distance' ? (
@@ -170,7 +182,20 @@ function SetRow({ set, item, index }: { set: WorkoutSet; item: Item; index: numb
       </div>
       {details && (
         <Modal title={`Set ${index + 1} details`} onClose={() => setDetails(false)}>
-          <p className="muted">Changes save immediately.</p>
+          <p className="muted">
+            Changes save immediately. {set.restUnknown ? 'Rest was not recorded.' : ''}
+          </p>
+          <Field label="Additional partial reps">
+            <input
+              type="number"
+              min={0}
+              max={10000}
+              value={set.partialReps ?? ''}
+              onChange={(e) =>
+                patch({ partialReps: e.target.value === '' ? undefined : +e.target.value })
+              }
+            />
+          </Field>
           <div className="form-grid">
             <Field label="Effort scale">
               <select
@@ -208,8 +233,10 @@ function SetRow({ set, item, index }: { set: WorkoutSet; item: Item; index: numb
                 type="number"
                 min={0}
                 max={3600}
-                value={set.restSeconds}
-                onChange={(e) => patch({ restSeconds: +e.target.value })}
+                value={set.restUnknown ? '' : set.restSeconds}
+                onChange={(e) =>
+                  patch({ restSeconds: +e.target.value, restUnknown: e.target.value === '' })
+                }
               />
             </Field>
             {['bodyweight', 'loaded_bodyweight', 'assisted'].includes(item.tracking) && (
@@ -312,11 +339,19 @@ function WorkoutExercise({
   const sets = data.sets
     .filter((s) => s.sessionId === session.id && s.itemId === item.id)
     .sort((a, b) => a.order - b.order);
-  const previous = exerciseHistory(data, item.exerciseId, item.tracking).find(
+  const comparable = {
+    ...data,
+    sets: data.sets.filter(
+      (s) =>
+        (s.setup?.id ?? '') === (item.setup?.id ?? '') &&
+        (s.setup?.basis ?? 'unspecified') === (item.setup?.basis ?? 'unspecified'),
+    ),
+  };
+  const previous = exerciseHistory(comparable, item.exerciseId, item.tracking).find(
     (h) => h.session.id !== session.id,
   );
   const exercise = data.exercises.find((e) => e.id === item.exerciseId);
-  const suggested = recommendation(data, item);
+  const suggested = recommendation(comparable, item);
   const currentName = exercise?.name || item.name;
   const group = session.groups.find((g) => g.id === item.groupId);
   const patchItem = (p: Partial<Item>) => run(() => updateSessionItem(session.id, item.id, p));
@@ -408,6 +443,7 @@ function WorkoutExercise({
           </AsyncButton>
         </div>
       </div>
+      <WorkoutSetup sessionId={session.id} item={item} />
       <div className="previous-performance">
         <span>PREVIOUS</span>
         {previous ? (
@@ -478,6 +514,8 @@ function WorkoutExercise({
                   reps: item.repMin,
                   loadKg: suggested.loadKg,
                   restSeconds: item.restSeconds,
+                  restUnknown: item.restUnknown,
+                  setup: item.setup,
                   label: 'working',
                   completed: false,
                   notes: '',
@@ -504,9 +542,10 @@ function WorkoutExercise({
               }),
             )
           }
+          disabled={!!item.restUnknown}
         >
           <Timer size={15} />
-          {item.restSeconds}s rest
+          {item.restUnknown ? 'Rest unknown; choose before timing' : item.restSeconds + 's rest'}
         </Button>
       </div>
       <details className="exercise-notes">
@@ -582,6 +621,7 @@ export function SessionView({ session }: { session: Session }) {
   const [pick, setPick] = useState(false);
   const [cancel, setCancel] = useState(false);
   const [editInfo, setEditInfo] = useState(false);
+  const [dateOnly, setDateOnly] = useState(!!session.dateOnly);
   const [group, setGroup] = useState(false);
   const [bodyweight, setBodyweight] = useState(false);
   const active = session.status === 'active';
@@ -642,7 +682,7 @@ export function SessionView({ session }: { session: Session }) {
         description={
           active
             ? 'Stay focused. Every change is saved as you go.'
-            : `${dateLabel(session.startAt, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · ${session.status === 'completed' ? 'Completed' : 'Kept as cancelled'}`
+            : `${dateLabel(session.startAt, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ${session.dateOnly ? '· Date only · times unrecorded ' : ''}· ${session.status === 'completed' ? 'Completed' : 'Kept as cancelled'}`
         }
         action={
           <div className="inline-actions">
@@ -669,7 +709,13 @@ export function SessionView({ session }: { session: Session }) {
       <div className="session-summary-strip">
         <span>
           <Clock3 size={18} />
-          <strong>{fmt(stats.minutes, 0)}</strong> minutes
+          {session.dateOnly ? (
+            <strong>Duration unrecorded</strong>
+          ) : (
+            <>
+              <strong>{fmt(stats.minutes, 0)}</strong> minutes
+            </>
+          )}
         </span>
         <span>
           <Layers size={18} />
@@ -863,13 +909,18 @@ export function SessionView({ session }: { session: Session }) {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               void run(async () => {
-                const startAt = new Date(String(fd.get('start'))).toISOString();
-                const endAt = fd.get('end')
-                  ? new Date(String(fd.get('end'))).toISOString()
-                  : undefined;
+                const startAt = new Date(
+                  String(fd.get('start')) + (dateOnly ? 'T12:00:00' : ''),
+                ).toISOString();
+                const endAt = dateOnly
+                  ? startAt
+                  : fd.get('end')
+                    ? new Date(String(fd.get('end'))).toISOString()
+                    : undefined;
                 if (endAt && endAt < startAt) throw Error('End time must follow start time.');
                 await updateSession(session.id, {
                   name: String(fd.get('name')),
+                  dateOnly,
                   startAt,
                   endAt,
                   rpe: fd.get('rpe') === '' ? undefined : Number(fd.get('rpe')),
@@ -882,16 +933,27 @@ export function SessionView({ session }: { session: Session }) {
             <Field label="Workout name">
               <input name="name" required maxLength={150} defaultValue={session.name} />
             </Field>
+            {!active && (
+              <label className="check-label">
+                <input
+                  type="checkbox"
+                  checked={dateOnly}
+                  onChange={(e) => setDateOnly(e.target.checked)}
+                />
+                Times unknown — date-only entry
+              </label>
+            )}
             <div className="form-grid">
-              <Field label="Start time">
+              <Field label={dateOnly ? 'Workout date' : 'Start time'}>
                 <input
                   name="start"
                   required
-                  type="datetime-local"
-                  defaultValue={localInput(session.startAt)}
+                  key={String(dateOnly)}
+                  type={dateOnly ? 'date' : 'datetime-local'}
+                  defaultValue={dateOnly ? dateKey(session.startAt) : localInput(session.startAt)}
                 />
               </Field>
-              {!active && (
+              {!active && !dateOnly && (
                 <Field label="End time">
                   <input
                     name="end"
@@ -1040,17 +1102,20 @@ export function History() {
         title="Workout history"
         description="Every session has a place in your story."
         action={
-          <AsyncButton
-            onAction={() =>
-              run(async () => {
-                await startSession();
-                go('workout');
-              })
-            }
-          >
-            <Plus size={17} />
-            Add a workout
-          </AsyncButton>
+          <div className="inline-actions">
+            <WorkspaceLink to="paste-workouts">Paste workout notes</WorkspaceLink>
+            <AsyncButton
+              onAction={() =>
+                run(async () => {
+                  await startSession();
+                  go('workout');
+                })
+              }
+            >
+              <Plus size={17} />
+              Add a workout
+            </AsyncButton>
+          </div>
         }
       />
       <Card className="filter-card">
@@ -1107,7 +1172,8 @@ export function History() {
                       {fmt(fromKg(stats.volume, data.settings.unit), 0)} {data.settings.unit}
                     </strong>
                     <small>
-                      {fmt(stats.minutes, 0)} min · {s.status}
+                      {s.dateOnly ? 'Duration unrecorded' : fmt(stats.minutes, 0) + ' min'} ·{' '}
+                      {s.status}
                     </small>
                   </span>
                   <Pencil size={16} />

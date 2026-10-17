@@ -73,3 +73,9 @@ This affects the FORM database at the current browser origin. Other browser prof
 Browser storage can be cleared manually, evicted under storage pressure, removed by private browsing or lost with the browser profile. Requesting durable storage may reduce eviction risk where supported; it is not a separate copy. If storage fails, the app shows an error and does not claim the write succeeded.
 
 Production files are cached after the first successful service-worker installation. Test offline mode only after loading the production app online and reloading once. Development mode does not register the production worker. An update prompt lets you reload deliberately. Data stays in IndexedDB rather than the service-worker cache.
+
+## Workspace format 4
+
+Complete backups now include the singleton workspace: pages/widget configurations, systems/home, equipment profiles, recoverable layouts and private import draft/provenance. Existing version 2/3 files remain accepted. Merge preserves existing page/profile identities; system/home/draft preference restoration remains explicit. An older file does not erase local pages during merge. Replacement of an older file supplies one mixed Overview and enables both systems. The new workspace category includes setup exercise dependencies.
+
+Page layout files (`page-layout`, format 1) and Gym libraries (schema 1) have separate preview/import tools and privacy rules. A complete/category workspace backup intentionally includes private notes/drafts; use Share layout to send a presentation without measurements. See the [workspace guide](WORKSPACE.md).

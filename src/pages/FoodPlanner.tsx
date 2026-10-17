@@ -273,13 +273,15 @@ export function FoodPlanner() {
           const entries = food.mealPlans
             .filter((p) => p.date === day)
             .sort((a, b) => mealSlots.indexOf(a.slot) - mealSlots.indexOf(b.slot));
-          const gym = data.plans.filter((p) => p.date === day);
-          const sessions = data.sessions.filter(
+          const gym = (data.workspace?.systems.gym === false ? [] : data.plans).filter(
+            (p) => p.date === day,
+          );
+          const sessions = (data.workspace?.systems.gym === false ? [] : data.sessions).filter(
             (s) => foodDay(new Date(s.startAt)) === day && s.status === 'completed',
           );
-          const weeklyRoutines = data.routines.filter((r) =>
-            r.weekdays.includes(new Date(day + 'T12:00:00').getDay()),
-          );
+          const weeklyRoutines = (
+            data.workspace?.systems.gym === false ? [] : data.routines
+          ).filter((r) => r.weekdays.includes(new Date(day + 'T12:00:00').getDay()));
           return (
             <section
               key={day}

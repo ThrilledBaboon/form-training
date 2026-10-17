@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -27,6 +28,7 @@ export function TrendChart({
   color?: string;
   zeroBaseline?: boolean;
 }) {
+  const gradientId = 'chart-' + useId().replaceAll(':', '');
   if (!data.length)
     return (
       <Empty title="Your progress starts here" compact>
@@ -42,7 +44,7 @@ export function TrendChart({
       <ResponsiveContainer width="100%" height={210}>
         <AreaChart data={data} margin={{ top: 15, right: 15, left: 0, bottom: 5 }}>
           <defs>
-            <linearGradient id={'chart-' + label.replaceAll(/\W/g, '')} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.2} />
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
@@ -86,7 +88,7 @@ export function TrendChart({
             dataKey="value"
             stroke={color}
             strokeWidth={2.5}
-            fill={`url(#chart-${label.replaceAll(/\W/g, '')})`}
+            fill={`url(#${gradientId})`}
             dot={{ r: 3, strokeWidth: 2, fill: 'var(--surface)' }}
             isAnimationActive={false}
           />

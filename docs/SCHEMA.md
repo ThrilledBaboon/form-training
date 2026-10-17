@@ -20,12 +20,17 @@
 
 PRs, charts and totals are derived, never a competing source of truth. Export/import metadata lives in the versioned JSON envelope, settings and recovery snapshot records.
 
+The `workspaces` singleton (`id: workspace`) owns system preferences, home/page order, bounded widget definitions/configuration, equipment profiles, recoverable layouts and a private pasted-workout draft/import provenance. It does not own Gym/Food measurements. See [workspace behaviour, formats and limits](WORKSPACE.md).
+
+Completed set/item `setup` snapshots retain profile identity, load convention and reminders. Profile edits do not rewrite snapshots. Optional `restUnknown`, set `partialReps`, session `dateOnly`/`importId`, and planned-set notes are additive. Date-only local timestamps are technical; duration is zero and factual times are omitted from CSV.
+
 ## Versions
 
 - IndexedDB v1: core entities and indexes.
 - IndexedDB v2: adds the recovery snapshot table and merges missing settings defaults without replacing existing preferences.
 - IndexedDB v3: adds food stores without modifying or clearing gym tables.
-- JSON envelope schema v3: `{app: "FORM", schemaVersion: 3, exportedAt, scope, manifest, data}`. Scope is `complete` or `categories`; the manifest records categories, format version and attachment count. Schema 2 gym backups migrate in memory with empty food stores; existing food records survive a merge. Unsupported versions are rejected. Gym library-sharing files retain schema 1.
+- IndexedDB v4: adds singleton `workspaces` without rewriting Gym/Food records. Its validated page revisions detect stale editors.
+- JSON envelope schema v4: `{app: "FORM", schemaVersion: 4, exportedAt, scope, manifest, data}`. Scope is `complete` or `categories`; the manifest records categories, format version and attachment count. Schema 2 gym backups migrate in memory with empty food stores; schema 3 Food backups also remain supported. Old backups omit workspace preferences: replacement creates one default Overview and merge preserves existing pages. Existing Food records survive a merge. Unsupported versions are rejected. Gym library-sharing files retain schema 1.
 
 Dexie upgrades run transactionally. The current migration is additive; it does not rewrite or discard training history. A future destructive migration must first preserve a recoverable snapshot and be covered by upgrade/rollback tests. Users should export an independent file before upgrades.
 

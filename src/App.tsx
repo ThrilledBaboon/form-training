@@ -1,3 +1,8 @@
+import { CustomPages } from './pages/CustomPages';
+import { EquipmentSetups } from './pages/EquipmentSetups';
+import { PasteWorkouts } from './pages/PasteWorkouts';
+import { defaultWorkspace, routeSystems } from './lib/workspace-model';
+import { changeWorkspace, setSystemEnabled } from './lib/workspace';
 import { Component, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRegisterSW } from 'virtual:pwa-register/react';
@@ -85,6 +90,9 @@ const navigation = [
   {
     label: 'YOUR WORKSPACE',
     items: [
+      ['pages', 'My pages', LayoutDashboard],
+      ['setups', 'Equipment setups', Dumbbell],
+      ['paste-workouts', 'Paste workout notes', BookOpen],
       ['exercises', 'Exercise library', BookOpen],
       ['settings', 'Settings & data', SettingsIcon],
     ],
@@ -120,7 +128,7 @@ export default function App() {
   const streak = useWorkoutStreak(data);
   const [streakOpen, setStreakOpen] = useState(false);
   const [pending, setPending] = useState(0);
-  const [hash, setHash] = useState(location.hash || '#/today');
+  const [hash, setHash] = useState(location.hash);
   const [menu, setMenu] = useState(false);
   const [notice, setNotice] = useState<{
     message: string;
@@ -155,7 +163,7 @@ export default function App() {
   } = useRegisterSW();
   useEffect(() => {
     const onHash = () => {
-      setHash(location.hash || '#/today');
+      setHash(location.hash);
       setMenu(false);
       setStreakOpen(false);
       window.scrollTo(0, 0);
@@ -254,12 +262,30 @@ export default function App() {
         <p>Opening your training workspace…</p>
       </div>
     );
-  const route = hash.replace(/^#\/?/, '').split('?')[0] || 'today';
+  const workspace = data.workspace ?? defaultWorkspace();
+  const homeRoute =
+    workspace.homePageId === 'overview' ? 'today' : 'pages?page=' + workspace.homePageId;
+  const effectiveHash = hash || '#/' + homeRoute;
+  const route = effectiveHash.replace(/^#\/?/, '').split('?')[0] || 'today';
   const active = data.sessions.find((s) => s.status === 'active');
   const current =
     navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
   let page: ReactNode;
   switch (route) {
+    case 'pages':
+      page = (
+        <CustomPages
+          key={effectiveHash}
+          pageId={new URLSearchParams(effectiveHash.split('?')[1]).get('page') ?? undefined}
+        />
+      );
+      break;
+    case 'setups':
+      page = <EquipmentSetups key={effectiveHash} />;
+      break;
+    case 'paste-workouts':
+      page = <PasteWorkouts />;
+      break;
     case 'food-menu':
       page = <FoodMenu key={hash} />;
       break;
@@ -324,6 +350,27 @@ export default function App() {
         </Empty>
       );
   }
+  const disabled = routeSystems(route).filter((s) => !workspace.systems[s]);
+  if (disabled.length)
+    page = (
+      <Empty
+        title={
+          disabled.map((s) => (s === 'gym' ? 'Gym' : 'Food')).join(' and ') + ' is switched off'
+        }
+        action={
+          <Button
+            onClick={() =>
+              void run(() => Promise.all(disabled.map((s) => setSystemEnabled(s, true))))
+            }
+          >
+            Enable {disabled.join(' and ')}
+          </Button>
+        }
+      >
+        Your records, drafts and saved widgets are retained.{' '}
+        <a href="#/today">Return to Overview</a> or <a href="#/settings">open system settings</a>.
+      </Empty>
+    );
   return (
     <AppContext.Provider
       value={{
@@ -382,23 +429,29 @@ export default function App() {
             TRAINING & FOOD
           </div>
           <nav aria-label="Main navigation">
-            {navigation.map((section) => (
-              <div className="nav-section" key={section.label}>
-                <span className="nav-label">{section.label}</span>
-                {section.items.map(([id, label, Icon]) => (
-                  <a
-                    key={id}
-                    href={`#/${id}`}
-                    aria-current={route === id ? 'page' : undefined}
-                    className={route === id ? 'active' : ''}
-                  >
-                    <Icon size={18} />
-                    <span>{label}</span>
-                    {id === 'workout' && active && <i className="live-dot" />}
-                  </a>
-                ))}
-              </div>
-            ))}
+            {navigation
+              .filter((section) =>
+                section.items.some(([id]) => routeSystems(id).every((s) => workspace.systems[s])),
+              )
+              .map((section) => (
+                <div className="nav-section" key={section.label}>
+                  <span className="nav-label">{section.label}</span>
+                  {section.items
+                    .filter(([id]) => routeSystems(id).every((s) => workspace.systems[s]))
+                    .map(([id, label, Icon]) => (
+                      <a
+                        key={id}
+                        href={`#/${id}`}
+                        aria-current={route === id ? 'page' : undefined}
+                        className={route === id ? 'active' : ''}
+                      >
+                        <Icon size={18} />
+                        <span>{label}</span>
+                        {id === 'workout' && active && <i className="live-dot" />}
+                      </a>
+                    ))}
+                </div>
+              ))}
           </nav>
           <div className="sidebar-bottom">
             <div className="local-note">
@@ -440,14 +493,16 @@ export default function App() {
                 <i className={online ? '' : 'offline'} />
                 {pending ? 'Saving…' : online ? 'On-device storage' : 'You’re offline'}
               </span>
-              <button
-                className="icon-button"
-                aria-label="Open exercise search"
-                onClick={() => go('exercises')}
-              >
-                <Search size={18} />
-              </button>
-              <StreakTrigger />
+              {workspace.systems.gym && (
+                <button
+                  className="icon-button"
+                  aria-label="Open exercise search"
+                  onClick={() => go('exercises')}
+                >
+                  <Search size={18} />
+                </button>
+              )}
+              {workspace.systems.gym && <StreakTrigger />}
               <button
                 className="icon-button"
                 aria-label="Toggle colour theme"
@@ -477,28 +532,38 @@ export default function App() {
           </footer>
         </div>
       </div>
-      <nav className="mobile-nav" aria-label="Mobile navigation">
+      <nav
+        className="mobile-nav"
+        aria-label="Mobile navigation"
+        style={{
+          gridTemplateColumns: workspace.systems.gym ? undefined : 'repeat(2,minmax(0,1fr))',
+        }}
+      >
         {[
           ['today', 'Today', LayoutDashboard],
           ['workout', 'Train', Dumbbell],
           ['routines', 'Plans', Layers],
           ['muscles', 'Muscles', Activity],
-        ].map(([id, label, Icon]) => {
-          const I = Icon as typeof Dumbbell;
-          return (
-            <a key={id as string} className={route === id ? 'active' : ''} href={`#/${id}`}>
-              <I size={21} />
-              <span>{label as string}</span>
-            </a>
-          );
-        })}
+        ]
+          .filter(([id]) => routeSystems(id as string).every((s) => workspace.systems[s]))
+          .map(([id, label, Icon]) => {
+            const I = Icon as typeof Dumbbell;
+            return (
+              <a key={id as string} className={route === id ? 'active' : ''} href={`#/${id}`}>
+                <I size={21} />
+                <span>{label as string}</span>
+              </a>
+            );
+          })}
         <button onClick={() => setMenu(!menu)} aria-expanded={menu}>
           <Menu size={21} />
           <span>More</span>
         </button>
       </nav>
-      <RestTimer />
-      {streakOpen && <WorkoutStreakDialog onClose={() => setStreakOpen(false)} />}
+      {workspace.systems.gym && <RestTimer />}
+      {workspace.systems.gym && streakOpen && (
+        <WorkoutStreakDialog onClose={() => setStreakOpen(false)} />
+      )}
       {notice && (
         <div
           className={`toast ${notice.error ? 'error' : ''}`}

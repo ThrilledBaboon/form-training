@@ -34,6 +34,9 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 
 ## What you can use
 
+- Editable mixed Overview, 40 reusable widget types, multiple custom pages/home choice, independent filters and responsive arrangement with keyboard/tap controls. Share private-data-free layouts with reference mapping and import previews.
+- Independent Gym/Food system switches, saved equipment setups with historical snapshots, and an offline pasted-workout review/import tool. See the [workspace guide](docs/WORKSPACE.md).
+
 - Dashboard with real training totals, weekly consistency, latest sessions, records, exercise progression highlights, bodyweight trends and muscle contributions.
 - Workout-day streak with an earned rest-day bank, longest streak and a selectable monthly calendar. Open it from the flame in the top bar or the overview card.
 - **Suggest session** on Overview reviews the next scheduled/weekly routine against its last completed session, shows proposed weight or rep increases and starts an editable copy after review. Saved routines and history remain intact.
@@ -51,7 +54,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 - Food diary, historical macro snapshots, independent optional macro targets, weekly summaries and shared training/bodyweight context. Nutrition uses protein, carbohydrates, fat and optional fibre only.
 - Kitchen stock, storage locations, expiry, confidence, waste and movement history; explicit cooking deducts ingredients and creates prepared portions, which can then be eaten or discarded.
 - Daily/weekly meal planning alongside training, stock-aware shopping with package rounding and preserved manual rows; reviewed receipt images, optional local OCR/manual fallback, purchases, recorded prices, budgets and estimated costs.
-- **Export everything** includes gym and food records, preferences, drafts and supported images. Category JSON files include dependencies and import previews; food and gym CSV reports support analysis.
+- **Export everything** includes gym and food records, pages, system choices, equipment setups, preferences, drafts and supported images. Category JSON files include dependencies and import previews; food and gym CSV reports support analysis.
 - Validated JSON import preview/merge/replace; duplicate handling; atomic local recovery snapshots; complete JSON backups; separate CSV exports; light/dark/system themes; reduced motion; offline PWA shell and update prompts.
 - Full data reset in **Settings & data → Start fresh**, with a backup export and typed `RESET` confirmation. Restores starter exercises/routines and removes personal records, custom content, preferences and recovery snapshots from this browser.
 
@@ -63,7 +66,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 4. Finish the workout. Inspect its history, progress, records, muscle map and calendar.
 5. Visit **Settings & data → Export everything** and keep that file somewhere independent of this browser.
 
-For historical entries, log a session, finish it, then correct its start and end dates/times in **Details**. Incomplete sets remain visible but do not count towards completed training analytics.
+For historical entries, use **History → Paste workout notes**, review the parsed sets and save date-only history or actual known times. You can also log a session, finish it and correct its dates/times in **Details**. Incomplete sets remain visible but do not count towards completed training analytics.
 
 ## Share and receive library content
 
@@ -95,6 +98,9 @@ pnpm build  # restore a root production build afterwards
 Formatting: `pnpm format`, `pnpm format:check`. See [verification notes](docs/VERIFICATION.md) for recorded results and limits.
 
 ## Documentation
+
+- [Custom pages, layout sharing, systems, equipment and pasted workouts](docs/WORKSPACE.md)
+- [Workspace implementation and verification](docs/WORKSPACE-IMPLEMENTATION.md)
 
 - [Food guide and practical limits](docs/FOOD.md)
 - [Food implementation and verification report](docs/FOOD-IMPLEMENTATION.md)

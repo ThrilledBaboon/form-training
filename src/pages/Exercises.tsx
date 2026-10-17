@@ -8,7 +8,7 @@ import {
   SlidersHorizontal,
   Dumbbell,
 } from 'lucide-react';
-import { useApp } from '../lib/context';
+import { useApp, go } from '../lib/context';
 import { db } from '../lib/db';
 import { saveExercise } from '../lib/actions';
 import { LibraryActions, ShareLibraryButton } from '../components/LibrarySharing';
@@ -330,6 +330,9 @@ export function Exercises() {
         action={
           <div className="inline-actions library-actions">
             <LibraryActions />
+            <Button variant="secondary" onClick={() => go('setups')}>
+              Equipment setups
+            </Button>
             <Button onClick={() => setEditor('new')}>
               <Plus size={17} />
               Create exercise

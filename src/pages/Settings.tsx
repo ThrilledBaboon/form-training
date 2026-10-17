@@ -1,3 +1,4 @@
+import { SystemSettings } from '../components/WorkspaceControls';
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
@@ -76,6 +77,7 @@ export function Settings() {
         title="Settings & your data"
         description="A few useful preferences. Complete control over your records."
       />
+      <SystemSettings />
       <div className="privacy-panel">
         <ShieldCheck size={26} />
         <div>

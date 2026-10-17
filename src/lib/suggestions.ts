@@ -72,6 +72,12 @@ export function suggestSession(
   at = Date.now(),
 ): SessionSuggestion {
   const source = structuredClone(choice.source);
+  source.items = source.items.map((item) => {
+    const profile = data.workspace?.setups.find(
+      (s) => s.exerciseId === item.exerciseId && s.isDefault && !s.archived,
+    );
+    return { ...item, setup: item.setup ?? profile };
+  });
   const routineId = 'weekdays' in source ? source.id : source.routineId;
   const history = data.sessions
     .filter(
@@ -104,7 +110,13 @@ export function suggestSession(
     const oldItem = matchingItem(session, item, index);
     return oldItem
       ? completed
-          .filter((s) => s.sessionId === session!.id && s.itemId === oldItem.id)
+          .filter(
+            (s) =>
+              s.sessionId === session!.id &&
+              s.itemId === oldItem.id &&
+              (s.setup?.id ?? '') === (item.setup?.id ?? '') &&
+              (s.setup?.basis ?? 'unspecified') === (item.setup?.basis ?? 'unspecified'),
+          )
           .sort((a, b) => a.order - b.order)
       : [];
   };
@@ -185,13 +197,13 @@ export function suggestSession(
       let loadKg = old.loadKg ?? plannedSet.loadKg;
       if (increaseWeight) {
         const display = fromKg(loadKg || 0, data.settings.unit);
+        const increment = item.setup?.incrementKg
+          ? fromKg(item.setup.incrementKg, data.settings.unit)
+          : data.settings.weightIncrement;
         loadKg = toKg(
           Math.max(
-            display + data.settings.weightIncrement,
-            roundTo(
-              display * (1 + data.settings.progressionPercent / 100),
-              data.settings.weightIncrement,
-            ),
+            display + increment,
+            roundTo(display * (1 + data.settings.progressionPercent / 100), increment),
           ),
           data.settings.unit,
         );

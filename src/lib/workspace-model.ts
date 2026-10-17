@@ -1,0 +1,223 @@
+import { z } from 'zod';
+import { MUSCLES, trackingTypes } from './constants';
+
+const id = z.string().min(1).max(200);
+const text = z.string().max(10000);
+const day = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((s) => {
+    const d = new Date(s + 'T12:00:00Z');
+    return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+  }, 'Invalid date');
+export const RangeSchema = z
+  .object({
+    days: z.number().int().min(0).max(36500).default(30),
+    from: day.optional(),
+    to: day.optional(),
+  })
+  .refine((r) => !r.from || !r.to || r.from <= r.to, 'From must precede through date');
+export type ViewRange = z.infer<typeof RangeSchema>;
+export const LoadBasisSchema = z.enum(['unspecified', 'total', 'per_dumbbell', 'per_side']);
+export const SetupSnapshotSchema = z.object({
+  id,
+  name: z.string().min(1).max(150),
+  gym: z.string().max(150).default(''),
+  machine: z.string().max(150).default(''),
+  settings: text.default(''),
+  attachment: z.string().max(300).default(''),
+  notes: text.default(''),
+  basis: LoadBasisSchema.default('unspecified'),
+  incrementKg: z.number().finite().positive().max(100).optional(),
+});
+export const SetupSchema = SetupSnapshotSchema.extend({
+  exerciseId: id,
+  isDefault: z.boolean().default(false),
+  archived: z.boolean().default(false),
+  updatedAt: z.string().datetime(),
+});
+export type SetupSnapshot = z.infer<typeof SetupSnapshotSchema>;
+export type EquipmentSetup = z.infer<typeof SetupSchema>;
+export const WidgetConfigSchema = z.object({
+  exerciseId: id.optional(),
+  ingredientId: id.optional(),
+  setupId: id.optional(),
+  metric: z
+    .enum([
+      'volume',
+      'bestLoad',
+      'bestMax',
+      'reps',
+      'sets',
+      'duration',
+      'distance',
+      'protein',
+      'carbs',
+      'fat',
+      'fibre',
+      'count',
+    ])
+    .default('volume'),
+  tracking: z.enum(trackingTypes).optional(),
+  muscle: z.enum(MUSCLES).default('chest'),
+  mode: z.enum(['sets', 'score', 'recovery']).default('sets'),
+  relative: z.boolean().default(false),
+  spendingPeriod: z.enum(['week', 'month']).default('week'),
+  calendarMetric: z.enum(['consistency', 'sets', 'volume', 'duration']).default('sets'),
+  calendarMax: z.number().finite().positive().max(1e9).default(20),
+  includeWarmup: z.boolean().default(false),
+  repMin: z.number().nonnegative().max(10000).optional(),
+  repMax: z.number().nonnegative().max(10000).optional(),
+  loadMinKg: z.number().nonnegative().max(1e6).optional(),
+  loadMaxKg: z.number().nonnegative().max(1e6).optional(),
+  basis: LoadBasisSchema.optional(),
+  range: RangeSchema.optional(),
+  date: day.optional(),
+  note: text.default(''),
+  link: z
+    .enum([
+      'workout',
+      'routines',
+      'history',
+      'weight',
+      'food-diary',
+      'food-menu',
+      'food-planner',
+      'food-shopping',
+      'paste-workouts',
+    ])
+    .default('workout'),
+});
+export const WidgetSchema = z
+  .object({
+    id,
+    type: z.string().min(1).max(80),
+    version: z.literal(1).default(1),
+    title: z.string().max(150).default(''),
+    size: z.enum(['compact', 'half', 'wide']).default('half'),
+    config: WidgetConfigSchema,
+    dependencies: z
+      .array(z.enum(['gym', 'food']))
+      .max(2)
+      .optional(),
+  })
+  .refine((w) => validFilterBounds(w.config), 'Minimum filters must not exceed maximum filters.');
+export type Widget = z.infer<typeof WidgetSchema>;
+export type WidgetConfig = z.infer<typeof WidgetConfigSchema>;
+export const PageSchema = z
+  .object({
+    id,
+    name: z.string().trim().min(1).max(100),
+    range: RangeSchema,
+    widgets: z.array(WidgetSchema).max(40),
+    revision: z.number().int().nonnegative().default(0),
+    importedKey: z.string().max(100).optional(),
+  })
+  .refine(
+    (p) => new Set(p.widgets.map((w) => w.id)).size === p.widgets.length,
+    'Duplicate widget identities',
+  );
+export type WorkspacePage = z.infer<typeof PageSchema>;
+export const WorkspaceSchema = z
+  .object({
+    id: z.literal('workspace'),
+    revision: z.number().int().nonnegative().default(0),
+    systems: z.object({ gym: z.boolean(), food: z.boolean() }),
+    homePageId: id,
+    pages: z.array(PageSchema).min(1).max(50),
+    setups: z.array(SetupSchema).max(2000).default([]),
+    removedPages: z.array(PageSchema).max(20).default([]),
+    pasteDraft: z.string().max(1000000).optional(),
+    imports: z
+      .array(
+        z.object({
+          id,
+          fingerprint: z.string().max(100),
+          workoutKeys: z.array(z.string().max(100)).max(50).optional(),
+          sessionIds: z.array(id),
+          routineIds: z.array(id),
+          undoDigest: z.string().max(100).optional(),
+        }),
+      )
+      .max(10000)
+      .default([]),
+  })
+  .refine(
+    (w) =>
+      new Set(w.pages.map((p) => p.id)).size === w.pages.length &&
+      w.pages.some((p) => p.id === w.homePageId) &&
+      w.pages.some((p) => p.id === 'overview') &&
+      new Set(w.setups.map((s) => s.id)).size === w.setups.length,
+    'Invalid pages or home page',
+  );
+export type Workspace = z.infer<typeof WorkspaceSchema>;
+export function makeWidget(
+  type: string,
+  config: Partial<WidgetConfig> = {},
+  id: string = crypto.randomUUID(),
+): Widget {
+  return WidgetSchema.parse({ id, type, size: 'half', config });
+}
+export function overviewPage(): WorkspacePage {
+  const types = [
+    'start',
+    'suggestion',
+    'week',
+    'streak',
+    'training-totals',
+    'highlights',
+    'bodyweight',
+    'macros',
+    'meal-plan',
+    'expiry',
+    'spending',
+  ];
+  return {
+    id: 'overview',
+    name: 'Overview',
+    range: { days: 30 },
+    revision: 0,
+    widgets: types.map((type) => ({
+      ...makeWidget(type, {}, 'overview-' + type),
+      size: type === 'training-totals' ? 'wide' : 'half',
+    })),
+  };
+}
+export const defaultWorkspace = (): Workspace => ({
+  id: 'workspace',
+  revision: 0,
+  systems: { gym: true, food: true },
+  homePageId: 'overview',
+  pages: [overviewPage()],
+  setups: [],
+  imports: [],
+  removedPages: [],
+});
+
+export type System = 'gym' | 'food';
+export const gymRoutes = new Set([
+  'workout',
+  'routines',
+  'history',
+  'exercises',
+  'progress',
+  'muscles',
+  'calendar',
+  'records',
+  'setups',
+  'paste-workouts',
+]);
+export const routeSystems = (route: string): System[] =>
+  route.startsWith('food-') ? ['food'] : gymRoutes.has(route) ? ['gym'] : [];
+
+export function validFilterBounds(c: {
+  repMin?: number;
+  repMax?: number;
+  loadMinKg?: number;
+  loadMaxKg?: number;
+}) {
+  return (
+    (c.repMin === undefined || c.repMax === undefined || c.repMin <= c.repMax) &&
+    (c.loadMinKg === undefined || c.loadMaxKg === undefined || c.loadMinKg <= c.loadMaxKg)
+  );
+}

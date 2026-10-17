@@ -1,3 +1,4 @@
+import { AddToPage } from '../components/WorkspaceControls';
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../lib/context';
@@ -325,6 +326,7 @@ export function FoodDiary() {
           </Button>
         }
       />
+      <AddToPage type="macros" config={{ date }} />
       <div className="food-date-bar">
         <Button
           variant="ghost"

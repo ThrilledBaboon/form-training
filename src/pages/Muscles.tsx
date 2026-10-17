@@ -4,6 +4,7 @@ import { useApp } from '../lib/context';
 import { muscleContributions, fmt, heatColor, dateLabel, fromKg, dateKey } from '../lib/calc';
 import { MUSCLES, muscleName, type Muscle } from '../lib/model';
 import { Card, PageTitle, SectionTitle, Badge, Empty, Field, Delta } from '../components/ui';
+import { AddToPage } from '../components/WorkspaceControls';
 import { Anatomy } from '../components/Anatomy';
 import { TrendChart } from '../components/Chart';
 export function Muscles() {
@@ -13,11 +14,11 @@ export function Muscles() {
   const [selected, setSelected] = useState<Muscle>(
     MUSCLES.includes(initial as Muscle) ? (initial as Muscle) : 'chest',
   );
-  const [days, setDays] = useState(7);
-  const [mode, setMode] = useState('sets');
-  const [relative, setRelative] = useState(false);
-  const [since, setSince] = useState('');
-  const [until, setUntil] = useState(dateKey(new Date()));
+  const [days, setDays] = useState(Number(q.get('days') ?? 7));
+  const [mode, setMode] = useState(q.get('mode') || 'sets');
+  const [relative, setRelative] = useState(q.get('relative') === 'true');
+  const [since, setSince] = useState(q.get('from') || '');
+  const [until, setUntil] = useState(q.get('to') || dateKey(new Date()));
   const at =
     until && until !== dateKey(new Date())
       ? new Date(until + 'T23:59:59.999').getTime()
@@ -62,6 +63,17 @@ export function Muscles() {
         eyebrow="SEE THE WORK BEHIND THE WORK"
         title="Every muscle has a story."
         description="Understand your training balance, one region at a time."
+        action={
+          <AddToPage
+            type="muscle-map"
+            config={{
+              muscle: selected,
+              mode: mode as 'sets' | 'score' | 'recovery',
+              relative,
+              range: { days, from: since || undefined, to: until || undefined },
+            }}
+          />
+        }
       />
       <Card className="filter-card">
         <Field label="Training period">

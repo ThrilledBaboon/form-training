@@ -1,3 +1,4 @@
+import { defaultWorkspace, type Workspace } from './workspace-model';
 import Dexie, { type EntityTable } from 'dexie';
 import { catalogue } from './catalogue';
 import {
@@ -38,6 +39,7 @@ export interface RecoveryBackup {
   json: string;
 }
 export class TrainingDB extends Dexie {
+  workspaces!: EntityTable<Workspace, 'id'>;
   ingredients!: EntityTable<Ingredient, 'id'>;
   recipes!: EntityTable<Recipe, 'id'>;
   foodEntries!: EntityTable<FoodEntry, 'id'>;
@@ -91,7 +93,13 @@ export class TrainingDB extends Dexie {
       await tx.table('mappings').bulkAdd(c.mappings);
       await tx.table('routines').bulkAdd(c.routines);
       await tx.table('settings').put(defaults);
+      await tx.table('workspaces').put(defaultWorkspace());
     });
+    this.version(4)
+      .stores({ workspaces: 'id' })
+      .upgrade(async (tx) => {
+        await tx.table('workspaces').put(defaultWorkspace());
+      });
     this.version(3).stores({
       ingredients: 'id,name,category,updatedAt',
       recipes: 'id,name,category,updatedAt',
@@ -116,6 +124,7 @@ export async function readData(
   return database.transaction(
     'r',
     [
+      database.workspaces,
       database.exercises,
       database.mappings,
       database.routines,
@@ -164,6 +173,7 @@ export async function readData(
         (await database.foodSettings.get('food-preferences')) ??
         structuredClone(emptyFood.foodSettings);
       return {
+        workspace: (await database.workspaces.get('workspace')) ?? defaultWorkspace(),
         food,
         ...(options.includeFiles === false
           ? { foodFileIds: await database.foodFiles.toCollection().primaryKeys() }

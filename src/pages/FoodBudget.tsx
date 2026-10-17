@@ -1,3 +1,4 @@
+import { AddToPage } from '../components/WorkspaceControls';
 import { useState } from 'react';
 import { useApp } from '../lib/context';
 import { saveFoodSettings } from '../lib/food-actions';
@@ -76,9 +77,10 @@ export function FoodBudget() {
   const today = foodDay(),
     week = weekDays(today),
     month = today.slice(0, 7) + '-01';
-  const [from, setFrom] = useState(month),
-    [to, setTo] = useState(today);
-  const [ingredientId, setIngredientId] = useState('');
+  const query = new URLSearchParams(location.hash.split('?')[1]);
+  const [from, setFrom] = useState(query.get('from') ?? month),
+    [to, setTo] = useState(query.get('to') ?? today);
+  const [ingredientId, setIngredientId] = useState(query.get('ingredient') ?? '');
   const currency = food.foodSettings.currency;
   const purchases = food.purchases.filter((p) => p.currency === currency);
   const weekSpend = purchases
@@ -210,6 +212,7 @@ export function FoodBudget() {
           <SectionTitle
             title="Checkout spending by retailer"
             sub="Actual reviewed purchases in the selected period."
+            action={<AddToPage type="spending-trend" config={{ range: { days: 0, from, to } }} />}
           />
           {retailer.map((r) => (
             <div className="food-history-line" key={r.name}>
@@ -269,6 +272,9 @@ export function FoodBudget() {
       <Card>
         <SectionTitle
           title="Ingredient price history"
+          action={
+            <AddToPage type="prices" config={{ ingredientId, range: { days: 0, from, to } }} />
+          }
           sub="Normalised from your recorded package quantities and net paid amounts, in the selected currency."
         />
         <IngredientSelect food={food} value={ingredientId} onChange={setIngredientId} />

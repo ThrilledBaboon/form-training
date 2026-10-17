@@ -1,0 +1,30 @@
+export const MUSCLES = [
+  'chest',
+  'front_delts',
+  'side_delts',
+  'rear_delts',
+  'triceps',
+  'biceps',
+  'forearms',
+  'upper_back',
+  'traps',
+  'lats',
+  'erectors',
+  'abs',
+  'obliques',
+  'glutes',
+  'quads',
+  'hamstrings',
+  'adductors',
+  'abductors',
+  'calves',
+] as const;
+
+export const trackingTypes = [
+  'weighted',
+  'bodyweight',
+  'loaded_bodyweight',
+  'assisted',
+  'duration',
+  'distance',
+] as const;

@@ -17,6 +17,7 @@ import {
   SectionTitle,
   Empty,
 } from '../components/ui';
+import { AddToPage } from '../components/WorkspaceControls';
 import { TrendChart } from '../components/Chart';
 export const localInput = (iso: string) => {
   const d = new Date(iso);
@@ -83,7 +84,9 @@ export function BodyweightForm({ entry, onClose }: { entry?: Bodyweight; onClose
 export function Weight() {
   const { data, run, toast } = useApp();
   const [editing, setEditing] = useState<Bodyweight | 'new' | null>(null);
-  const [days, setDays] = useState(90);
+  const [days, setDays] = useState(
+    Number(new URLSearchParams(location.hash.split('?')[1]).get('days') ?? 90),
+  );
   const trend = useMemo(() => bodyweightTrend(data), [data.bodyweights]);
   const latest = trend[trend.length - 1];
   const filtered = trend.filter((e) => !days || Date.parse(e.at) >= Date.now() - days * 86400000);
@@ -147,6 +150,7 @@ export function Weight() {
         <SectionTitle
           title="Your weight over time"
           sub="Raw measurements and a trailing 7-day average."
+
           action={
             <select
               aria-label="Bodyweight date range"
@@ -159,6 +163,7 @@ export function Weight() {
             </select>
           }
         />
+        <AddToPage type="bodyweight" config={{ range: { days } }} />
         <TrendChart
           label="Bodyweight"
           zeroBaseline={false}

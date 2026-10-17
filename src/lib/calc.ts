@@ -74,11 +74,13 @@ export function sessionStats(data: Data, session: Session) {
       (n, s) => n + externalVolume(s, session.items.find((i) => i.id === s.itemId)?.tracking || ''),
       0,
     ),
-    minutes: Math.max(
-      0,
-      ((session.endAt ? Date.parse(session.endAt) : Date.now()) - Date.parse(session.startAt)) /
-        60000,
-    ),
+    minutes: session.dateOnly
+      ? 0
+      : Math.max(
+          0,
+          ((session.endAt ? Date.parse(session.endAt) : Date.now()) - Date.parse(session.startAt)) /
+            60000,
+        ),
   };
 }
 export function completedSessions(data: Data, days = 0, at = Date.now()) {
@@ -135,7 +137,19 @@ export function exerciseHistory(data: Data, exerciseId: string, trackingType?: s
 
 export function recommendation(data: Data, exercise: Exercise | Item) {
   const id = 'exerciseId' in exercise ? exercise.exerciseId : exercise.id;
-  const h = exerciseHistory(data, id, exercise.tracking);
+  const profile =
+    'exerciseId' in exercise
+      ? exercise.setup
+      : data.workspace?.setups.find((s) => s.exerciseId === id && s.isDefault && !s.archived);
+  const comparable = {
+    ...data,
+    sets: data.sets.filter(
+      (s) =>
+        (s.setup?.id ?? '') === (profile?.id ?? '') &&
+        (s.setup?.basis ?? 'unspecified') === (profile?.basis ?? 'unspecified'),
+    ),
+  };
+  const h = exerciseHistory(comparable, id, exercise.tracking);
   const latest = h[0];
   const n = 'defaultSets' in exercise ? exercise.defaultSets : exercise.sets.length;
   if (!latest)
@@ -162,14 +176,14 @@ export function recommendation(data: Data, exercise: Exercise | Item) {
   const last = sets[sets.length - 1];
   let loadKg = last.loadKg || 0;
   if (increase) {
+    const increment = profile?.incrementKg
+      ? fromKg(profile.incrementKg, data.settings.unit)
+      : data.settings.weightIncrement;
     const display = fromKg(loadKg, data.settings.unit);
     loadKg = toKg(
       Math.max(
-        display + data.settings.weightIncrement,
-        roundTo(
-          display * (1 + data.settings.progressionPercent / 100),
-          data.settings.weightIncrement,
-        ),
+        display + increment,
+        roundTo(display * (1 + data.settings.progressionPercent / 100), increment),
       ),
       data.settings.unit,
     );
@@ -196,9 +210,25 @@ export type RecordEntry = {
   sessionId: string;
   at: string;
   setId?: string;
+  context?: string;
+  contextKey?: string;
 };
 export function personalRecords(data: Data): RecordEntry[] {
   return data.exercises.flatMap((e) => {
+    const contextKey = (s: WorkoutSet) =>
+      (s.setup?.id ?? 'legacy') + ':' + (s.setup?.basis ?? 'unspecified');
+    const relevant = data.sets.filter((s) => s.exerciseId === e.id && working(s));
+    const contexts = [...new Set(relevant.map(contextKey))];
+    if (contexts.length > 1)
+      return contexts.flatMap((key) =>
+        personalRecords({
+          ...data,
+          exercises: [e],
+          sets: relevant.filter((s) => contextKey(s) === key),
+        }),
+      );
+    const setup = relevant[0]?.setup;
+    const context = setup ? setup.name + ' · ' + setup.basis.replaceAll('_', ' ') : undefined;
     const h = exerciseHistory(data, e.id).reverse();
     if (!h.length) return [];
     const records: RecordEntry[] = [];
@@ -207,6 +237,8 @@ export function personalRecords(data: Data): RecordEntry[] {
         records.push({
           exerciseId: e.id,
           exercise: e.name,
+          context,
+          contextKey: contexts[0],
           kind,
           value,
           unit,

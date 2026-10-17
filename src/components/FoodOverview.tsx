@@ -63,6 +63,7 @@ export function FoodTrainingContext() {
   const food = useFood();
   const { data } = useApp();
   const days = weekDays(foodDay());
+  if (data.workspace && (!data.workspace.systems.gym || !data.workspace.systems.food)) return null;
   return (
     <Card>
       <SectionTitle

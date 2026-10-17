@@ -1,3 +1,4 @@
+import { defaultWorkspace, SetupSnapshotSchema } from './workspace-model';
 import { db, type TrainingDB } from './db';
 import {
   uid,
@@ -32,6 +33,7 @@ export async function resetAllData(database = db) {
     await database.mappings.bulkAdd(starter.mappings);
     await database.routines.bulkAdd(starter.routines);
     await database.settings.put({ ...defaults });
+    await database.workspaces.put(defaultWorkspace());
   });
 }
 export async function saveExercise(exercise: Exercise, mappings: Mapping[], database = db) {
@@ -90,7 +92,16 @@ export async function startSession(
   const data = await readData(database);
   const t = now();
   const sessionId = uid();
-  const items: Item[] = (source?.items || []).map((i) => ({ ...i, id: uid() }));
+  const items: Item[] = (source?.items || []).map((i) => {
+    const profile = data.workspace?.setups.find(
+      (s) => s.exerciseId === i.exerciseId && s.isDefault && !s.archived,
+    );
+    return {
+      ...i,
+      id: uid(),
+      setup: i.setup ?? (profile ? SetupSnapshotSchema.parse(profile) : undefined),
+    };
+  });
   const settings = data.settings;
   const bodyweight = [...data.bodyweights]
     .filter((b) => b.at <= t)
@@ -99,12 +110,24 @@ export async function startSession(
     const previous =
       options.prefillHistory === false
         ? undefined
-        : exerciseHistory(data, item.exerciseId, item.tracking)[0]?.sets.at(-1);
+        : exerciseHistory(
+            {
+              ...data,
+              sets: data.sets.filter(
+                (s) =>
+                  (s.setup?.id ?? '') === (item.setup?.id ?? '') &&
+                  (s.setup?.basis ?? 'unspecified') === (item.setup?.basis ?? 'unspecified'),
+              ),
+            },
+            item.exerciseId,
+            item.tracking,
+          )[0]?.sets.at(-1);
     return item.sets.map((p, order) => ({
       id: uid(),
       sessionId,
       itemId: item.id,
       exerciseId: item.exerciseId,
+      setup: item.setup,
       order,
       ...p,
       loadKg: p.loadKg ?? previous?.loadKg ?? 0,
@@ -112,7 +135,8 @@ export async function startSession(
       restSeconds: p.restSeconds ?? item.restSeconds ?? settings.defaultRest,
       label: p.label || 'working',
       completed: false,
-      notes: '',
+      notes: p.notes ?? '',
+      restUnknown: p.restSeconds === undefined && item.restUnknown,
     }));
   });
   const session: Session = {
@@ -163,14 +187,29 @@ async function insertExercise(
   replaceItemId?: string,
 ) {
   const data = await readData(database);
-  const previous = exerciseHistory(data, exercise.id, exercise.tracking)[0]?.sets.at(-1);
+  const profile = data.workspace?.setups.find(
+    (s) => s.exerciseId === exercise.id && s.isDefault && !s.archived,
+  );
+  const setup = profile ? SetupSnapshotSchema.parse(profile) : undefined;
+  const previous = exerciseHistory(
+    {
+      ...data,
+      sets: data.sets.filter(
+        (s) =>
+          (s.setup?.id ?? '') === (setup?.id ?? '') &&
+          (s.setup?.basis ?? 'unspecified') === (setup?.basis ?? 'unspecified'),
+      ),
+    },
+    exercise.id,
+    exercise.tracking,
+  )[0]?.sets.at(-1);
   const bw = [...data.bodyweights]
     .filter((b) => b.at <= now())
     .sort((a, b) => b.at.localeCompare(a.at))[0]?.kg;
   await database.transaction('rw', [database.sessions, database.sets], async () => {
     const s = await database.sessions.get(sessionId);
     if (!s) throw Error('Workout not found.');
-    const item = exerciseItem(exercise);
+    const item = { ...exerciseItem(exercise), setup };
     const index = replaceItemId ? s.items.findIndex((i) => i.id === replaceItemId) : -1;
     if (replaceItemId) {
       if (index < 0) throw Error('Exercise no longer exists in this workout.');
@@ -187,6 +226,7 @@ async function insertExercise(
       sessionId,
       itemId: item.id,
       exerciseId: exercise.id,
+      setup,
       order,
       ...p,
       loadKg: p.loadKg ?? previous?.loadKg ?? 0,
@@ -265,8 +305,12 @@ export async function completeSet(id: string, database = db) {
       const item = session?.items.find((i) => i.id === s.itemId);
       if (!item) throw Error('Exercise not found.');
       validateCompletion(s, item);
-      await database.sets.update(id, { completed: true, completedAt: now() });
-      if (session?.status === 'active') {
+      await database.sets.update(id, {
+        completed: true,
+        completedAt: now(),
+        setup: s.setup ?? item.setup,
+      });
+      if (session?.status === 'active' && !s.restUnknown) {
         const group = session.groups.find((g) => g.id === (s.groupId || item.groupId));
         let rest = s.restSeconds;
         if (group) {

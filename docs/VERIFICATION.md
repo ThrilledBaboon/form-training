@@ -1,5 +1,9 @@
 # Implementation and verification record
 
+## Custom workspace — 18 October 2026, local
+
+The custom workspace builds on the unpublished Food extension on `codex/custom-workspace`. It adds 40 reusable widgets, an editable mixed Overview and custom pages, first-release layout sharing, independent Gym/Food switches, equipment snapshots and reviewed offline workout-note imports. Its widget inventory, migration/privacy boundaries, exact commands/results and outstanding physical-device checks are in the [workspace implementation report](WORKSPACE-IMPLEMENTATION.md). The [workspace guide](WORKSPACE.md) explains how to use it. This update is local only; the public GitHub Pages site has not changed.
+
 ## Food extension — 17 October 2026, local
 
 The food extension is isolated on `codex/food-management` and is not deployed. Its audit,
