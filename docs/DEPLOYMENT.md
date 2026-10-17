@@ -1,5 +1,9 @@
 # GitHub Pages deployment
 
+The food extension is currently local on `codex/food-management`; it has not been pushed or
+published. The deployment history below describes earlier gym releases. The existing manual
+Pages workflow is unchanged. Review the [food report](FOOD-IMPLEMENTATION.md) before publishing.
+
 Published at **[FORM](https://thrilledbaboon.github.io/form-training/)** from the public [source repository](https://github.com/ThrilledBaboon/form-training). The first [deployment](https://github.com/ThrilledBaboon/form-training/actions/runs/38800980991) succeeded on 15 October 2026, after [CI verification](https://github.com/ThrilledBaboon/form-training/actions/runs/38800587905) passed.
 
 The workout streak and confirmed data-reset update was [deployed successfully](https://github.com/ThrilledBaboon/form-training/actions/runs/38805692280) on 15 October 2026 after [CI](https://github.com/ThrilledBaboon/form-training/actions/runs/38805197566) passed all 69 unit/storage tests and 48 browser checks. Ten additional checks passed against the live site in Chromium and WebKit, including reset/export/restore and offline logging. See the [verification record](VERIFICATION.md) for scope and limitations.

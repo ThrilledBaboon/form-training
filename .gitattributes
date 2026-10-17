@@ -1,0 +1,2 @@
+# Keep pinned upstream OCR distributions byte-for-byte, including their whitespace.
+public/ocr/** -whitespace

@@ -1,5 +1,41 @@
 # Transparent calculation methods
 
+## Food quantities, macros and costs
+
+`src/lib/food-calc.ts` supplies every food view. A line contributes
+`quantity converted to its recorded 100 g/ml basis / 100 × ingredient macro`.
+Recipe totals sum line contributions; a selected serving count scales all lines by
+`selected servings / recipe servings`. A diary snapshot is per serving and intake multiplies
+it by servings eaten. Unknown components propagate to the corresponding total; other known
+macros stay available. Empty recorded intake is zero; a recipe without ingredients is unknown.
+
+Mass and volume convert within their dimensions (1 kg = 1000 g; 1 l = 1000 ml).
+Cross-dimension conversion requires ingredient density in g/ml or grams per count. Recipe
+line state must equal the ingredient's raw/cooked/as-sold state. No automatic cooking yield
+is assumed. Zero optional quantities contribute zero. Displayed macros round to at most one
+decimal while calculations retain numeric precision.
+
+Shopping aggregates repeated ingredients, assigns earliest-expiry usable packages to demands
+in meal-date order, then calculates shortage. Known package sizes round upward only after
+stock subtraction: 900 g required − 350 g stock = 550 g shortage; 500 g packages imply two
+packages/1000 g to buy. Unknown conversions/states remain flagged. Prepared-batch plans do
+not consume the same raw ingredients again. Planning does not reserve or deduct stock.
+
+Recorded net line cost divided by total package quantity gives a comparable unit cost.
+Recipe cost prorates that price by ingredient quantity. Cooking uses actual selected package
+cost when complete, otherwise a recorded-price estimate. Stock value is original package
+price × remaining/original quantity. Checkout expenditure uses full receipt totals; discounts
+are already reflected in net paid and are not subtracted twice. Waste retains historical cost
+and currency. Different currencies are not converted. CSV checkout totals appear once per
+purchase so summing the report does not multiply receipts by their line count.
+
+Food daily/weekly reports and targets use protein, carbohydrates, fat and optional fibre.
+Weekly means divide seven days of recorded intake by seven; no missing intake is imputed.
+Historical diary/batch snapshots are unchanged by later ingredient/recipe edits. See the
+[food guide](FOOD.md) for confidence, price-source and receipt limitations.
+
+## Training calculations
+
 All values derive from actual saved records. Incomplete sets, cancelled/active sessions and future sessions are excluded from completed-history charts. Warm-ups are excluded unless an analysis explicitly includes them. Exercise histories compare the stored tracking type; use the tracking-type filter to inspect an earlier method after editing an exercise.
 
 ## Units and volume

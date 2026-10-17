@@ -874,7 +874,6 @@ export function SessionView({ session }: { session: Session }) {
                   endAt,
                   rpe: fd.get('rpe') === '' ? undefined : Number(fd.get('rpe')),
                   energy: fd.get('energy') === '' ? undefined : Number(fd.get('energy')),
-                  calories: fd.get('calories') === '' ? undefined : Number(fd.get('calories')),
                 });
                 setEditInfo(false);
               }, 'Workout details updated');
@@ -914,9 +913,6 @@ export function SessionView({ session }: { session: Session }) {
               </Field>
               <Field label="Energy / fatigue (1–5)">
                 <input name="energy" type="number" min={0} max={5} defaultValue={session.energy} />
-              </Field>
-              <Field label="Calories (manual, optional)">
-                <input name="calories" type="number" min={0} defaultValue={session.calories} />
               </Field>
             </div>
             <div className="modal-actions">

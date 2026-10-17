@@ -17,3 +17,5 @@ form-bodyweight.csv
 form-exercise-history.csv
 form-exercises.csv
 form-library-*.json
+form-categories-*.json
+form-food-*.csv

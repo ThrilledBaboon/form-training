@@ -1,5 +1,17 @@
 # Implementation and verification record
 
+## Food extension — 17 October 2026, local
+
+The food extension is isolated on `codex/food-management` and is not deployed. Its audit,
+migration, implemented features, final test results, limitations and exact commands are in
+the [food implementation report](FOOD-IMPLEMENTATION.md). The new unit/storage coverage
+includes nutrition/conversions/scaling, atomic inventory and prepared portions, receipts,
+shopping, complete/category backups and files, rollback, a real v2 database upgrade, and
+a 7300-entry food archive. Browser checks include actual local OCR, manual fallback/cancel,
+offline food/purchase persistence, image restoration, responsive layouts and accessibility.
+
+The deployment records below describe earlier gym releases.
+
 Verified locally and published on 15 October 2026. Local checks used macOS, Node.js 24 and pnpm 11. The public [source repository](https://github.com/ThrilledBaboon/form-training) and live HTTPS app at **[FORM](https://thrilledbaboon.github.io/form-training/)** are available. GitHub CI and Pages deployment succeeded, followed by checks against the actual hosted site.
 
 Initial-release checks: **54/54 unit and IndexedDB integration tests**, **36/36 production browser checks at the root path**, and **36/36 at the repository subpath**, with TypeScript/production builds and formatting checks passing. Each initial browser run comprises twelve checks across three browser/viewport projects; the accessibility check scans sixteen screen/theme combinations per project.

@@ -45,6 +45,7 @@ import { muscleName } from '../lib/model';
 import { BodyweightForm } from './Weight';
 import { StreakCard } from '../components/WorkoutStreak';
 import { SessionSuggestionCard } from '../components/SessionSuggestion';
+import { FoodOverview } from '../components/FoodOverview';
 export function Today() {
   const { data, run } = useApp();
   const [days, setDays] = useState(7);
@@ -495,6 +496,7 @@ export function Today() {
           )}
         </Card>
       </div>
+      <FoodOverview />
       <div className="dashboard-footer">
         <div>
           <ShieldCheck size={16} />

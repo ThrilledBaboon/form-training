@@ -24,6 +24,19 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globIgnores: ['ocr/**'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              url.origin === self.location.origin && url.pathname.includes('/ocr/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'form-ocr-v7',
+              expiration: { maxEntries: 10, maxAgeSeconds: 31536000 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
       },

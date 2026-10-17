@@ -1,6 +1,6 @@
 # FORM · Personal Training
 
-An original mobile-first, local-first gym tracker built with React, TypeScript, Vite, Dexie/IndexedDB and Recharts. No account, server, telemetry, paid API or runtime network dependency. Exercise and routine templates are included; **no workout history or bodyweight measurements are fabricated**.
+An original mobile-first, local-first training and food tracker built with React, TypeScript, Vite, Dexie/IndexedDB and Recharts. No account, backend, telemetry or paid API. Exercise and routine templates are included; **no workout history, nutrition or bodyweight measurements are fabricated**. Core features work offline after the app is cached. Optional English receipt OCR loads bundled files on demand and processes images on the device.
 
 [Open FORM](https://thrilledbaboon.github.io/form-training/) · [Source repository](https://github.com/ThrilledBaboon/form-training)
 
@@ -37,7 +37,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 - Dashboard with real training totals, weekly consistency, latest sessions, records, exercise progression highlights, bodyweight trends and muscle contributions.
 - Workout-day streak with an earned rest-day bank, longest streak and a selectable monthly calendar. Open it from the flame in the top bar or the overview card.
 - **Suggest session** on Overview reviews the next scheduled/weekly routine against its last completed session, shows proposed weight or rep increases and starts an editable copy after review. Saved routines and history remain intact.
-- Blank workouts and routine-based workouts; persistent active session and immediately saved set edits; refresh recovery; idempotent set completion; previous-session copying; adding, reordering and substituting exercises; set duplication/deletion/undo; editable historical workouts; session and set notes, optional effort and manual calories.
+- Blank workouts and routine-based workouts; persistent active session and immediately saved set edits; refresh recovery; idempotent set completion; previous-session copying; adding, reordering and substituting exercises; set duplication/deletion/undo; editable historical workouts; session and set notes and optional effort.
 - Weighted, bodyweight, externally loaded bodyweight, assisted, timed and distance exercises; partial reps; warm-ups, working/failure/PR/custom set labels; optional RPE or RIR; canonical kg/metres/seconds.
 - Global deadline-based timer with pause/resume, reset, skip and ±15 seconds; optional foreground sound/vibration and supported screen wake lock.
 - Editable, duplicable, reorderable routines and programmes; targets per set; weekly schedules; dated plans with independent snapshots; groups for supersets, trisets, circuits, dropsets and custom arrangements; group rest rules.
@@ -47,6 +47,11 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 - Multiple daily bodyweight entries, editing/undo, raw readings, trailing averages, weekly/monthly summaries and an optional goal.
 - Original selectable front/back anatomical SVG, transparent muscle set contributions and relative volume scores, daily trends and equal-period comparisons, drill-down to source sets, configurable scales, separate recent-training/recovery estimate and accessible list alternative.
 - Monthly calendar, day drill-down, planned/completed/rest states, adjustable intensity metric/threshold and consistency view.
+- Ingredients with macro provenance, density/count conversions and distinct raw/cooked states; a searchable recipe menu, photos, steps, scaling, substitutions, favourites and ratings.
+- Food diary, historical macro snapshots, independent optional macro targets, weekly summaries and shared training/bodyweight context. Nutrition uses protein, carbohydrates, fat and optional fibre only.
+- Kitchen stock, storage locations, expiry, confidence, waste and movement history; explicit cooking deducts ingredients and creates prepared portions, which can then be eaten or discarded.
+- Daily/weekly meal planning alongside training, stock-aware shopping with package rounding and preserved manual rows; reviewed receipt images, optional local OCR/manual fallback, purchases, recorded prices, budgets and estimated costs.
+- **Export everything** includes gym and food records, preferences, drafts and supported images. Category JSON files include dependencies and import previews; food and gym CSV reports support analysis.
 - Validated JSON import preview/merge/replace; duplicate handling; atomic local recovery snapshots; complete JSON backups; separate CSV exports; light/dark/system themes; reduced motion; offline PWA shell and update prompts.
 - Full data reset in **Settings & data → Start fresh**, with a backup export and typed `RESET` confirmation. Restores starter exercises/routines and removes personal records, custom content, preferences and recovery snapshots from this browser.
 
@@ -56,7 +61,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 2. Add exercises. Enter load and reps (or duration/distance), then tap the check to complete a set.
 3. Completed sets save to IndexedDB before the UI shows completion. The rest timer starts automatically. Review the previous-performance panel and notes as needed.
 4. Finish the workout. Inspect its history, progress, records, muscle map and calendar.
-5. Visit **Settings & data → Export JSON backup** and keep that file somewhere independent of this browser.
+5. Visit **Settings & data → Export everything** and keep that file somewhere independent of this browser.
 
 For historical entries, log a session, finish it, then correct its start and end dates/times in **Details**. Incomplete sets remain visible but do not count towards completed training analytics.
 
@@ -91,6 +96,8 @@ Formatting: `pnpm format`, `pnpm format:check`. See [verification notes](docs/VE
 
 ## Documentation
 
+- [Food guide and practical limits](docs/FOOD.md)
+- [Food implementation and verification report](docs/FOOD-IMPLEMENTATION.md)
 - [Data schema and invariants](docs/SCHEMA.md)
 - [Calculation methods](docs/CALCULATIONS.md)
 - [Backup and restore](docs/BACKUPS.md)

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { validateCompletion } from './actions';
 import { db, readData, type TrainingDB } from './db';
+import { FoodDataSchema, emptyFood, foodTables, validateFood } from './food-model';
 import {
   ExerciseSchema,
   MappingSchema,
@@ -18,8 +19,18 @@ import {
 } from './model';
 const BackupSchema = z.object({
   app: z.literal('FORM'),
-  schemaVersion: z.literal(2),
+  schemaVersion: z.literal(3),
   exportedAt: z.string().datetime({ offset: true }),
+  manifest: z
+    .object({
+      format: z.enum(['FORM complete backup', 'FORM category export']),
+      version: z.literal(3),
+      categories: z.array(z.string()),
+      requested: z.array(z.string()).optional(),
+      attachments: z.number().int().nonnegative(),
+    })
+    .optional(),
+  scope: z.enum(['complete', 'categories']).default('complete'),
   data: z.object({
     exercises: z.array(ExerciseSchema).max(10000),
     mappings: z.array(MappingSchema).max(200000),
@@ -31,6 +42,7 @@ const BackupSchema = z.object({
     bodyweights: z.array(BodyweightSchema).max(100000),
     settings: SettingsSchema,
     timer: TimerSchema.optional(),
+    food: FoodDataSchema.default(emptyFood),
   }),
 });
 export type Backup = z.infer<typeof BackupSchema>;
@@ -45,7 +57,33 @@ const entities = [
   'bodyweights',
 ] as const;
 export function serialise(data: Data) {
-  return JSON.stringify({ app: 'FORM', schemaVersion: 2, exportedAt: now(), data }, null, 2);
+  // A retired legacy session metric stays in existing storage, but must never enter exports.
+  const sessions = data.sessions.map(({ calories: _retired, ...session }) => session);
+  const food = data.food ?? structuredClone(emptyFood);
+  if (data.foodFileIds?.some((id) => !food.foodFiles.some((file) => file.id === id)))
+    throw Error('Attachments have not been loaded. Read the complete database before exporting.');
+  const output = JSON.stringify(
+    {
+      app: 'FORM',
+      schemaVersion: 3,
+      exportedAt: now(),
+      scope: 'complete',
+      manifest: {
+        format: 'FORM complete backup',
+        version: 3,
+        categories: [...entities, 'settings', 'timer', ...foodTables, 'foodSettings'],
+        attachments: food.foodFiles.length,
+      },
+      data: { ...data, foodFileIds: undefined, sessions, food },
+    },
+    null,
+    2,
+  );
+  if (output.length > 100 * 1024 * 1024)
+    throw Error(
+      'This backup exceeds the 100 MB restore limit. Export selected categories instead; no data was omitted.',
+    );
+  return output;
 }
 export function parseBackup(input: string): Backup {
   if (input.length > 100 * 1024 * 1024) throw Error('Backup exceeds the 100 MB import limit.');
@@ -55,15 +93,34 @@ export function parseBackup(input: string): Backup {
   } catch {
     throw Error('This file is not valid JSON. No records were changed.');
   }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'schemaVersion' in value &&
+    value.schemaVersion === 2
+  ) {
+    value = {
+      ...value,
+      schemaVersion: 3,
+      scope: 'complete',
+      manifest: undefined,
+      data: { ...(value as { data?: object }).data, food: structuredClone(emptyFood) },
+    };
+  }
   const parsed = BackupSchema.safeParse(value);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw Error(
-      `Invalid backup at ${issue.path.join('.')}: ${issue.message}. Expected a FORM schema version 2 backup.`,
+      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2 or 3 backup.`,
     );
   }
   const b = parsed.data;
   const d = b.data;
+  if (b.manifest && b.manifest.attachments !== d.food.foodFiles.length)
+    throw Error(
+      'The attachment count does not match the backup manifest. No records were changed.',
+    );
+  validateFood(d.food);
   for (const key of entities) {
     const ids = d[key].map((x) => x.id);
     if (new Set(ids).size !== ids.length) throw Error(`Duplicate identifiers inside ${key}.`);
@@ -118,7 +175,7 @@ export function parseBackup(input: string): Backup {
   return b;
 }
 export function importPreview(backup: Backup, current: Data) {
-  return entities.map((key) => {
+  const gym = entities.map((key) => {
     const existing = new Set(current[key].map((row) => row.id));
     return {
       table: key,
@@ -126,6 +183,21 @@ export function importPreview(backup: Backup, current: Data) {
       duplicates: backup.data[key].filter((row) => existing.has(row.id)).length,
     };
   });
+  return [
+    ...gym,
+    ...foodTables.map((key) => {
+      const existing = new Set(
+        key === 'foodFiles' && current.foodFileIds
+          ? current.foodFileIds
+          : (current.food ?? emptyFood)[key].map((row) => row.id),
+      );
+      return {
+        table: key,
+        total: backup.data.food[key].length,
+        duplicates: backup.data.food[key].filter((row) => existing.has(row.id)).length,
+      };
+    }),
+  ];
 }
 export async function recoverySnapshot(reason: string, database = db) {
   const data = await readData(database);
@@ -137,9 +209,12 @@ export async function importBackup(
   backup: Backup,
   mode: 'merge' | 'replace',
   database: TrainingDB = db,
+  options: { restorePreferences?: boolean } = {},
 ) {
   const checked = parseBackup(JSON.stringify(backup));
   const data = checked.data;
+  if (checked.scope === 'categories' && mode === 'replace')
+    throw Error('Category files support merge only. Use a complete backup for full replacement.');
   // Capture and restore in a single atomic transaction: no tab can change the source between them.
   await database.transaction('rw', database.tables, async () => {
     const before = await readData(database);
@@ -157,7 +232,36 @@ export async function importBackup(
         if (data[key].length) await database.table(key).bulkPut(data[key]);
       await database.settings.put(data.settings);
       if (data.timer) await database.timers.put(data.timer);
+      for (const key of foodTables) {
+        await database.table(key).clear();
+        if (data.food[key].length) await database.table(key).bulkPut(data.food[key]);
+      }
+      await database.foodSettings.clear();
+      await database.foodSettings.put(data.food.foodSettings);
     } else {
+      const currentFood = before.food ?? emptyFood;
+      const existingBatches = new Set(currentFood.batches.map((b) => b.id));
+      const existingStock = new Set(currentFood.stock.map((s) => s.id));
+      const existingPurchases = new Set(currentFood.purchases.map((p) => p.id));
+      const existingEntries = new Set(currentFood.foodEntries.map((e) => e.id));
+      const existingMovements = new Set(currentFood.movements.map((m) => m.id));
+      if (
+        data.food.foodEntries.some(
+          (e) => !existingEntries.has(e.id) && e.batchId && existingBatches.has(e.batchId),
+        ) ||
+        data.food.movements.some(
+          (m) =>
+            !existingMovements.has(m.id) &&
+            ((m.batchId && existingBatches.has(m.batchId)) ||
+              (m.stockId && existingStock.has(m.stockId))),
+        ) ||
+        data.food.stock.some(
+          (s) => !existingStock.has(s.id) && s.purchaseId && existingPurchases.has(s.purchaseId),
+        )
+      )
+        throw Error(
+          'New inventory events conflict with existing stock, batch or purchase balances. Use a complete replacement backup to restore this snapshot, or record the change in the app. No records were changed.',
+        );
       const incomingActive = data.sessions.find(
         (s) => s.status === 'active' && !before.sessions.some((x) => x.id === s.id),
       );
@@ -185,6 +289,24 @@ export async function importBackup(
             (row) => !existingSessions.has((row as Data['sets'][number]).sessionId),
           );
         if (incoming.length) await database.table(key).bulkAdd(incoming);
+      }
+      const combined = structuredClone(before.food ?? emptyFood);
+      for (const key of foodTables) {
+        const existing = new Set(combined[key].map((row) => row.id));
+        const incoming = data.food[key].filter((row) => !existing.has(row.id));
+        if (incoming.length) await database.table(key).bulkAdd(incoming);
+        Object.assign(combined, { [key]: [...combined[key], ...incoming] });
+      }
+      validateFood(combined);
+      if (options.restorePreferences) {
+        const includes = (key: string) =>
+          checked.scope === 'complete' || checked.manifest?.categories.includes(key);
+        if (includes('settings')) await database.settings.put(data.settings);
+        if (includes('timer')) {
+          await database.timers.clear();
+          if (data.timer) await database.timers.put(data.timer);
+        }
+        if (includes('foodSettings')) await database.foodSettings.put(data.food.foodSettings);
       }
     }
   });
@@ -223,7 +345,7 @@ export function csvExport(data: Data, kind: 'sessions' | 'sets' | 'bodyweight' |
     ]);
   if (kind === 'sessions')
     return csv([
-      ['id', 'name', 'start', 'end', 'status', 'notes', 'rpe', 'energy', 'calories'],
+      ['id', 'name', 'start', 'end', 'status', 'notes', 'rpe', 'energy'],
       ...data.sessions.map((s) => [
         s.id,
         s.name,
@@ -233,7 +355,6 @@ export function csvExport(data: Data, kind: 'sessions' | 'sets' | 'bodyweight' |
         s.notes,
         s.rpe,
         s.energy,
-        s.calories,
       ]),
     ]);
   if (kind === 'exercises')

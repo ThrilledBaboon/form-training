@@ -9,3 +9,19 @@
 - The supplied specification was used as product requirements. No Setgraph source code, brand, exact interface, screenshots or artwork was used. FORM is not affiliated with Setgraph.
 
 Dependencies retain their respective licences (see package metadata and package licence files). Application code is supplied for this personal project; no third-party code licence is invented for the user. Add your preferred repository licence before publishing if you want to grant reuse rights.
+
+## Optional local receipt OCR
+
+`public/ocr/` vendors Tesseract.js 7.0.0, its matching Tesseract.js-core 7.0.0 LSTM
+WebAssembly runtime, and the `@tesseract.js-data/eng` 1.0.0 English integer-best model.
+Engine and model sources are the official project's published npm distributions; model
+upstream is [naptha/tessdata](https://github.com/naptha/tessdata). Runtime source and local
+hosting instructions: [Tesseract.js](https://github.com/naptha/tesseract.js) and its
+[local installation guide](https://github.com/naptha/tesseract.js/blob/master/docs/local-installation.md).
+
+Apache 2.0 engine and model licence texts and distribution notices are included beside the
+files. `public/ocr/sources.json` records exact source URLs, SHA-256 hashes and sizes. These
+files are excluded from the initial PWA precache and cached on demand. All recognition paths
+are base-relative and same-origin; there are no CDN requests at runtime or uploaded receipts.
+The optional model/runtime adds about 9.4 MB to the repository build. User photos remain
+local database records and are never committed as application assets.

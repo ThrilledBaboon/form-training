@@ -24,6 +24,9 @@ import {
   AlertCircle,
   WifiOff,
   ChevronRight,
+  Utensils,
+  Refrigerator,
+  ShoppingBasket,
 } from 'lucide-react';
 import { readData } from './lib/db';
 import { saveSettings } from './lib/actions';
@@ -37,6 +40,13 @@ import { Muscles } from './pages/Muscles';
 import { Calendar } from './pages/Calendar';
 import { Weight } from './pages/Weight';
 import { Settings } from './pages/Settings';
+import { FoodMenu } from './pages/FoodMenu';
+import { FoodIngredients } from './pages/FoodIngredients';
+import { FoodDiary } from './pages/FoodDiary';
+import { FoodKitchen } from './pages/FoodKitchen';
+import { FoodPlanner } from './pages/FoodPlanner';
+import { FoodShopping } from './pages/FoodShopping';
+import { FoodBudget } from './pages/FoodBudget';
 import { Button, Empty } from './components/ui';
 import { RestTimer } from './components/Timer';
 import { StreakTrigger, WorkoutStreakDialog, useWorkoutStreak } from './components/WorkoutStreak';
@@ -48,6 +58,18 @@ const navigation = [
       ['workout', 'Active workout', Dumbbell],
       ['routines', 'Routines & plans', Layers],
       ['history', 'Workout history', HistoryIcon],
+    ],
+  },
+  {
+    label: 'FOOD',
+    items: [
+      ['food-menu', 'Menu & recipes', Utensils],
+      ['food-diary', 'Food diary', BookOpen],
+      ['food-kitchen', 'Kitchen', Refrigerator],
+      ['food-planner', 'Meal planner', CalendarDays],
+      ['food-shopping', 'Shopping', ShoppingBasket],
+      ['food-budget', 'Food spending', TrendingUp],
+      ['food-ingredients', 'Ingredients', Layers],
     ],
   },
   {
@@ -89,7 +111,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error?: 
 export default function App() {
   const result = useLiveQuery(async () => {
     try {
-      return { data: await readData(), error: undefined };
+      return { data: await readData(undefined, { includeFiles: false }), error: undefined };
     } catch (error) {
       return { data: undefined, error: String(error) };
     }
@@ -140,6 +162,8 @@ export default function App() {
     };
     const onNetwork = () => setOnline(navigator.onLine);
     window.addEventListener('hashchange', onHash);
+    // A fast navigation can occur while the initial database read is still rendering.
+    onHash();
     window.addEventListener('online', onNetwork);
     window.addEventListener('offline', onNetwork);
     return () => {
@@ -153,6 +177,15 @@ export default function App() {
     const t = setTimeout(() => setNotice(undefined), 6000);
     return () => clearTimeout(t);
   }, [notice]);
+  useEffect(() => {
+    if (!pending) return;
+    const protect = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', protect);
+    return () => window.removeEventListener('beforeunload', protect);
+  }, [pending]);
   useEffect(() => {
     if (!data) return;
     const media = matchMedia('(prefers-color-scheme: dark)');
@@ -227,6 +260,27 @@ export default function App() {
     navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
   let page: ReactNode;
   switch (route) {
+    case 'food-menu':
+      page = <FoodMenu key={hash} />;
+      break;
+    case 'food-ingredients':
+      page = <FoodIngredients key={hash} />;
+      break;
+    case 'food-diary':
+      page = <FoodDiary key={hash} />;
+      break;
+    case 'food-kitchen':
+      page = <FoodKitchen key={hash} />;
+      break;
+    case 'food-planner':
+      page = <FoodPlanner key={hash} />;
+      break;
+    case 'food-shopping':
+      page = <FoodShopping key={hash} />;
+      break;
+    case 'food-budget':
+      page = <FoodBudget key={hash} />;
+      break;
     case 'today':
       page = <Today />;
       break;
@@ -325,7 +379,7 @@ export default function App() {
           )}
           <div className="workspace-label">
             <span className="workspace-dot" />
-            PERSONAL TRAINING
+            TRAINING & FOOD
           </div>
           <nav aria-label="Main navigation">
             {navigation.map((section) => (

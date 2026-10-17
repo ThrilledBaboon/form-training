@@ -425,7 +425,7 @@ test('JSON backup restores after replacement; repeated merge does not duplicate'
   await logBench(page);
   await navigate(page, 'settings');
   const downloaded = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export JSON backup' }).click();
+  await page.getByRole('button', { name: 'Export everything' }).click();
   const file = await downloaded;
   const path = await file.path();
   expect(path).toBeTruthy();

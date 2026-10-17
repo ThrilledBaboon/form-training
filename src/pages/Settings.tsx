@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../lib/context';
 import { db } from '../lib/db';
+import { CategoryPortability } from '../components/CategoryPortability';
 import { saveSettings, resetAllData } from '../lib/actions';
 import {
   parseBackup,
@@ -42,6 +43,7 @@ export function Settings() {
   const s = data.settings;
   const [importing, setImporting] = useState<Backup | null>(null);
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
+  const [restorePreferences, setRestorePreferences] = useState(false);
   const [storage, setStorage] = useState<string>('');
   const [resetOpen, setResetOpen] = useState(false);
   const [resetWord, setResetWord] = useState('');
@@ -77,7 +79,7 @@ export function Settings() {
       <div className="privacy-panel">
         <ShieldCheck size={26} />
         <div>
-          <h2>Your training stays with you.</h2>
+          <h2>Your training and food records stay with you.</h2>
           <p>
             No account, no tracking, no cloud uploads. Your records live in this browser on this
             device. Other devices and browsers have separate data. Export a backup to keep an
@@ -227,10 +229,11 @@ export function Settings() {
             <span className="backup-icon">
               <FileJson size={25} />
             </span>
-            <h3>A complete copy</h3>
+            <h3>Everything, in one backup</h3>
             <p>
-              Export exercises, routines, plans, sessions, sets, measurements and preferences as a
-              versioned JSON file.
+              Export all gym and food records, recipes, ingredients, diary, stock, shopping,
+              purchases, uploaded images, drafts and preferences as a versioned JSON file with a
+              manifest.
             </p>
             <AsyncButton
               onAction={() =>
@@ -241,7 +244,7 @@ export function Settings() {
               }
             >
               <Download size={16} />
-              Export JSON backup
+              Export everything
             </AsyncButton>
             <small>
               {s.lastBackupAt
@@ -272,6 +275,8 @@ export function Settings() {
                       if (file.size > 100 * 1024 * 1024)
                         throw Error('Import files must be below 100 MB.');
                       setImporting(parseBackup(await file.text()));
+                      setImportMode('merge');
+                      setRestorePreferences(false);
                     });
                   e.target.value = '';
                 }}
@@ -308,6 +313,13 @@ export function Settings() {
           </div>
         </div>
       </Card>
+      <CategoryPortability
+        onImport={(backup) => {
+          setImporting(backup);
+          setImportMode('merge');
+          setRestorePreferences(false);
+        }}
+      />
       <Card>
         <SectionTitle
           title="Local recovery snapshots"
@@ -334,7 +346,14 @@ export function Settings() {
               <Button
                 variant="secondary"
                 onClick={() => {
-                  download(b.json, `form-recovery-${b.createdAt.slice(0, 10)}.json`);
+                  download(
+                    JSON.stringify(
+                      parseBackup(b.json),
+                      (_key, value) => (_key === 'calories' ? undefined : value),
+                      2,
+                    ),
+                    `form-recovery-${b.createdAt.slice(0, 10)}.json`,
+                  );
                   toast('Recovery snapshot download started');
                 }}
               >
@@ -369,9 +388,10 @@ export function Settings() {
       <Card className="reset-data-card">
         <SectionTitle title="Start fresh" sub="Reset FORM’s data in this browser." />
         <p>
-          Remove your training history, measurements, custom exercises, routines, plans, preferences
-          and local recovery snapshots. The starter exercise library and routines will be restored.
-          Export a backup first if you want to keep a copy.
+          Remove your food and kitchen records, purchases, images, training history, measurements,
+          custom exercises, routines, plans, preferences and local recovery snapshots. The starter
+          exercise library and routines will be restored. Export a backup first if you want to keep
+          a copy.
         </p>
         <Button
           variant="danger"
@@ -393,7 +413,7 @@ export function Settings() {
           <br />
           Original code and illustrations. No affiliation with Setgraph.
         </p>
-        <span>Version 1.0 · Database schema 2</span>
+        <span>Version 1.1 · Database schema 3</span>
       </div>
       {resetOpen && (
         <Modal title="Reset all FORM data?" onClose={() => setResetOpen(false)}>
@@ -456,7 +476,11 @@ export function Settings() {
           <p>
             Exported{' '}
             {dateLabel(importing.exportedAt, { day: 'numeric', month: 'long', year: 'numeric' })} ·
-            FORM schema {importing.schemaVersion}
+            FORM schema {importing.schemaVersion} ·{' '}
+            {importing.scope === 'categories'
+              ? 'Selected categories with dependencies'
+              : 'Complete backup'}{' '}
+            · {importing.data.food.foodFiles.length} included images
           </p>
           <div className="table-scroll">
             <table>
@@ -486,13 +510,25 @@ export function Settings() {
               onChange={(e) => setImportMode(e.target.value as typeof importMode)}
             >
               <option value="merge">Merge · keep existing records, add new IDs</option>
-              <option value="replace">Replace · use records from this file</option>
+              <option value="replace" disabled={importing.scope === 'categories'}>
+                Replace · use records from this file
+              </option>
             </select>
           </Field>
+          {importMode === 'merge' && (
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={restorePreferences}
+                onChange={(e) => setRestorePreferences(e.target.checked)}
+              />
+              Also restore included preferences, food targets, budgets and timer
+            </label>
+          )}
           <p className="callout">
             {importMode === 'merge'
-              ? 'Existing IDs keep their current values. Existing session snapshots and their sets stay together; they are not overwritten. Imported preferences are ignored. Repeated imports add no duplicate records.'
-              : 'All current training records and preferences will be replaced. A local recovery snapshot is saved atomically before changes. Export a file first for an independent backup.'}
+              ? `Existing IDs keep their current values. Session snapshots and their sets stay together. ${restorePreferences ? 'Included preferences and timer will be restored.' : 'Current preferences are kept.'} Repeated imports add no duplicate IDs. A conflicting food relationship rejects the entire merge.`
+              : 'All current gym and food records, images, drafts and preferences will be replaced. A local recovery snapshot is saved atomically before changes. Export a file first for an independent backup.'}
           </p>
           <div className="modal-actions">
             <Button variant="secondary" onClick={() => setImporting(null)}>
@@ -510,7 +546,7 @@ export function Settings() {
                     )
                   )
                     return;
-                  await importBackup(importing, importMode);
+                  await importBackup(importing, importMode, db, { restorePreferences });
                   setImporting(null);
                   toast('Import complete. Your data has been restored.');
                 })

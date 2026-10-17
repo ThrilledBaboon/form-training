@@ -24,7 +24,8 @@ PRs, charts and totals are derived, never a competing source of truth. Export/im
 
 - IndexedDB v1: core entities and indexes.
 - IndexedDB v2: adds the recovery snapshot table and merges missing settings defaults without replacing existing preferences.
-- JSON envelope schema v2: `{app: "FORM", schemaVersion: 2, exportedAt, data}`. Unsupported versions are rejected. Additive optional fields remain compatible with v2; defaults are applied by the parser where defined.
+- IndexedDB v3: adds food stores without modifying or clearing gym tables.
+- JSON envelope schema v3: `{app: "FORM", schemaVersion: 3, exportedAt, scope, manifest, data}`. Scope is `complete` or `categories`; the manifest records categories, format version and attachment count. Schema 2 gym backups migrate in memory with empty food stores; existing food records survive a merge. Unsupported versions are rejected. Gym library-sharing files retain schema 1.
 
 Dexie upgrades run transactionally. The current migration is additive; it does not rewrite or discard training history. A future destructive migration must first preserve a recoverable snapshot and be covered by upgrade/rollback tests. Users should export an independent file before upgrades.
 
@@ -42,5 +43,29 @@ Dexie upgrades run transactionally. The current migration is additive; it does n
 - Save errors are shown. Success feedback occurs after awaited writes; a browser closed during an unfinished write cannot be guaranteed to complete that write. Wait for saving indicators to finish.
 
 ## Scale
+
+Food schemas live in `src/lib/food-model.ts`; `food-actions.ts` performs multi-record changes
+transactionally; `food-calc.ts` is the shared calculation source. UI reads skip binary file
+payloads, loading images by ID; backup reads explicitly include all files.
+
+| Food table    | Relationships and behaviour                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| ingredients   | Stable ID, aliases/brand/category/state, per-100 macros, provenance, conversions, package/storage metadata, archive            |
+| recipes       | Ingredient references, servings, ordered steps/image IDs, tags, times, notes, ratings, draft/archive                           |
+| foodEntries   | Date/meal, recipe/batch refs, servings, frozen per-serving macro/cost/ingredient snapshot                                      |
+| mealPlans     | Date/meal, recipe/optional batch ref; never implicitly consumes stock                                                          |
+| stock         | Ingredient, quantity/unit, original quantity/price/currency, dates/location/confidence, source purchase/line                   |
+| movements     | Signed changes, stock/batch/ingredient refs, kind, timestamp, historical cost/currency                                         |
+| batches       | Recipe, produced/remaining portions, preparation/expiry/location, per-serving snapshot                                         |
+| purchases     | Reviewed receipt header, net total/currency, product-line IDs and ingredient/package/paid/received metadata, image/fingerprint |
+| shoppingLists | Date range or recipe, generated/manual rows, shortage/package estimate, override/checked/received states                       |
+| foodSettings  | Singleton `food-preferences`: independent macro targets, budgets, currency, locations                                          |
+| foodFiles     | Raster-file ID, original name, MIME, base64 data, timestamp                                                                    |
+| foodDrafts    | Editor kind/JSON/timestamp; unsafe shapes are exportable but not resumed                                                       |
+
+Imports check IDs, dates, numeric ranges, units, references, recipe/batch and purchase-line
+compatibility, and attachments. Merge validates the combined graph before commit. Replace
+and its recovery snapshot roll back together. Historical food snapshots deliberately preserve
+past values after recipe edits.
 
 Muscle analytics index session items and mappings and visit completed sets in linear passes, with per-exercise median sorting. Exercise history groups relevant sets before comparing sessions. A regression fixture exercises 30,000 sets across 1,500 sessions. Records are memoised in views until underlying data changes. The app still loads the local dataset into memory; archive pagination/worker-based aggregation may be useful for substantially larger datasets.

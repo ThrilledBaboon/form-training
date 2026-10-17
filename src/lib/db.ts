@@ -1,6 +1,23 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { catalogue } from './catalogue';
 import {
+  emptyFood,
+  foodTables,
+  type Ingredient,
+  type Recipe,
+  type FoodEntry,
+  type MealPlan,
+  type Stock,
+  type Movement,
+  type Batch,
+  type Purchase,
+  type ShoppingList,
+  type FoodSettings,
+  type FoodFile,
+  type FoodDraft,
+  type FoodData,
+} from './food-model';
+import {
   defaults,
   type Exercise,
   type Mapping,
@@ -21,6 +38,18 @@ export interface RecoveryBackup {
   json: string;
 }
 export class TrainingDB extends Dexie {
+  ingredients!: EntityTable<Ingredient, 'id'>;
+  recipes!: EntityTable<Recipe, 'id'>;
+  foodEntries!: EntityTable<FoodEntry, 'id'>;
+  mealPlans!: EntityTable<MealPlan, 'id'>;
+  stock!: EntityTable<Stock, 'id'>;
+  movements!: EntityTable<Movement, 'id'>;
+  batches!: EntityTable<Batch, 'id'>;
+  purchases!: EntityTable<Purchase, 'id'>;
+  shoppingLists!: EntityTable<ShoppingList, 'id'>;
+  foodSettings!: EntityTable<FoodSettings, 'id'>;
+  foodFiles!: EntityTable<FoodFile, 'id'>;
+  foodDrafts!: EntityTable<FoodDraft, 'id'>;
   exercises!: EntityTable<Exercise, 'id'>;
   mappings!: EntityTable<Mapping, 'id'>;
   routines!: EntityTable<Routine, 'id'>;
@@ -63,10 +92,27 @@ export class TrainingDB extends Dexie {
       await tx.table('routines').bulkAdd(c.routines);
       await tx.table('settings').put(defaults);
     });
+    this.version(3).stores({
+      ingredients: 'id,name,category,updatedAt',
+      recipes: 'id,name,category,updatedAt',
+      foodEntries: 'id,date,recipeId,batchId',
+      mealPlans: 'id,date,recipeId,batchId',
+      stock: 'id,ingredientId,expires,location,purchaseId',
+      movements: 'id,at,stockId,batchId,ingredientId',
+      batches: 'id,recipeId,prepared,expires',
+      purchases: 'id,date,retailer,fingerprint',
+      shoppingLists: 'id,updatedAt',
+      foodSettings: 'id',
+      foodFiles: 'id',
+      foodDrafts: 'id,kind',
+    });
   }
 }
 export const db = new TrainingDB();
-export async function readData(database: TrainingDB = db): Promise<Data> {
+export async function readData(
+  database: TrainingDB = db,
+  options: { includeFiles?: boolean } = {},
+): Promise<Data> {
   return database.transaction(
     'r',
     [
@@ -80,6 +126,8 @@ export async function readData(database: TrainingDB = db): Promise<Data> {
       database.bodyweights,
       database.settings,
       database.timers,
+      ...foodTables.map((key) => database.table(key)),
+      database.foodSettings,
     ],
     async () => {
       const [
@@ -108,7 +156,18 @@ export async function readData(database: TrainingDB = db): Promise<Data> {
       routines.sort(
         (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.createdAt.localeCompare(b.createdAt),
       );
+      const food = { ...structuredClone(emptyFood) };
+      for (const key of foodTables)
+        if (key !== 'foodFiles' || options.includeFiles !== false)
+          Object.assign(food, { [key]: await database.table(key).toArray() });
+      food.foodSettings =
+        (await database.foodSettings.get('food-preferences')) ??
+        structuredClone(emptyFood.foodSettings);
       return {
+        food,
+        ...(options.includeFiles === false
+          ? { foodFileIds: await database.foodFiles.toCollection().primaryKeys() }
+          : {}),
         exercises,
         mappings,
         routines,

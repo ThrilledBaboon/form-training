@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { FoodData } from './food-model';
 export const MUSCLES = [
   'chest',
   'front_delts',
@@ -246,6 +247,9 @@ export const defaults: Settings = {
   weekTarget: 4,
 };
 export type Data = {
+  food?: FoodData;
+  /** Lightweight UI reads omit image payloads; backups always use a complete read. */
+  foodFileIds?: string[];
   exercises: Exercise[];
   mappings: Mapping[];
   routines: Routine[];

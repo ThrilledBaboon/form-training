@@ -26,6 +26,7 @@ import {
 import { trackingLabel } from './Exercises';
 import { type Exercise } from '../lib/model';
 import { TrendChart } from '../components/Chart';
+import { FoodTrainingContext } from '../components/FoodOverview';
 export function Progress() {
   const { data } = useApp();
   const query = new URLSearchParams(location.hash.split('?')[1]);
@@ -429,6 +430,7 @@ export function Progress() {
           ))
         )}
       </Card>
+      <FoodTrainingContext />
       <div className="two-col">
         <Card>
           <SectionTitle
