@@ -51,7 +51,7 @@ export function MacroSummary({ macros, compact = false }: { macros: Macros; comp
         <div key={key}>
           <dt>{key === 'carbs' ? 'Carbs' : macroNames[key]}</dt>
           <dd>
-            {foodNumber(macros[key])}
+            <span>{foodNumber(macros[key])}</span>
             <small>{macros[key] === undefined ? ' unknown' : ' g'}</small>
           </dd>
         </div>
@@ -60,7 +60,7 @@ export function MacroSummary({ macros, compact = false }: { macros: Macros; comp
         <div>
           <dt>Estimated calories</dt>
           <dd>
-            {foodNumber(energy, 0)}
+            <span>{foodNumber(energy, 0)}</span>
             <small>{energy === undefined ? ' unknown' : ' kcal'}</small>
           </dd>
         </div>

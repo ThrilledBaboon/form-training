@@ -541,6 +541,7 @@
   line-height: 1.7;
 }
 .macro-summary {
+  container: macro-summary / inline-size;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
@@ -548,7 +549,7 @@
 }
 .macro-summary > div {
   min-width: 0;
-  padding: 12px;
+  padding: 12px 16px;
   background: var(--surface-alt);
   border-radius: 10px;
 }
@@ -558,25 +559,45 @@
   overflow-wrap: anywhere;
 }
 .macro-summary dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 5px;
   margin: 6px 0 0;
   font-size: 22px;
   font-weight: 650;
   letter-spacing: -0.7px;
+  font-variant-numeric: tabular-nums;
+}
+.macro-summary dd > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .macro-summary dd small {
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0;
+  white-space: nowrap;
 }
 .macro-summary.compact {
   gap: 6px;
   margin: 12px 0;
 }
 .macro-summary.compact > div {
-  padding: 9px;
+  padding: 9px 12px;
 }
 .macro-summary.compact dd {
   font-size: 17px;
+}
+@container macro-summary (max-width: 600px) {
+  .macro-summary > div {
+    grid-column: span 2;
+  }
+}
+@container macro-summary (max-width: 200px) {
+  .macro-summary > div {
+    grid-column: 1 / -1;
+  }
 }
 .food-menu-intro {
   background: var(--deep);
@@ -966,11 +987,10 @@ progress::-webkit-progress-value {
     grid-template-columns: minmax(0, 1fr);
   }
   .macro-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
   .macro-summary > div {
-    padding: 9px;
+    padding: 12px 16px;
   }
   .macro-summary dd {
     font-size: 19px;
