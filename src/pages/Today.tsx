@@ -1,4 +1,10 @@
 import { CustomPages } from './CustomPages';
+import { ProfileWelcome } from '../components/ProfileSetup';
 export function Today() {
-  return <CustomPages overview />;
+  return (
+    <>
+      <ProfileWelcome />
+      <CustomPages overview />
+    </>
+  );
 }

@@ -349,6 +349,7 @@ export async function importBackup(
           workspace.systems = data.workspace.systems;
           workspace.homePageId = data.workspace.homePageId;
           workspace.pasteDraft = data.workspace.pasteDraft;
+          workspace.profile = data.workspace.profile;
         }
         workspace.revision++;
         await database.workspaces.put(WorkspaceSchema.parse(workspace));

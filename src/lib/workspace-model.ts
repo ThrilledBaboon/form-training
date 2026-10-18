@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProfileSchema } from './profile-model';
 import { MUSCLES, trackingTypes } from './constants';
 
 const id = z.string().min(1).max(200);
@@ -127,6 +128,7 @@ export const WorkspaceSchema = z
     pages: z.array(PageSchema).min(1).max(52),
     setups: z.array(SetupSchema).max(2000).default([]),
     removedPages: z.array(PageSchema).max(20).default([]),
+    profile: ProfileSchema.optional(),
     pasteDraft: z.string().max(1000000).optional(),
     imports: z
       .array(

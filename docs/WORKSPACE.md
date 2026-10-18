@@ -76,3 +76,7 @@ The established local preview is **http://127.0.0.1:4174/**. Its origin retains 
 Overview lives in Your workspace and combines enabled systems. Train and Food each have an independent, editable home page, initialized once when first opened. Editing one never changes the others. My pages can set any saved page as the starting view. System home pages can be reset to their own template.
 
 Choose Edit page to reveal Drag to move, arrow controls, resizing and a visible Remove button. Handles support mouse, pen and touch; Escape or dropping outside a card cancels a move. Remove affects the layout, and Undo restores the previous arrangement. Workout and food records are retained.
+
+### First-use profile
+
+New users can enter an optional name, birthday, height, starting weight and goal weight on Overview, or choose Skip for now. Existing users with history are not interrupted. Settings always provides Your profile. Starting weight creates one identifiable measurement; editing the same value or changing height never adds another. Birthday and profile fields are included in private full backups and excluded from shared page layouts. Preference restoration during a merge is explicit.
