@@ -148,6 +148,44 @@ test('custom pages edit, duplicate, move, resize, undo and persist with a chosen
   await page.goto(base);
   await expect(page.getByRole('heading', { name: 'Make room for progress.' })).toBeVisible();
 });
+test('shared Overview stays outside Train, and each system home saves its own layout', async ({
+  page,
+}) => {
+  const navigation = page.getByRole('navigation', { name: 'Main navigation', exact: true });
+  const train = navigation
+    .locator('.nav-section')
+    .filter({ has: page.locator('.nav-label').filter({ hasText: /^TRAIN$/ }) });
+  const shared = navigation
+    .locator('.nav-section')
+    .filter({ has: page.locator('.nav-label').filter({ hasText: /^YOUR WORKSPACE$/ }) });
+  await expect(train.getByRole('link', { name: 'Overview', exact: true })).toHaveCount(0);
+  await expect(shared.getByRole('link', { name: 'Overview', exact: true })).toHaveCount(1);
+  await route(page, 'training-home');
+  await expect(page.getByRole('heading', { name: 'Training overview', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Daily macros', exact: true })).toHaveCount(0);
+  await expect(page.locator('.workspace-widget')).toHaveCount(9);
+  await page.getByRole('button', { name: 'Edit page', exact: true }).click();
+  await page
+    .locator('.workspace-widget')
+    .last()
+    .getByRole('button', { name: 'Remove widget', exact: true })
+    .click();
+  await expect(page.locator('.workspace-widget')).toHaveCount(8);
+  await page.reload();
+  await expect(page.locator('.workspace-widget')).toHaveCount(8);
+  await route(page, 'food-home');
+  await expect(page.getByRole('heading', { name: 'Food overview', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Daily macros', exact: true })).toBeVisible();
+  await expect(page.locator('.workspace-widget')).toHaveCount(9);
+  await route(page, 'today');
+  await expect(page.locator('.workspace-widget')).toHaveCount(11);
+  await route(page, 'settings');
+  await page.getByRole('switch', { name: 'Enable Food system' }).setChecked(false);
+  await route(page, 'food-home');
+  await expect(
+    page.getByRole('heading', { name: 'Food is switched off', exact: true }),
+  ).toBeVisible();
+});
 test('all system combinations hide routes and widgets while retaining an active workout and its positions', async ({
   page,
 }) => {

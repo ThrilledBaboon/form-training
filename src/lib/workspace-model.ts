@@ -124,7 +124,7 @@ export const WorkspaceSchema = z
     revision: z.number().int().nonnegative().default(0),
     systems: z.object({ gym: z.boolean(), food: z.boolean() }),
     homePageId: id,
-    pages: z.array(PageSchema).min(1).max(50),
+    pages: z.array(PageSchema).min(1).max(52),
     setups: z.array(SetupSchema).max(2000).default([]),
     removedPages: z.array(PageSchema).max(20).default([]),
     pasteDraft: z.string().max(1000000).optional(),
@@ -147,6 +147,7 @@ export const WorkspaceSchema = z
       new Set(w.pages.map((p) => p.id)).size === w.pages.length &&
       w.pages.some((p) => p.id === w.homePageId) &&
       w.pages.some((p) => p.id === 'overview') &&
+      w.pages.filter((p) => !systemForPage(p.id)).length <= 50 &&
       new Set(w.setups.map((s) => s.id)).size === w.setups.length,
     'Invalid pages or home page',
   );
@@ -183,6 +184,48 @@ export function overviewPage(): WorkspacePage {
     })),
   };
 }
+export function systemForPage(id: string): System | undefined {
+  return id === 'training-home' ? 'gym' : id === 'food-home' ? 'food' : undefined;
+}
+export const pageRoute = (id: string) =>
+  id === 'overview' ? 'today' : systemForPage(id) ? id : 'pages?page=' + encodeURIComponent(id);
+export function systemHomePage(system: System): WorkspacePage {
+  const id = system === 'gym' ? 'training-home' : 'food-home';
+  const types =
+    system === 'gym'
+      ? [
+          'start',
+          'suggestion',
+          'week',
+          'streak',
+          'training-totals',
+          'highlights',
+          'routines',
+          'sessions',
+          'setups',
+        ]
+      : [
+          'macros',
+          'meal-plan',
+          'expiry',
+          'shopping',
+          'spending',
+          'stock',
+          'batches',
+          'shortages',
+          'macro-trend',
+        ];
+  return {
+    id,
+    name: system === 'gym' ? 'Training overview' : 'Food overview',
+    range: { days: 30 },
+    revision: 0,
+    widgets: types.map((type) => ({
+      ...makeWidget(type, type === 'macro-trend' ? { metric: 'protein' } : {}, id + '-' + type),
+      size: type === 'training-totals' ? 'wide' : 'half',
+    })),
+  };
+}
 export const defaultWorkspace = (): Workspace => ({
   id: 'workspace',
   revision: 0,
@@ -196,6 +239,7 @@ export const defaultWorkspace = (): Workspace => ({
 
 export type System = 'gym' | 'food';
 export const gymRoutes = new Set([
+  'training-home',
   'workout',
   'routines',
   'history',

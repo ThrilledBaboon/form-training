@@ -6,10 +6,18 @@ import {
   PageSchema,
   SetupSchema,
   defaultWorkspace,
+  systemHomePage,
   type Workspace,
   type WorkspacePage,
   type EquipmentSetup,
 } from './workspace-model';
+
+export function ensureSystemHomePage(system: 'gym' | 'food', database = db) {
+  return changeWorkspace((w) => {
+    const page = systemHomePage(system);
+    if (!w.pages.some((p) => p.id === page.id)) w.pages.push(page);
+  }, database);
+}
 
 /** Read-modify-write in one transaction prevents a preference change losing page edits. */
 export async function changeWorkspace(change: (current: Workspace) => void, database = db) {

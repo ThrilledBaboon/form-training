@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Plus,
   Pencil,
@@ -17,10 +17,13 @@ import {
   defaultWorkspace,
   makeWidget,
   overviewPage,
+  pageRoute,
+  systemForPage,
+  systemHomePage,
   type Widget,
   type WorkspacePage,
 } from '../lib/workspace-model';
-import { changeWorkspace, savePage, moveEntry } from '../lib/workspace';
+import { changeWorkspace, savePage, moveEntry, ensureSystemHomePage } from '../lib/workspace';
 import {
   exportLayout,
   parseLayout,
@@ -60,6 +63,15 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       new URLSearchParams(location.hash.split('?')[1]).get('page') ??
       workspace.homePageId);
   const storedPage = workspace.pages.find((p) => p.id === id);
+  const system = systemForPage(id);
+  const [openingFailed, setOpeningFailed] = useState(false);
+  const openSystemHome = () => {
+    if (system)
+      void run(() => ensureSystemHomePage(system)).then((result) => setOpeningFailed(!result));
+  };
+  useEffect(() => {
+    if (system && !storedPage) openSystemHome();
+  }, [system, !!storedPage]);
   const [savedPage, setSavedPage] = useState<WorkspacePage>();
   const page =
     storedPage && savedPage?.id === id && savedPage.revision > storedPage.revision
@@ -102,6 +114,18 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
     );
   });
   if (!page)
+    if (system)
+      return openingFailed ? (
+        <Empty
+          title="Could not open your page"
+          action={<Button onClick={openSystemHome}>Try again</Button>}
+        >
+          Your saved pages and records are retained. Try opening this page again.
+        </Empty>
+      ) : (
+        <p role="status">Preparing your {system === 'gym' ? 'training' : 'food'} page…</p>
+      );
+  if (!page)
     return (
       <Empty
         title="Page unavailable"
@@ -114,7 +138,13 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
   return (
     <>
       <PageTitle
-        eyebrow="YOUR WORKSPACE, YOUR VIEW"
+        eyebrow={
+          system === 'gym'
+            ? 'YOUR TRAINING'
+            : system === 'food'
+              ? 'YOUR FOOD'
+              : 'YOUR WORKSPACE, YOUR VIEW'
+        }
         title={overview && page.name === 'Overview' ? 'Make room for progress.' : page.name}
         description={
           overview
@@ -135,12 +165,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       />
       <div className="workspace-toolbar">
         <Field label="Current page">
-          <select
-            value={page.id}
-            onChange={(e) =>
-              go(e.target.value === 'overview' ? 'today' : 'pages?page=' + e.target.value)
-            }
-          >
+          <select value={page.id} onChange={(e) => go(pageRoute(e.target.value))}>
             {workspace.pages.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -418,37 +443,39 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           </Field>
           <p>Up to 40 widgets per page. Each copy keeps its own settings.</p>
           <div className="widget-catalog">
-            {WIDGETS.filter((w) =>
-              (w[1] + ' ' + w[2] + ' ' + w[3]).toLowerCase().includes(search.toLowerCase()),
-            ).map((meta) => (
-              <div key={meta[0]}>
-                <Badge>{meta[3]}</Badge>
-                <h3>{meta[1]}</h3>
-                <p>{meta[2]}</p>
-                {requiredSystems(makeWidget(meta[0])).some((s) => !workspace.systems[s]) && (
-                  <p className="small-text muted">
-                    System disabled; this widget will be hidden until enabled.
-                  </p>
-                )}
-                <AsyncButton
-                  variant="secondary"
-                  disabled={page.widgets.length >= 40}
-                  onAction={() =>
-                    run(async () => {
-                      const w = makeWidget(
-                        meta[0],
-                        meta[0] === 'macro-trend' ? { metric: 'protein' } : {},
-                      );
-                      await commit({ ...page, widgets: [...page.widgets, w] }, 'Widget added');
-                      setCatalog(false);
-                      setConfiguring(w);
-                    })
-                  }
-                >
-                  Add {meta[1]}
-                </AsyncButton>
-              </div>
-            ))}
+            {WIDGETS.filter((w) => !system || w[3] === system || w[3] === 'shared')
+              .filter((w) =>
+                (w[1] + ' ' + w[2] + ' ' + w[3]).toLowerCase().includes(search.toLowerCase()),
+              )
+              .map((meta) => (
+                <div key={meta[0]}>
+                  <Badge>{meta[3]}</Badge>
+                  <h3>{meta[1]}</h3>
+                  <p>{meta[2]}</p>
+                  {requiredSystems(makeWidget(meta[0])).some((s) => !workspace.systems[s]) && (
+                    <p className="small-text muted">
+                      System disabled; this widget will be hidden until enabled.
+                    </p>
+                  )}
+                  <AsyncButton
+                    variant="secondary"
+                    disabled={page.widgets.length >= 40}
+                    onAction={() =>
+                      run(async () => {
+                        const w = makeWidget(
+                          meta[0],
+                          meta[0] === 'macro-trend' ? { metric: 'protein' } : {},
+                        );
+                        await commit({ ...page, widgets: [...page.widgets, w] }, 'Widget added');
+                        setCatalog(false);
+                        setConfiguring(w);
+                      })
+                    }
+                  >
+                    Add {meta[1]}
+                  </AsyncButton>
+                </div>
+              ))}
           </div>
         </Modal>
       )}
@@ -457,10 +484,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           <p>Choose a home page, arrange your pages, or create a different view.</p>
           {workspace.pages.map((p, index) => (
             <div key={p.id} className="page-manager-row">
-              <a
-                href={p.id === 'overview' ? '#/today' : '#/pages?page=' + p.id}
-                onClick={() => setManage(false)}
-              >
+              <a href={'#/' + pageRoute(p.id)} onClick={() => setManage(false)}>
                 {p.name}
               </a>
               {p.id === workspace.homePageId && <Badge>Home</Badge>}
@@ -526,7 +550,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                 >
                   <Copy size={16} />
                 </AsyncButton>
-                {p.id !== 'overview' && (
+                {p.id !== 'overview' && !systemForPage(p.id) && (
                   <AsyncButton
                     variant="ghost"
                     aria-label={'Delete ' + p.name}
@@ -579,17 +603,23 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                 run(async () => {
                   if (
                     !confirm(
-                      'Restore the default Overview layout? Your records and other pages stay intact.',
+                      `Restore the default ${system === 'gym' ? 'Training overview' : system === 'food' ? 'Food overview' : 'Overview'} layout? Your records and other pages stay intact.`,
                     )
                   )
                     return;
-                  const old = workspace.pages.find((p) => p.id === 'overview')!;
-                  await savePage({ ...overviewPage() }, old.revision);
-                  toast('Overview template restored', () => savePage(old, old.revision + 1));
+                  const template = system ? systemHomePage(system) : overviewPage();
+                  const old = workspace.pages.find((p) => p.id === template.id)!;
+                  await savePage(template, old.revision);
+                  toast('Page template restored', () => savePage(old, old.revision + 1));
                 })
               }
             >
-              Restore default Overview
+              Restore default{' '}
+              {system === 'gym'
+                ? 'Training overview'
+                : system === 'food'
+                  ? 'Food overview'
+                  : 'Overview'}
             </AsyncButton>
           </div>
           {workspace.removedPages.length > 0 && (

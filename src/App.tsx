@@ -1,7 +1,7 @@
 import { CustomPages } from './pages/CustomPages';
 import { EquipmentSetups } from './pages/EquipmentSetups';
 import { PasteWorkouts } from './pages/PasteWorkouts';
-import { defaultWorkspace, routeSystems } from './lib/workspace-model';
+import { defaultWorkspace, routeSystems, pageRoute } from './lib/workspace-model';
 import { changeWorkspace, setSystemEnabled } from './lib/workspace';
 import { Component, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -57,9 +57,16 @@ import { RestTimer } from './components/Timer';
 import { StreakTrigger, WorkoutStreakDialog, useWorkoutStreak } from './components/WorkoutStreak';
 const navigation = [
   {
-    label: 'TRAIN',
+    label: 'YOUR WORKSPACE',
     items: [
       ['today', 'Overview', LayoutDashboard],
+      ['pages', 'My pages', LayoutDashboard],
+    ],
+  },
+  {
+    label: 'TRAIN',
+    items: [
+      ['training-home', 'Training overview', LayoutDashboard],
       ['workout', 'Active workout', Dumbbell],
       ['routines', 'Routines & plans', Layers],
       ['history', 'Workout history', HistoryIcon],
@@ -68,6 +75,7 @@ const navigation = [
   {
     label: 'FOOD',
     items: [
+      ['food-home', 'Food overview', Utensils],
       ['food-menu', 'Menu & recipes', Utensils],
       ['food-diary', 'Food diary', BookOpen],
       ['food-kitchen', 'Kitchen', Refrigerator],
@@ -88,9 +96,8 @@ const navigation = [
     ],
   },
   {
-    label: 'YOUR WORKSPACE',
+    label: 'MANAGE',
     items: [
-      ['pages', 'My pages', LayoutDashboard],
       ['setups', 'Equipment setups', Dumbbell],
       ['paste-workouts', 'Paste workout notes', BookOpen],
       ['exercises', 'Exercise library', BookOpen],
@@ -263,8 +270,7 @@ export default function App() {
       </div>
     );
   const workspace = data.workspace ?? defaultWorkspace();
-  const homeRoute =
-    workspace.homePageId === 'overview' ? 'today' : 'pages?page=' + workspace.homePageId;
+  const homeRoute = pageRoute(workspace.homePageId);
   const effectiveHash = hash || '#/' + homeRoute;
   const route = effectiveHash.replace(/^#\/?/, '').split('?')[0] || 'today';
   const active = data.sessions.find((s) => s.status === 'active');
@@ -272,6 +278,10 @@ export default function App() {
     navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
   let page: ReactNode;
   switch (route) {
+    case 'training-home':
+    case 'food-home':
+      page = <CustomPages key={route} pageId={route} />;
+      break;
     case 'pages':
       page = (
         <CustomPages
@@ -350,7 +360,15 @@ export default function App() {
         </Empty>
       );
   }
-  const disabled = routeSystems(route).filter((s) => !workspace.systems[s]);
+  const requestedPage =
+    route === 'pages' ? new URLSearchParams(effectiveHash.split('?')[1]).get('page') : undefined;
+  const disabled = routeSystems(requestedPage || route).filter((s) => !workspace.systems[s]);
+  const mobileLinks = [
+    ['today', 'Overview', LayoutDashboard],
+    ['training-home', 'Train', Dumbbell],
+    ['food-home', 'Food', Utensils],
+    ['routines', 'Plans', Layers],
+  ].filter(([id]) => routeSystems(id as string).every((s) => workspace.systems[s]));
   if (disabled.length)
     page = (
       <Empty
@@ -536,25 +554,18 @@ export default function App() {
         className="mobile-nav"
         aria-label="Mobile navigation"
         style={{
-          gridTemplateColumns: workspace.systems.gym ? undefined : 'repeat(2,minmax(0,1fr))',
+          gridTemplateColumns: `repeat(${mobileLinks.length + 1},minmax(0,1fr))`,
         }}
       >
-        {[
-          ['today', 'Today', LayoutDashboard],
-          ['workout', 'Train', Dumbbell],
-          ['routines', 'Plans', Layers],
-          ['muscles', 'Muscles', Activity],
-        ]
-          .filter(([id]) => routeSystems(id as string).every((s) => workspace.systems[s]))
-          .map(([id, label, Icon]) => {
-            const I = Icon as typeof Dumbbell;
-            return (
-              <a key={id as string} className={route === id ? 'active' : ''} href={`#/${id}`}>
-                <I size={21} />
-                <span>{label as string}</span>
-              </a>
-            );
-          })}
+        {mobileLinks.map(([id, label, Icon]) => {
+          const I = Icon as typeof Dumbbell;
+          return (
+            <a key={id as string} className={route === id ? 'active' : ''} href={`#/${id}`}>
+              <I size={21} />
+              <span>{label as string}</span>
+            </a>
+          );
+        })}
         <button onClick={() => setMenu(!menu)} aria-expanded={menu}>
           <Menu size={21} />
           <span>More</span>

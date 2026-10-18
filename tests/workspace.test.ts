@@ -7,8 +7,15 @@ import {
   makeWidget,
   SetupSchema,
   WorkspaceSchema,
+  pageRoute,
 } from '../src/lib/workspace-model';
-import { changeWorkspace, savePage, saveSetup, applyEquipmentSetup } from '../src/lib/workspace';
+import {
+  changeWorkspace,
+  savePage,
+  saveSetup,
+  applyEquipmentSetup,
+  ensureSystemHomePage,
+} from '../src/lib/workspace';
 import {
   exportLayout,
   parseLayout,
@@ -48,6 +55,29 @@ async function reviewed() {
   return { draft, data, exercise };
 }
 describe('workspace persistence and portability', () => {
+  it('initializes independent system homes once without overwriting edited layouts or the combined Overview', async () => {
+    const overview = (await readData(database)).workspace!.pages[0];
+    await Promise.all([
+      ensureSystemHomePage('gym', database),
+      ensureSystemHomePage('gym', database),
+    ]);
+    await ensureSystemHomePage('food', database);
+    let workspace = (await readData(database)).workspace!;
+    expect(workspace.pages).toHaveLength(3);
+    const gym = workspace.pages.find((p) => p.id === 'training-home')!;
+    const food = workspace.pages.find((p) => p.id === 'food-home')!;
+    expect(gym.widgets.every((w) => !requiredSystems(w).includes('food'))).toBe(true);
+    expect(food.widgets.every((w) => !requiredSystems(w).includes('gym'))).toBe(true);
+    await savePage({ ...gym, widgets: [] }, gym.revision, database);
+    await ensureSystemHomePage('gym', database);
+    workspace = (await readData(database)).workspace!;
+    expect(workspace.pages.find((p) => p.id === gym.id)!.widgets).toEqual([]);
+    expect(workspace.pages.find((p) => p.id === 'overview')).toEqual(overview);
+    expect(pageRoute(gym.id)).toBe('training-home');
+    expect(pageRoute(food.id)).toBe('food-home');
+    expect(pageRoute('overview')).toBe('today');
+  });
+
   it('creates one mixed Overview, keeps independent widgets, rejects stale and deleted page editors', async () => {
     const original = (await readData(database)).workspace!;
     expect(original.pages).toHaveLength(1);

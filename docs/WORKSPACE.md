@@ -70,3 +70,9 @@ Practical limits: 50 pages, 40 widgets per page, 20 recoverable layouts, 2,000 e
 The parser does not understand arbitrary prose, every third-party export or every exercise naming convention. Use manual corrections for ambiguous text. No account, sync, Apple Health, automatic weight import, public layout gallery or paid parser was introduced. Physical iPhone Safari, installed-PWA updates, native file picking and touch dragging still require device testing; automated WebKit uses an emulated phone viewport.
 
 The established local preview is **http://127.0.0.1:4174/**. Its origin retains its own browser data; it does not share storage with the hosted app, localhost, port 4173 or another browser. Refresh and accept FORM's normal update prompt when a cached older version is present. Do not clear site storage to update. Run `pnpm build` then `pnpm preview --port 4174` if the preview is stopped. Use isolated test profiles for `pnpm test:e2e` on 4173.
+
+### System home pages and editing
+
+Overview lives in Your workspace and combines enabled systems. Train and Food each have an independent, editable home page, initialized once when first opened. Editing one never changes the others. My pages can set any saved page as the starting view. System home pages can be reset to their own template.
+
+Choose Edit page to reveal Drag to move, arrow controls, resizing and a visible Remove button. Handles support mouse, pen and touch; Escape or dropping outside a card cancels a move. Remove affects the layout, and Undo restores the previous arrangement. Workout and food records are retained.
