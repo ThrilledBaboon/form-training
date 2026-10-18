@@ -30,6 +30,81 @@ test.beforeEach(async ({ page }) => {
   await page.goto(base);
   await expect(page.getByRole('heading', { name: 'Make room for progress.' })).toBeVisible();
 });
+test('drag handles reorder widgets with a mouse and persist after reload', async ({ page }) => {
+  await createPage(page, 'Drag desk');
+  await page.getByRole('button', { name: 'Edit page', exact: true }).click();
+  await addWidget(page, 'Personal notes', 'First card', 'One');
+  await addWidget(page, 'Personal notes', 'Second card', 'Two');
+  await addWidget(page, 'Personal notes', 'Third card', 'Three');
+  const cards = page.locator('.workspace-widget');
+  const original = await cards.evaluateAll((nodes) =>
+    nodes.map((n) => n.getAttribute('data-widget-id')),
+  );
+  await cards
+    .first()
+    .getByRole('button', { name: /^Drag / })
+    .dragTo(cards.last());
+  await expect
+    .poll(() => cards.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-widget-id'))))
+    .toEqual([original[1], original[2], original[0]]);
+  await page.reload();
+  await expect(cards.first().getByRole('heading')).toHaveText('Second card');
+  await expect(cards.last().getByRole('heading')).toHaveText('First card');
+});
+test('touch dragging reorders widgets and removing a card can be undone', async ({
+  page,
+  context,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'Trusted touch sequences use Chromium DevTools; WebKit covers mouse and keyboard controls.',
+  );
+  await createPage(page, 'Touch desk');
+  await page.getByRole('button', { name: 'Edit page', exact: true }).click();
+  await addWidget(page, 'Personal notes', 'First touch card', 'One');
+  await addWidget(page, 'Personal notes', 'Second touch card', 'Two');
+  const cards = page.locator('.workspace-widget');
+  const original = await cards.evaluateAll((nodes) =>
+    nodes.map((n) => n.getAttribute('data-widget-id')),
+  );
+  await page
+    .locator('.widget-grid')
+    .evaluate((grid) => window.scrollTo(0, grid.getBoundingClientRect().top + window.scrollY - 90));
+  const handle = await cards
+    .first()
+    .getByRole('button', { name: /^Drag / })
+    .boundingBox();
+  const target = await cards.last().boundingBox();
+  if (!handle || !target) throw Error('Drag source or destination unavailable');
+  const start = { x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 };
+  const end = { x: target.x + target.width / 2, y: target.y + 24 };
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+  for (let step = 1; step <= 12; step++) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [
+        {
+          x: start.x + ((end.x - start.x) * step) / 12,
+          y: start.y + ((end.y - start.y) * step) / 12,
+        },
+      ],
+    });
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect
+    .poll(() => cards.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-widget-id'))))
+    .toEqual([original[1], original[0]]);
+  await cdp.detach();
+  await cards.first().getByRole('button', { name: 'Remove widget', exact: true }).click();
+  await expect(cards).toHaveCount(1);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(cards).toHaveCount(2);
+  await page.reload();
+  await expect(cards.first().getByRole('heading')).toHaveText('Second touch card');
+});
 test('custom pages edit, duplicate, move, resize, undo and persist with a chosen home', async ({
   page,
 }) => {
@@ -326,4 +401,27 @@ test('a mixed page with repeated real charts updates from history, keeps unique 
     path: `test-results/workspace-mixed-${test.info().project.name}.png`,
     fullPage: true,
   });
+});
+
+test('Escape cancels a held widget move and keyboard arrows remain available', async ({ page }) => {
+  await createPage(page, 'Keyboard desk');
+  await page.getByRole('button', { name: 'Edit page', exact: true }).click();
+  await addWidget(page, 'Personal notes', 'First keyboard card', 'One');
+  await addWidget(page, 'Personal notes', 'Second keyboard card', 'Two');
+  const cards = page.locator('.workspace-widget');
+  const first = cards.first().getByRole('button', { name: /^Drag / });
+  await first.scrollIntoViewIfNeeded();
+  const source = await first.boundingBox();
+  const target = await cards.last().boundingBox();
+  if (!source || !target) throw Error('Missing drag controls');
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + target.width / 2, target.y + 24, { steps: 8 });
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(cards.first().getByRole('heading')).toHaveText('First keyboard card');
+  const up = cards.last().getByRole('button', { name: 'Move widget up', exact: true });
+  await up.focus();
+  await page.keyboard.press('Enter');
+  await expect(cards.first().getByRole('heading')).toHaveText('Second keyboard card');
 });

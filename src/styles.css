@@ -73,6 +73,11 @@
 .workspace-edit-banner p {
   margin: 0;
 }
+.workspace-edit-hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin: -12px 0 20px;
+}
 .widget-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -127,6 +132,25 @@
   min-width: 36px;
   padding: 8px;
   min-height: 40px;
+}
+.widget-editor-controls .widget-drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.widget-editor-controls .widget-drag-handle:active {
+  cursor: grabbing;
+}
+.workspace-widget.widget-dragging {
+  border-style: dashed;
+}
+.workspace-widget.widget-drop-target {
+  outline: 3px solid var(--green);
+  outline-offset: 3px;
+}
+.widget-editor-controls .widget-remove-button {
+  color: var(--danger);
 }
 .widget-editor-controls select {
   max-width: 110px;

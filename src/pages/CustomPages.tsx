@@ -49,6 +49,7 @@ import {
   widgetDestination,
 } from '../components/Widgets';
 import { RangeControls, WidgetEditor } from '../components/WorkspaceControls';
+import { useWidgetDrag } from '../components/useWidgetDrag';
 
 export function CustomPages({ overview = false, pageId }: { overview?: boolean; pageId?: string }) {
   const { data, run, toast, pending } = useApp();
@@ -71,7 +72,6 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
     [manage, setManage] = useState(false),
     [sharing, setSharing] = useState(false);
   const [layout, setLayout] = useState<SharedLayout | null>(null);
-  const [drag, setDrag] = useState<string>();
   const [naming, setNaming] = useState<'new' | 'rename' | null>(null),
     [name, setName] = useState(''),
     [template, setTemplate] = useState('empty');
@@ -85,6 +85,22 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       setSavedPage(restored.pages.find((p) => p.id === page.id));
     });
   };
+  const { drag, handleProps } = useWidgetDrag(editing && !pending, (source, target) => {
+    if (!page) return;
+    void run(() =>
+      commit(
+        {
+          ...page,
+          widgets: moveEntry(
+            page.widgets,
+            page.widgets.findIndex((w) => w.id === source),
+            page.widgets.findIndex((w) => w.id === target),
+          ),
+        },
+        'Widget moved',
+      ),
+    );
+  });
   if (!page)
     return (
       <Empty
@@ -163,11 +179,17 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           </label>
         </div>
       </div>
+      {!editing && (
+        <p className="workspace-edit-hint">
+          Choose <strong>Edit page</strong> to move, resize or remove widgets.
+        </p>
+      )}
       {editing && (
         <div className="workspace-edit-banner">
           <p>
-            <strong>Editing {page.name}.</strong> Each change saves immediately. Use Undo after a
-            change to restore its previous arrangement.
+            <strong>Editing {page.name}.</strong> Use <strong>Drag to move</strong> or the arrows to
+            reorder. <strong>Remove</strong> takes a widget off this page. Changes save immediately;
+            Undo restores the last change.
           </p>
           <Button
             onClick={() => {
@@ -202,29 +224,8 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
               key={widget.id}
               data-widget-id={widget.id}
               tabIndex={-1}
-              className={`card workspace-widget widget-size-${widget.size}${missing.length ? ' widget-disabled' : ''}`}
+              className={`card workspace-widget widget-size-${widget.size}${missing.length ? ' widget-disabled' : ''}${drag?.id === widget.id ? ' widget-dragging' : ''}${drag?.target === widget.id && drag.id !== widget.id ? ' widget-drop-target' : ''}`}
               aria-label={widget.title || meta?.[1] || 'Unavailable widget'}
-              onDragOver={(e) => {
-                if (editing) e.preventDefault();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (drag)
-                  void run(() =>
-                    commit(
-                      {
-                        ...page,
-                        widgets: moveEntry(
-                          page.widgets,
-                          page.widgets.findIndex((w) => w.id === drag),
-                          index,
-                        ),
-                      },
-                      'Widget moved',
-                    ),
-                  );
-                setDrag(undefined);
-              }}
             >
               <div className="widget-heading">
                 <div>
@@ -268,16 +269,19 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                 <div className="widget-editor-controls">
                   <Button
                     variant="ghost"
-                    aria-label={'Drag ' + (meta?.[1] ?? 'widget')}
-                    draggable
-                    onDragStart={() => setDrag(widget.id)}
-                    onDragEnd={() => setDrag(undefined)}
+                    className="widget-drag-handle"
+                    aria-label={'Drag ' + (widget.title || meta?.[1] || 'widget')}
+                    title="Drag to reorder, or use the Move up and Move down buttons"
+                    disabled={pending}
+                    {...handleProps(widget.id)}
                   >
                     <GripVertical size={16} />
+                    Drag to move
                   </Button>
                   <AsyncButton
                     variant="ghost"
                     aria-label="Move widget up"
+                    title="Move widget up"
                     disabled={index === 0 || pending}
                     onAction={() => move(index - 1)}
                   >
@@ -286,6 +290,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                   <AsyncButton
                     variant="ghost"
                     aria-label="Move widget down"
+                    title="Move widget down"
                     disabled={index === page.widgets.length - 1 || pending}
                     onAction={() => move(index + 1)}
                   >
@@ -294,6 +299,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                   <Button
                     variant="ghost"
                     aria-label="Configure widget"
+                    title="Configure widget"
                     onClick={() => setConfiguring(widget)}
                   >
                     <Settings2 size={16} />
@@ -301,6 +307,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                   <AsyncButton
                     variant="ghost"
                     aria-label="Duplicate widget"
+                    title="Duplicate widget"
                     disabled={pending}
                     onAction={() =>
                       run(() =>
@@ -322,6 +329,8 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                   <AsyncButton
                     variant="ghost"
                     aria-label="Remove widget"
+                    className="widget-remove-button"
+                    title="Remove this widget from the page; your records are retained"
                     disabled={pending}
                     onAction={() =>
                       run(async () => {
@@ -346,6 +355,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                     }
                   >
                     <Trash2 size={16} />
+                    Remove
                   </AsyncButton>
                   <select
                     aria-label="Resize widget"
