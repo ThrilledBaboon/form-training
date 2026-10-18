@@ -11,16 +11,17 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 1.5;
-  --bg: #f6f7f2;
-  --surface: #fff;
-  --surface-alt: #f4f6f0;
+  color-scheme: light;
+  --bg: #f3f5f0;
+  --surface: #f7f8f4;
+  --surface-alt: #e9eee4;
   --ink: #243b33;
   --muted: #5f6e63;
   --green: #346b52;
   --deep: #193c36;
   --lime: #d8edaa;
-  --line: #e7ebe3;
-  --nav: #f0f3ec;
+  --line: #dce3d7;
+  --nav: #e8eee2;
   --danger: #ad4842;
   --anatomy-body: #f3f5f0;
   --anatomy-stroke: #c1cbc0;
@@ -1047,8 +1048,8 @@ progress::-webkit-progress-value {
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #141f1b;
-  --surface: #1c2923;
+  --bg: #18231e;
+  --surface: #1c2822;
   --surface-alt: #24332b;
   --ink: #e2ebe0;
   --muted: #a0afa0;
@@ -1548,7 +1549,7 @@ main {
   color: #f2f5ed;
 }
 .button.primary:hover {
-  background: #285a48;
+  background: color-mix(in srgb, var(--deep) 85%, var(--green));
 }
 .button.secondary {
   border-color: var(--line);

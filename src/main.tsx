@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App, { ErrorBoundary } from './App';
 import { loadJackDemo, localDemoAvailable } from './lib/demo';
 import './styles.css';
+import './themes.css';
 const root = createRoot(document.getElementById('root')!);
 async function start() {
   const url = new URL(location.href);

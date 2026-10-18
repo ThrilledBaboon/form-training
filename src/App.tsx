@@ -207,12 +207,19 @@ export default function App() {
     const apply = () => {
       document.documentElement.dataset.theme =
         data.settings.theme === 'system' ? (media.matches ? 'dark' : 'light') : data.settings.theme;
+      document.documentElement.dataset.palette = data.settings.palette;
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute(
+          'content',
+          getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+        );
       document.documentElement.classList.toggle('reduced-motion', data.settings.reducedMotion);
     };
     apply();
     media.addEventListener('change', apply);
     return () => media.removeEventListener('change', apply);
-  }, [data?.settings.theme, data?.settings.reducedMotion]);
+  }, [data?.settings.theme, data?.settings.palette, data?.settings.reducedMotion]);
   useEffect(() => {
     if (!menu) return;
     const previous = document.activeElement as HTMLElement;

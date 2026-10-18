@@ -1,5 +1,6 @@
 import { FoodDisplayPreference } from '../components/FoodGoals';
 import { DemoDataSettings } from '../components/DemoData';
+import { AppearanceSettings } from '../components/AppearanceSettings';
 import { ProfileSettings } from '../components/ProfileSetup';
 import { SystemSettings } from '../components/WorkspaceControls';
 import { useState } from 'react';
@@ -81,6 +82,7 @@ export function Settings() {
         description="A few useful preferences. Complete control over your records."
       />
       <SystemSettings />
+      <AppearanceSettings />
       <ProfileSettings />
       {data.workspace?.systems.food !== false && <FoodDisplayPreference card />}
       <div className="privacy-panel">
@@ -163,31 +165,13 @@ export function Settings() {
           </p>
         </Card>
         <Card>
-          <SectionTitle title="Appearance & assumptions" />
+          <SectionTitle title="Calculation assumptions & storage" />
           <div className="form-grid">
-            <Field label="Theme">
-              <select
-                value={s.theme}
-                onChange={(e) => patch({ theme: e.target.value as Preferences['theme'] })}
-              >
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="system">Use device setting</option>
-              </select>
-            </Field>
             {numeric('primaryFactor', 'Primary muscle contribution', 0, 2, 0.1)}
             {numeric('secondaryFactor', 'Secondary muscle contribution', 0, 2, 0.1)}
             {numeric('muscleScale', 'Full muscle colour at', 1, 100, 1)}
             {numeric('recoveryHours', 'Recent-load half-life (hours)', 1, 336, 1)}
           </div>
-          <label className="check-label">
-            <input
-              type="checkbox"
-              checked={s.reducedMotion}
-              onChange={(e) => patch({ reducedMotion: e.target.checked })}
-            />
-            Reduce interface motion
-          </label>
           <div className="callout">
             <Info size={18} />
             <p>

@@ -106,7 +106,7 @@ describe('durable data operations', () => {
     const { sets } = await session();
     await updateSet(sets[0].id, { loadKg: 60, reps: 8 }, db);
     await completeSet(sets[0].id, db);
-    await saveSettings({ theme: 'dark', goalKg: 80 }, db);
+    await saveSettings({ theme: 'dark', palette: 'plum', goalKg: 80 }, db);
     await db.bodyweights.put({ id: uid(), at: now(), kg: 85, notes: 'Test' });
     await db.programmes.put({ id: 'custom-programme', name: 'Custom', notes: '' });
     await db.exercises.put({ ...original.exercises[0], id: 'custom-exercise', name: 'Custom' });
@@ -366,6 +366,44 @@ describe('durable data operations', () => {
   });
 });
 describe('validated backups', () => {
+  it('opens older stored preferences and backups without losing the existing theme or units', async () => {
+    const legacy = JSON.parse(serialise(await readData(db)));
+    delete legacy.data.settings.palette;
+    legacy.data.settings.theme = 'dark';
+    legacy.data.settings.unit = 'lb';
+    await db.table('settings').put(legacy.data.settings);
+    expect((await readData(db)).settings).toMatchObject({
+      theme: 'dark',
+      unit: 'lb',
+      palette: 'sage',
+    });
+    expect(parseBackup(JSON.stringify(legacy)).data.settings).toMatchObject({
+      theme: 'dark',
+      unit: 'lb',
+      palette: 'sage',
+    });
+    await saveSettings({ sound: true }, db);
+    expect(await db.settings.get('preferences')).toMatchObject({
+      theme: 'dark',
+      unit: 'lb',
+      palette: 'sage',
+      sound: true,
+    });
+  });
+  it('backs up colour preferences and restores them only when preference restoration is selected', async () => {
+    await session();
+    await saveSettings({ theme: 'system', palette: 'plum' }, db);
+    const data = await readData(db);
+    const backup = parseBackup(serialise(data));
+    expect(backup.data.settings).toMatchObject({ theme: 'system', palette: 'plum' });
+    await saveSettings({ theme: 'dark', palette: 'slate' }, db);
+    await importBackup(backup, 'merge', db);
+    expect((await readData(db)).settings).toMatchObject({ theme: 'dark', palette: 'slate' });
+    await importBackup(backup, 'merge', db, { restorePreferences: true });
+    expect((await readData(db)).settings).toMatchObject({ theme: 'system', palette: 'plum' });
+    expect(await db.sessions.toArray()).toEqual(data.sessions);
+    expect(await db.sets.count()).toBe(data.sets.length);
+  });
   it('round trips a populated snapshot with stable identifiers', async () => {
     await session();
     const d = await readData(db);

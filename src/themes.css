@@ -1,0 +1,181 @@
+/* Palette is independent of the light/dark preference. Sage lives in styles.css. */
+:root[data-palette='sand'] {
+  --bg: #f5f1ea;
+  --surface: #f8f5ef;
+  --surface-alt: #ede5d9;
+  --ink: #45382c;
+  --muted: #6c5d4c;
+  --green: #7e572b;
+  --deep: #583f29;
+  --lime: #f1dcb0;
+  --line: #ded4c4;
+  --nav: #ede4d5;
+  --anatomy-body: #ede6d9;
+  --anatomy-stroke: #c4b49c;
+}
+:root[data-palette='slate'] {
+  --bg: #f0f3f6;
+  --surface: #f4f6f8;
+  --surface-alt: #e5ebf0;
+  --ink: #2e3c4a;
+  --muted: #536474;
+  --green: #3e6385;
+  --deep: #253f59;
+  --lime: #d2e3f1;
+  --line: #d7e0e7;
+  --nav: #e5edf3;
+  --anatomy-body: #e8eef2;
+  --anatomy-stroke: #b5c5d3;
+}
+:root[data-palette='plum'] {
+  --bg: #f5f0f4;
+  --surface: #f8f4f7;
+  --surface-alt: #ede3eb;
+  --ink: #49334a;
+  --muted: #6e556c;
+  --green: #805477;
+  --deep: #50334e;
+  --lime: #ecd4e9;
+  --line: #dfd2dd;
+  --nav: #ede2eb;
+  --anatomy-body: #f0e6ee;
+  --anatomy-stroke: #caafc4;
+}
+:root[data-theme='dark'][data-palette='sand'] {
+  --bg: #262119;
+  --surface: #2b251d;
+  --surface-alt: #383024;
+  --ink: #f0e7d7;
+  --muted: #c1b29e;
+  --green: #ddbd87;
+  --deep: #493321;
+  --lime: #f1dcb0;
+  --line: #4e4435;
+  --nav: #352d23;
+  --anatomy-body: #382f24;
+  --anatomy-stroke: #88745a;
+}
+:root[data-theme='dark'][data-palette='slate'] {
+  --bg: #1a222c;
+  --surface: #1e2832;
+  --surface-alt: #283745;
+  --ink: #e2eaf2;
+  --muted: #a8b9c9;
+  --green: #a2c5e5;
+  --deep: #1c3650;
+  --lime: #d2e3f1;
+  --line: #3b4b5b;
+  --nav: #293a4a;
+  --anatomy-body: #293845;
+  --anatomy-stroke: #657f96;
+}
+:root[data-theme='dark'][data-palette='plum'] {
+  --bg: #261e27;
+  --surface: #2b232c;
+  --surface-alt: #3a2d3a;
+  --ink: #efe3ee;
+  --muted: #c4adc0;
+  --green: #d7b0d0;
+  --deep: #422b40;
+  --lime: #ecd4e9;
+  --line: #514050;
+  --nav: #392c38;
+  --anatomy-body: #3a2e3a;
+  --anatomy-stroke: #94798e;
+}
+
+/* Keep widgets recognisable without the strong outline of separate cards. */
+.widget-grid > .workspace-widget {
+  background: color-mix(in srgb, var(--surface) 35%, var(--bg));
+  border-color: color-mix(in srgb, var(--line) 45%, var(--bg));
+  box-shadow: none;
+}
+.workspace-widget > .card {
+  background: transparent;
+}
+
+.appearance-settings {
+  margin-bottom: 24px;
+}
+.appearance-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  margin-bottom: 18px;
+}
+.appearance-controls > .field {
+  min-width: 180px;
+  margin: 0;
+}
+.appearance-controls .check-label {
+  margin: 0;
+}
+.palette-picker {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.palette-picker legend {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding: 0;
+}
+.palette-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.palette-option {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.palette-option.selected {
+  border-color: var(--green);
+  background: var(--nav);
+}
+.palette-option:focus-within {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+.palette-preview {
+  display: flex;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+.palette-preview > span {
+  flex: 1;
+}
+.palette-option-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+}
+.palette-option input[type='radio'] {
+  width: 17px;
+  height: 17px;
+  min-height: 17px;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  accent-color: var(--green);
+}
+.palette-description {
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 650px) {
+  .palette-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

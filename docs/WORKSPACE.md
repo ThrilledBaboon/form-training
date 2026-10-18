@@ -24,6 +24,12 @@ Layouts (`type: page-layout`, `formatVersion: 1`), Gym libraries (`type: library
 
 An active workout, timer deadline/paused remainder and Food/import drafts remain saved. Hidden timers have no foreground component or alerts. Re-enabling displays the remaining/elapsed state; a timer that expired while hidden is marked notified without a late sound. Complete backups include disabled-system records. Layout imports and record imports do not enable systems.
 
+## Choose your colours
+
+**Settings & your data → Appearance** offers Sage, Sand, Slate and Plum palettes. Each works with Light, Dark or Use device setting. Changes apply across the app and save on this device. The top-bar theme shortcut switches Light/Dark while keeping the palette. Widgets use gentle background and border colours that blend into the page.
+
+Complete backups include the palette; a merge restores it only when preference restoration is selected. Older preferences and backups default to Sage while keeping their saved Light/Dark/device setting. Shared layouts do not change the recipient's colours.
+
 ## Remember equipment
 
 Open **More / Your workspace → Equipment setups**, or the exercise-library link. Create a profile for an exercise with optional gym, machine, settings, attachment, grip/stance and notes. Choose a recorded-load convention and, optionally, an increment. Profiles can be duplicated, archived and selected as an exercise's default.
