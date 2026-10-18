@@ -13,6 +13,11 @@ routines, streaks and bodyweight records remain in the same database.
    set its serving count, then add instructions, times, equipment, photos and storage notes.
    Ingredient, recipe and purchase editor drafts save locally while editing. Wait for
    **On-device storage** before closing the browser. Save other forms with their Save button.
+   Each menu card also has **Add photo / Change photo** to pick a local PNG, JPEG or WebP
+   up to 5 MB. The card and recipe details show the saved photo, including after a refresh
+   or offline. To remove it, open **Edit recipe → Remove photo → Save recipe**. Photos stay
+   on-device and are included in JSON backups; changing a card photo preserves recipe notes
+   and any unfinished editor draft.
 3. Open a recipe to scale it, inspect whole-recipe versus per-serving macros, and try a
    substitution. Check quantities, units and cooking behaviour, then save a separate
    variation before logging, planning or cooking it.

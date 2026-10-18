@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Plus,
   Star,
@@ -10,6 +10,7 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
+  Camera,
 } from 'lucide-react';
 import { useApp, go } from '../lib/context';
 import { uid, now } from '../lib/model';
@@ -20,7 +21,13 @@ import {
   type RecipeLine,
   type Ingredient,
 } from '../lib/food-model';
-import { saveRecipe, saveShoppingList, regenerateShopping } from '../lib/food-actions';
+import {
+  saveRecipe,
+  saveRecipePhoto,
+  imageFile,
+  saveShoppingList,
+  regenerateShopping,
+} from '../lib/food-actions';
 import {
   recipeNutrition,
   lineNutrition,
@@ -73,6 +80,48 @@ function move<T>(items: T[], index: number, delta: number) {
   if (other < 0 || other >= items.length) return copy;
   [copy[index], copy[other]] = [copy[other], copy[index]];
   return copy;
+}
+function RecipePhotoUpload({ recipe }: { recipe: Recipe }) {
+  const { run } = useApp();
+  const input = useRef<HTMLInputElement>(null);
+  const lock = useRef(false);
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <input
+        ref={input}
+        hidden
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        aria-label={'Upload photo for ' + recipe.name}
+        disabled={busy}
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (!file || lock.current) return;
+          lock.current = true;
+          setBusy(true);
+          void run(async () => {
+            const photo = await imageFile(file);
+            await saveRecipePhoto(recipe.id, photo);
+          }, 'Recipe photo saved').finally(() => {
+            lock.current = false;
+            setBusy(false);
+          });
+        }}
+      />
+      <Button
+        variant="secondary"
+        disabled={busy}
+        aria-label={(recipe.imageId ? 'Change photo for ' : 'Add photo to ') + recipe.name}
+        title="PNG, JPEG or WebP, up to 5 MB"
+        onClick={() => input.current?.click()}
+      >
+        <Camera size={16} />
+        {busy ? 'Saving photo…' : recipe.imageId ? 'Change photo' : 'Add photo'}
+      </Button>
+    </>
+  );
 }
 export function RecipeEditor({ initial, onClose }: { initial?: Recipe; onClose: () => void }) {
   const food = useFood();
@@ -182,8 +231,14 @@ export function RecipeEditor({ initial, onClose }: { initial?: Recipe; onClose: 
             onChange={(e) => patch({ description: e.target.value })}
           />
         </Field>
-        <ImageInput onChange={(imageId) => patch({ imageId })} />
+        <ImageInput label="Recipe photo" onChange={(imageId) => patch({ imageId })} />
         <FoodImage id={value.imageId} alt="Recipe preview" className="food-editor-image" />
+        {value.imageId && (
+          <Button type="button" variant="ghost" onClick={() => patch({ imageId: undefined })}>
+            <Trash2 size={16} />
+            Remove photo
+          </Button>
+        )}
         <SectionTitle
           title="Ingredients for the whole recipe"
           action={
@@ -878,6 +933,7 @@ export function FoodMenu() {
                 <Button variant="secondary" onClick={() => setDetail(r.id)}>
                   View recipe
                 </Button>
+                <RecipePhotoUpload recipe={r} />
                 <Button variant="ghost" aria-label={'Edit ' + r.name} onClick={() => setEdit(r)}>
                   <Pencil size={16} />
                 </Button>

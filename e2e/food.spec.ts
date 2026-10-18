@@ -119,6 +119,90 @@ test('ingredients, durable recipe drafts, scaling, filters and diary targets wor
   await route(page, 'food-kitchen');
   await expect(page.getByText('No stock matches this view.')).toBeVisible(); // Viewing/scaling/logging a recipe alone does not cook it.
 });
+test('menu cards upload, replace and persist photos; the editor previews and removes them', async ({
+  page,
+}) => {
+  await seed(page);
+  await route(page, 'food-menu');
+  const card = page
+    .locator('.recipe-card')
+    .filter({ has: page.getByRole('heading', { name: 'Rice bowl', exact: true }) });
+  const choose = page.waitForEvent('filechooser');
+  await card.getByRole('button', { name: 'Add photo to Rice bowl', exact: true }).click();
+  await (
+    await choose
+  ).setFiles({ name: 'meal.png', mimeType: 'image/png', buffer: Buffer.from(pixel, 'base64') });
+  await expect(card.locator('img')).toHaveAttribute('src', 'data:image/png;base64,' + pixel);
+  await expect(card.locator('img')).toHaveJSProperty('naturalWidth', 1);
+  await page.reload();
+  await expect(
+    card.getByRole('button', { name: 'Change photo for Rice bowl', exact: true }),
+  ).toBeVisible();
+  await expect(card.locator('img')).toHaveAttribute('src', 'data:image/png;base64,' + pixel);
+  await card.getByRole('button', { name: 'Edit Rice bowl', exact: true }).click();
+  let editor = page.getByRole('dialog', { name: 'Edit recipe', exact: true });
+  await expect(editor.getByAltText('Recipe preview', { exact: true })).toBeVisible();
+  await editor.getByLabel('Personal notes', { exact: true }).fill('An unfinished recipe note');
+  await expect(page.locator('.save-status')).toHaveText('On-device storage');
+  await editor.getByRole('button', { name: 'Close editor', exact: true }).click();
+  const replacement = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 240;
+    canvas.height = 160;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = '#597e69';
+    context.fillRect(0, 0, 240, 160);
+    return canvas.toDataURL('image/jpeg').split(',')[1];
+  });
+  await card.getByLabel('Upload photo for Rice bowl', { exact: true }).setInputFiles({
+    name: 'meal.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from(replacement, 'base64'),
+  });
+  await expect(card.locator('img')).toHaveAttribute('src', 'data:image/jpeg;base64,' + replacement);
+  await card.getByLabel('Upload photo for Rice bowl', { exact: true }).setInputFiles({
+    name: 'unsupported.heic',
+    mimeType: 'image/heic',
+    buffer: Buffer.from('unsupported'),
+  });
+  await expect(page.getByText('Choose a PNG, JPEG or WebP image.', { exact: true })).toBeVisible();
+  await expect(card.locator('img')).toHaveAttribute('src', 'data:image/jpeg;base64,' + replacement);
+  await card.getByLabel('Upload photo for Rice bowl', { exact: true }).setInputFiles({
+    name: 'too-large.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(5 * 1024 * 1024 + 1),
+  });
+  await expect(
+    page.getByText('Images must be below 5 MB. Resize the image and try again.', { exact: true }),
+  ).toBeVisible();
+  await card.getByRole('button', { name: 'Edit Rice bowl', exact: true }).click();
+  editor = page.getByRole('dialog', { name: 'Edit recipe', exact: true });
+  await expect(editor.getByLabel('Personal notes', { exact: true })).toHaveValue(
+    'An unfinished recipe note',
+  );
+  await expect(editor.getByAltText('Recipe preview', { exact: true })).toHaveAttribute(
+    'src',
+    'data:image/jpeg;base64,' + replacement,
+  );
+  await editor.getByRole('button', { name: 'Save recipe', exact: true }).click();
+  await card.getByRole('button', { name: 'View recipe', exact: true }).click();
+  const details = page.getByRole('dialog', { name: 'Rice bowl', exact: true });
+  await expect(details.locator('.food-detail-image')).toHaveAttribute(
+    'src',
+    'data:image/jpeg;base64,' + replacement,
+  );
+  await details.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await card.getByRole('button', { name: 'Edit Rice bowl', exact: true }).click();
+  editor = page.getByRole('dialog', { name: 'Edit recipe', exact: true });
+  await editor.getByRole('button', { name: 'Remove photo', exact: true }).click();
+  await expect(editor.getByAltText('Recipe preview', { exact: true })).toHaveCount(0);
+  await editor.getByRole('button', { name: 'Save recipe', exact: true }).click();
+  await expect(card.locator('img')).toHaveCount(0);
+  await page.reload();
+  await expect(
+    card.getByRole('button', { name: 'Add photo to Rice bowl', exact: true }),
+  ).toBeVisible();
+});
 test('cooking consumes stock once and prepared portions survive reload, correction and waste', async ({
   page,
 }) => {

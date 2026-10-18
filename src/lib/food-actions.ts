@@ -11,6 +11,7 @@ import {
   ShoppingListSchema,
   FoodFileSchema,
   FoodDraftSchema,
+  readFoodDraft,
   BatchSchema,
   type Ingredient,
   type Recipe,
@@ -67,6 +68,29 @@ export async function saveRecipe(value: Recipe, database = db) {
         if (!(await database.foodFiles.get(image!))) throw Error('A recipe image is missing.');
       await database.recipes.put(recipe);
       await database.foodDrafts.delete('recipe-editor');
+    },
+  );
+}
+export async function saveRecipePhoto(recipeId: string, file?: FoodFile, database = db) {
+  const photo = file ? FoodFileSchema.parse(file) : undefined;
+  await database.transaction(
+    'rw',
+    [database.recipes, database.foodFiles, database.foodDrafts],
+    async () => {
+      const recipe = await database.recipes.get(recipeId);
+      if (!recipe) throw Error('This recipe is no longer available.');
+      if (photo) await database.foodFiles.add(photo);
+      const updatedAt = now();
+      // Patch the latest record and matching draft without overwriting their other edits.
+      await database.recipes.put({ ...recipe, imageId: photo?.id, updatedAt });
+      const saved = await database.foodDrafts.get('recipe-editor');
+      const draft = saved ? (readFoodDraft('recipe', saved.json) as Recipe | undefined) : undefined;
+      if (saved && draft?.id === recipeId)
+        await database.foodDrafts.put({
+          ...saved,
+          json: JSON.stringify({ ...draft, imageId: photo?.id }),
+          updatedAt,
+        });
     },
   );
 }
