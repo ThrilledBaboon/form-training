@@ -242,29 +242,12 @@
   font-size: 11px;
 }
 .widget-start {
-  background: var(--deep);
-  color: #fff;
-  border-radius: 12px;
-  padding: 24px;
-}
-.widget-start h3 {
-  color: #fff;
-  font-size: 28px;
-  line-height: 1.2;
-  max-width: 280px;
-  margin: 14px 0;
-}
-.widget-start .eyebrow {
-  color: var(--lime);
-}
-.widget-start p {
-  color: #e0e8e2;
+  padding-top: 8px;
 }
 .widget-start a {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #e0e8e2;
   margin-top: 16px;
   font-size: 12px;
 }

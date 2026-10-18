@@ -103,9 +103,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
   if (w.type === 'start')
     return (
       <div className="widget-start">
-        <span className="eyebrow">YOUR NEXT CHAPTER</span>
-        <h3>{active ? 'Pick up where you left off.' : 'A little stronger. Every session.'}</h3>
-        <p>{active ? active.name : 'A clear plan. A focused session.'}</p>
+        {active && <p>{active.name}</p>}
         <AsyncButton
           onAction={() =>
             run(async () => {
