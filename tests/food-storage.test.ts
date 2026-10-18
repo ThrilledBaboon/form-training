@@ -267,7 +267,7 @@ describe('complete portable food data', () => {
     food.recipes[0].imageId = 'image';
     food.purchases = [{ ...purchase(), imageId: 'image' }];
     const text = serialise({ ...before, food });
-    expect(text).not.toMatch(/calorie|kcal/i);
+    expect(JSON.parse(text).data.sessions.every((s: object) => !('calories' in s))).toBe(true);
     const backup = parseBackup(text);
     expect(backup.manifest?.attachments).toBe(1);
     await importBackup(backup, 'replace', database);

@@ -249,8 +249,22 @@ export const FoodSettingsSchema = z.object({
     .regex(/^[A-Z]{3}$/)
     .default('GBP'),
   targets: z
-    .object({ protein: positive.optional(), carbs: positive.optional(), fat: positive.optional() })
+    .object({
+      protein: positive.optional(),
+      carbs: positive.optional(),
+      fat: positive.optional(),
+      fibre: positive.optional(),
+    })
     .default({}),
+  showCalories: z.boolean().default(false),
+  calorieTarget: positive.max(20000).optional(),
+  goalSetup: z
+    .object({
+      goal: z.enum(['maintain', 'lose', 'gain']),
+      method: z.literal('mifflin-v1'),
+      generatedAt: timestamp,
+    })
+    .optional(),
   weeklyBudget: positive.optional(),
   monthlyBudget: positive.optional(),
   locations: z
@@ -340,6 +354,7 @@ export const FoodDataSchema = z.object({
   foodDrafts: z.array(FoodDraftSchema).max(100).default([]),
   foodSettings: FoodSettingsSchema.default({
     id: 'food-preferences',
+    showCalories: false,
     currency: 'GBP',
     targets: {},
     locations: ['Fridge', 'Freezer', 'Cupboard'],

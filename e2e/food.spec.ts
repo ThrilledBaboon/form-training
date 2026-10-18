@@ -266,7 +266,8 @@ test('complete and category exports preserve food records and images with safe i
   expect(backup.data.food.recipes).toHaveLength(1);
   expect(backup.data.food.foodFiles).toHaveLength(1);
   expect(backup.manifest.attachments).toBe(1);
-  expect(JSON.stringify(backup)).not.toMatch(/calorie|kcal/i);
+  expect(backup.data.sessions.every((s: object) => !('calories' in s))).toBe(true);
+  expect(backup.data.food.foodSettings.showCalories).toBe(false);
   event = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export selected categories', exact: true }).click();
   file = await event;

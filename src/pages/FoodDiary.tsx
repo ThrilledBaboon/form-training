@@ -1,5 +1,5 @@
 import { AddToPage } from '../components/WorkspaceControls';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../lib/context';
 import { uid, now } from '../lib/model';
@@ -18,6 +18,7 @@ import {
   shiftDay,
   weekDays,
   dailyMacros,
+  dailyEnergy,
   scaleMacros,
   addMacros,
   foodNumber,
@@ -221,7 +222,9 @@ export function FoodEntryEditor({
 function TargetEditor({ onClose }: { onClose: () => void }) {
   const food = useFood();
   const { run } = useApp();
-  const keys = ['protein', 'carbs', 'fat'] as const;
+  const keys = ['protein', 'carbs', 'fat', 'fibre'] as const;
+  const [energyEnabled, setEnergyEnabled] = useState(food.foodSettings.calorieTarget !== undefined);
+  const [energyTarget, setEnergyTarget] = useState(String(food.foodSettings.calorieTarget ?? ''));
   const [enabled, setEnabled] = useState(
     Object.fromEntries(keys.map((k) => [k, food.foodSettings.targets[k] !== undefined])),
   );
@@ -238,7 +241,15 @@ function TargetEditor({ onClose }: { onClose: () => void }) {
             const targets = Object.fromEntries(
               keys.map((k) => [k, enabled[k] ? Number(values[k]) : undefined]),
             ) as FoodSettings['targets'];
-            await saveFoodSettings({ ...food.foodSettings, targets });
+            await saveFoodSettings({
+              ...food.foodSettings,
+              targets,
+              calorieTarget: food.foodSettings.showCalories
+                ? energyEnabled
+                  ? Number(energyTarget)
+                  : undefined
+                : food.foodSettings.calorieTarget,
+            });
             onClose();
           }, 'Macro targets saved');
         }}
@@ -266,6 +277,30 @@ function TargetEditor({ onClose }: { onClose: () => void }) {
             </Field>
           </div>
         ))}
+        {food.foodSettings.showCalories && (
+          <div>
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={energyEnabled}
+                onChange={(e) => setEnergyEnabled(e.target.checked)}
+              />
+              Calorie target enabled
+            </label>
+            <Field label="Daily calorie target (kcal)">
+              <input
+                type="number"
+                min={1}
+                max={20000}
+                step={1}
+                disabled={!energyEnabled}
+                required={energyEnabled}
+                value={energyTarget}
+                onChange={(e) => setEnergyTarget(e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
         <div className="modal-actions">
           <Button type="submit">Save targets</Button>
         </div>
@@ -276,20 +311,54 @@ function TargetEditor({ onClose }: { onClose: () => void }) {
 export function MacroProgress({ date }: { date: string }) {
   const food = useFood();
   const totals = dailyMacros(food, date);
+  const id = useId();
+  const energy = dailyEnergy(food, date);
   return (
     <>
       <MacroSummary macros={totals} />
-      {(['protein', 'carbs', 'fat'] as const).map((key) => {
+      {food.foodSettings.showCalories && (
+        <>
+          {energy.missing > 0 && (
+            <p className="small-text muted">
+              Estimated calories: {foodNumber(energy.total, 0)} kcal known subtotal;{' '}
+              {energy.missing} {energy.missing === 1 ? 'entry has' : 'entries have'} incomplete
+              macros.
+            </p>
+          )}
+          {food.foodSettings.calorieTarget !== undefined && (
+            <div className="macro-target">
+              <label htmlFor={id + '-energy'}>
+                Estimated calories: {energy.missing ? 'incomplete' : foodNumber(energy.total, 0)} /{' '}
+                {foodNumber(food.foodSettings.calorieTarget, 0)} kcal
+              </label>
+              <progress
+                id={id + '-energy'}
+                max={food.foodSettings.calorieTarget}
+                value={Math.min(energy.total, food.foodSettings.calorieTarget)}
+              />
+            </div>
+          )}
+          <p className="small-text muted">
+            Estimated from protein, carbohydrates and fat using 4/4/9 kcal per gram. Fibre, alcohol
+            and label-specific factors are excluded.
+          </p>
+        </>
+      )}
+      {(['protein', 'carbs', 'fat', 'fibre'] as const).map((key) => {
         const target = food.foodSettings.targets[key];
         return target === undefined ? null : (
           <div className="macro-target" key={key}>
-            <label htmlFor={'macro-' + key}>
+            <label htmlFor={id + '-macro-' + key}>
               {macroNames[key]}: {foodNumber(totals[key])} / {foodNumber(target)} g{' '}
               {totals[key] === undefined
                 ? '(incomplete)'
                 : `· ${foodNumber((totals[key]! / target) * 100, 0)}%`}
             </label>
-            <progress id={'macro-' + key} max={target} value={Math.min(target, totals[key] ?? 0)} />
+            <progress
+              id={id + '-macro-' + key}
+              max={target}
+              value={Math.min(target, totals[key] ?? 0)}
+            />
           </div>
         );
       })}

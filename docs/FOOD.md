@@ -17,8 +17,9 @@ routines, streaks and bodyweight records remain in the same database.
    substitution. Check quantities, units and cooking behaviour, then save a separate
    variation before logging, planning or cooking it.
 4. **Food diary** records actual meals. Choose a recipe, prepared batch or a manual meal;
-   adjust servings, date, meal slot and notes. Protein, carbohydrate and fat targets can
-   each be enabled independently. Batch-entry corrections return/reassign portions.
+   adjust servings, date, meal slot and notes. Protein, carbohydrate, fat and fibre targets can
+   each be enabled independently. Food overview offers reviewed goal estimates. Calories
+   stay hidden unless explicitly enabled in Food preferences; see [onboarding](ONBOARDING.md). Batch-entry corrections return/reassign portions.
 5. **Kitchen → Add stock** records quantities at home, location, expiry, opening date and
    confidence. **I cooked this recipe** explicitly deducts ingredients and creates prepared
    portions. Viewing, planning or logging an ordinary recipe does not deduct ingredients.

@@ -30,6 +30,7 @@ import {
   shiftDay,
   weekDays,
   dailyMacros,
+  recordedEnergy,
   foodNumber,
   money,
   stockValue,
@@ -666,6 +667,20 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
             />
           );
         })}
+        {food.foodSettings.showCalories &&
+          (() => {
+            const energy = recordedEnergy(
+              food.foodEntries.filter((e) => e.date >= from && e.date <= to),
+            );
+            return (
+              <Row
+                name={
+                  'Estimated calories · ' + (energy.missing ? 'known subtotal' : 'recorded total')
+                }
+                value={foodNumber(energy.total, 0) + ' kcal'}
+              />
+            );
+          })()}
         <p>
           {dates.length} days with food logged. Unlogged days and incomplete macros stay unknown.
         </p>

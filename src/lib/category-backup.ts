@@ -14,7 +14,7 @@ import {
 } from './food-model';
 import { serialise, parseBackup, csv } from './backup';
 export const dataCategories = {
-  workspace: 'Pages, systems, equipment & import drafts',
+  workspace: 'Pages, profile, systems, equipment & import drafts',
   workouts: 'Workouts & exercise history',
   exercises: 'Exercise library',
   routines: 'Routines & programmes',
@@ -28,7 +28,7 @@ export const dataCategories = {
   inventory: 'Kitchen, batches & movements',
   shopping: 'Shopping lists',
   purchases: 'Purchases & prices',
-  foodPreferences: 'Food targets, budgets & locations',
+  foodPreferences: 'Food goals, display, budgets & locations',
   files: 'All uploaded images',
   drafts: 'Food editor drafts',
 } as const;

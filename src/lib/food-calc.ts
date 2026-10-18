@@ -356,3 +356,23 @@ export function purchaseSignature(p: {
     p.lines.map((l) => [l.description.trim().toLocaleLowerCase(), l.paid]),
   ]);
 }
+
+/** Background energy is derived from saved macro snapshots, independently of display consent. */
+export function macroEnergy(macros: Macros): number | undefined {
+  const { protein, carbs, fat } = macros;
+  if ([protein, carbs, fat].some((n) => n === undefined || !Number.isFinite(n) || n < 0))
+    return undefined;
+  return protein! * 4 + carbs! * 4 + fat! * 9;
+}
+export function recordedEnergy(entries: FoodData['foodEntries']) {
+  const values = entries.map((e) => macroEnergy(scaleMacros(e.snapshot.macros, e.servings)));
+  const known = values.filter((v): v is number => v !== undefined);
+  return {
+    total: known.reduce((a, b) => a + b, 0),
+    missing: entries.length - known.length,
+    entries: entries.length,
+  };
+}
+export function dailyEnergy(food: FoodData, date: string) {
+  return recordedEnergy(food.foodEntries.filter((e) => e.date === date));
+}

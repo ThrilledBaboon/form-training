@@ -52,6 +52,7 @@ import {
   widgetDestination,
 } from '../components/Widgets';
 import { RangeControls, WidgetEditor } from '../components/WorkspaceControls';
+import { FoodGoalBuilder, FoodDisplayPreference } from '../components/FoodGoals';
 import { TrainingPlanBuilder } from '../components/TrainingPlanBuilder';
 import { useWidgetDrag } from '../components/useWidgetDrag';
 
@@ -170,6 +171,15 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           <p className="small-text muted">
             New to training? Build an editable plan around your weekly schedule.
           </p>
+        </div>
+      )}
+      {system === 'food' && (
+        <div className="food-actions">
+          <FoodGoalBuilder />
+          <details>
+            <summary>Food display</summary>
+            <FoodDisplayPreference />
+          </details>
         </div>
       )}
       <div className="workspace-toolbar">

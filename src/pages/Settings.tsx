@@ -1,3 +1,4 @@
+import { FoodDisplayPreference } from '../components/FoodGoals';
 import { ProfileSettings } from '../components/ProfileSetup';
 import { SystemSettings } from '../components/WorkspaceControls';
 import { useState } from 'react';
@@ -80,6 +81,7 @@ export function Settings() {
       />
       <SystemSettings />
       <ProfileSettings />
+      {data.workspace?.systems.food !== false && <FoodDisplayPreference card />}
       <div className="privacy-panel">
         <ShieldCheck size={26} />
         <div>

@@ -121,8 +121,11 @@ describe('category portability and receipt extraction', () => {
   it('omits retired metrics from every readable report, complete backup and category file', () => {
     const data = { ...fixture(), food: foodFixture() };
     data.sessions[0].calories = 999;
-    expect(serialise(data)).not.toMatch(/calorie|kcal/i);
-    expect(categoryExport(data, ['workouts'])).not.toMatch(/calorie|kcal/i);
+    expect(parseBackup(serialise(data)).data.sessions[0]).not.toHaveProperty('calories');
+    expect(parseBackup(categoryExport(data, ['workouts'])).data.sessions[0]).not.toHaveProperty(
+      'calories',
+    );
+    expect(parseBackup(serialise(data)).data.food.foodSettings.showCalories).toBe(false);
     for (const kind of ['sessions', 'sets', 'exercises', 'bodyweight'] as const)
       expect(csvExport(data, kind)).not.toMatch(/calorie|kcal/i);
     for (const kind of foodCsvKinds) expect(foodCsv(data.food, kind)).not.toMatch(/calorie|kcal/i);

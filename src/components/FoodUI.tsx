@@ -14,13 +14,14 @@ import {
   type FoodDraft,
   readFoodDraft,
 } from '../lib/food-model';
-import { foodNumber, money, foodDay, recipeNutrition } from '../lib/food-calc';
+import { foodNumber, money, foodDay, recipeNutrition, macroEnergy } from '../lib/food-calc';
 import { saveFoodDraft, imageFile, saveFoodFile, cookRecipe } from '../lib/food-actions';
 import { now } from '../lib/model';
 import { Button, Field, Modal } from './ui';
 
 export const useFood = () => useApp().data.food ?? emptyFood;
 export const foodLinks = [
+  ['food-home', 'Overview'],
   ['food-menu', 'Menu'],
   ['food-diary', 'Food diary'],
   ['food-kitchen', 'Kitchen'],
@@ -42,6 +43,8 @@ export function FoodNav() {
   );
 }
 export function MacroSummary({ macros, compact = false }: { macros: Macros; compact?: boolean }) {
+  const food = useFood();
+  const energy = macroEnergy(macros);
   return (
     <dl className={`macro-summary ${compact ? 'compact' : ''}`}>
       {macroKeys.map((key) => (
@@ -53,6 +56,15 @@ export function MacroSummary({ macros, compact = false }: { macros: Macros; comp
           </dd>
         </div>
       ))}
+      {food.foodSettings.showCalories && (
+        <div>
+          <dt>Estimated calories</dt>
+          <dd>
+            {foodNumber(energy, 0)}
+            <small>{energy === undefined ? ' unknown' : ' kcal'}</small>
+          </dd>
+        </div>
+      )}
     </dl>
   );
 }
