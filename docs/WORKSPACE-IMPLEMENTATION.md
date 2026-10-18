@@ -1,5 +1,7 @@
 # Custom workspace implementation
 
+For later widget controls, system home pages, onboarding and current follow-up checks, see [local feature commits](LOCAL-FEATURE-COMMITS.md).
+
 Starting point: `6e4e9a0` on `codex/food-management`, preserving the untracked requested prompt. Work proceeds on `codex/custom-workspace`, locally only.
 
 Baseline: 129 unit/storage tests and all 93 production browser checks passed; TypeScript and production build passed. There were no pre-existing test failures.
