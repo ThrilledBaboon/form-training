@@ -61,21 +61,18 @@ export function StreakCard() {
         openStreak();
       }}
       aria-haspopup="dialog"
+      aria-label={`View workout streak, ${streak.current} workout days`}
     >
       <span className="streak-card-icon">
         <Flame size={23} aria-hidden="true" />
       </span>
       <span className="streak-card-copy">
-        <span className="eyebrow">YOUR WORKOUT STREAK</span>
         <strong>
-          {streak.current
-            ? `${streak.current} workout day${streak.current === 1 ? '' : 's'} strong.`
-            : 'Find your rhythm.'}
+          {streak.current} workout day{streak.current === 1 ? '' : 's'}
         </strong>
         <span>
-          {streak.current
-            ? `${streak.restDaysLeft} rest day${streak.restDaysLeft === 1 ? '' : 's'} left · best ${streak.longest} days`
-            : 'Build a streak, with room to rest.'}
+          {streak.restDaysLeft} rest day{streak.restDaysLeft === 1 ? '' : 's'} left · best{' '}
+          {streak.longest} days
         </span>
       </span>
       <span className="streak-card-link">
