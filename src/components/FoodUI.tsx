@@ -49,7 +49,7 @@ export function MacroSummary({ macros, compact = false }: { macros: Macros; comp
     <dl className={`macro-summary ${compact ? 'compact' : ''}`}>
       {macroKeys.map((key) => (
         <div key={key}>
-          <dt>{macroNames[key]}</dt>
+          <dt>{key === 'carbs' ? 'Carbs' : macroNames[key]}</dt>
           <dd>
             {foodNumber(macros[key])}
             <small>{macros[key] === undefined ? ' unknown' : ' g'}</small>
