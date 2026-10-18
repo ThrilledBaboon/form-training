@@ -52,6 +52,7 @@ import {
   widgetDestination,
 } from '../components/Widgets';
 import { RangeControls, WidgetEditor } from '../components/WorkspaceControls';
+import { TrainingPlanBuilder } from '../components/TrainingPlanBuilder';
 import { useWidgetDrag } from '../components/useWidgetDrag';
 
 export function CustomPages({ overview = false, pageId }: { overview?: boolean; pageId?: string }) {
@@ -163,6 +164,14 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           </div>
         }
       />
+      {system === 'gym' && (
+        <div className="food-actions">
+          <TrainingPlanBuilder />
+          <p className="small-text muted">
+            New to training? Build an editable plan around your weekly schedule.
+          </p>
+        </div>
+      )}
       <div className="workspace-toolbar">
         <Field label="Current page">
           <select value={page.id} onChange={(e) => go(pageRoute(e.target.value))}>

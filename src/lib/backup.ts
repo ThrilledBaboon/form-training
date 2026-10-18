@@ -339,6 +339,9 @@ export async function importBackup(
         workspace.setups.push(
           ...data.workspace.setups.filter((p) => !workspace.setups.some((c) => c.id === p.id)),
         );
+        workspace.planBuilds = [
+          ...new Set([...(workspace.planBuilds ?? []), ...data.workspace.planBuilds]),
+        ];
         workspace.imports.push(
           ...data.workspace.imports.filter((p) => !workspace.imports.some((c) => c.id === p.id)),
         );

@@ -128,6 +128,7 @@ export const WorkspaceSchema = z
     pages: z.array(PageSchema).min(1).max(52),
     setups: z.array(SetupSchema).max(2000).default([]),
     removedPages: z.array(PageSchema).max(20).default([]),
+    planBuilds: z.array(id).max(1000).default([]),
     profile: ProfileSchema.optional(),
     pasteDraft: z.string().max(1000000).optional(),
     imports: z
@@ -229,6 +230,7 @@ export function systemHomePage(system: System): WorkspacePage {
   };
 }
 export const defaultWorkspace = (): Workspace => ({
+  planBuilds: [],
   id: 'workspace',
   revision: 0,
   systems: { gym: true, food: true },
