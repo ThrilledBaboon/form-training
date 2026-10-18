@@ -13,6 +13,10 @@ Each feature has its own commit, starting with the original Food system. Later c
 | `d37ed86` | Optional first-use profile and editable birthday, height, starting weight and goal weight                  |
 | `07dcd50` | Reviewed training-plan generator with days, splits, weekdays and exercise substitutions                    |
 | `4b45093` | Reviewed maintain/lose/gain food goals, fibre targets and explicit calorie display opt-in                  |
+| `f766fe7` | Simplify workout action widget and remove the motivational banner                                          |
+| `ad6850d` | Compact clickable streak statistics; keep the larger streak calendar                                       |
+
+The subsequent **Add reversible local Jack demo data and six-month examples** commit contains the separate demo-data work. See [Jack's local demo data](DEMO-DATA.md) for loading, removal, generation and verification details.
 
 The five new feature commits were individually typechecked from isolated Git snapshots. Their final combined file contents also match the verified production build. The separate documentation commit records these results.
 

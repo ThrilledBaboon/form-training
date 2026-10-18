@@ -1,4 +1,5 @@
 import { FoodDisplayPreference } from '../components/FoodGoals';
+import { DemoDataSettings } from '../components/DemoData';
 import { ProfileSettings } from '../components/ProfileSetup';
 import { SystemSettings } from '../components/WorkspaceControls';
 import { useState } from 'react';
@@ -326,6 +327,7 @@ export function Settings() {
           setRestorePreferences(false);
         }}
       />
+      <DemoDataSettings />
       <Card>
         <SectionTitle
           title="Local recovery snapshots"
