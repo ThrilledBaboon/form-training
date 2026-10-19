@@ -223,6 +223,7 @@ export function systemHomePage(system: System): WorkspacePage {
           ]
         : [
             'macros',
+            'suggest-meal',
             'meal-plan',
             'expiry',
             'shopping',

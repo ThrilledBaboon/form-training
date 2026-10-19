@@ -15,6 +15,13 @@ import {
 
 export const WIDGETS = [
   [
+    'suggest-meal',
+    'Suggest a meal',
+    'Review options from saved recipes, stock, time, prices and gram goals.',
+    'food',
+    'today',
+  ],
+  [
     'combined-week',
     'Combined week planner',
     'Training, climbing and meal plans with completed records, for enabled systems.',
@@ -322,6 +329,7 @@ export function widgetDestination(w: Widget) {
     sessions: 'history',
     routines: 'routines',
     setups: 'setups',
+    'suggest-meal': 'food-suggest',
     macros: 'food-diary',
     'macro-trend': 'food-diary',
     'meal-plan': 'food-planner',

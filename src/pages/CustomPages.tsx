@@ -1,3 +1,4 @@
+import { SuggestMealButton } from '../components/MealSuggestions';
 import { useEffect, useState } from 'react';
 import {
   Plus,
@@ -194,6 +195,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       {system === 'food' && (
         <div className="food-actions">
           <FoodGoalBuilder />
+          {!page.widgets.some((w) => w.type === 'suggest-meal') && <SuggestMealButton />}
           <details>
             <summary>Food display</summary>
             <FoodDisplayPreference />

@@ -1,3 +1,4 @@
+import { MealSuggestions } from './components/MealSuggestions';
 import { WeekPlanner } from './pages/WeekPlanner';
 import { Climbing } from './pages/Climbing';
 import { CustomPages } from './pages/CustomPages';
@@ -90,6 +91,7 @@ const navigation = [
     items: [
       ['food-home', 'Food overview', Utensils],
       ['food-menu', 'Menu & recipes', Utensils],
+      ['food-suggest', 'Suggest a meal', Utensils],
       ['food-diary', 'Food diary', BookOpen],
       ['food-kitchen', 'Kitchen', Refrigerator],
       ['food-planner', 'Meal planner', CalendarDays],
@@ -331,6 +333,9 @@ export default function App() {
       break;
     case 'paste-workouts':
       page = <PasteWorkouts />;
+      break;
+    case 'food-suggest':
+      page = <MealSuggestions />;
       break;
     case 'food-menu':
       page = <FoodMenu key={hash} />;
