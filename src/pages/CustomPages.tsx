@@ -12,6 +12,7 @@ import {
   Download,
   Upload,
   Home,
+  ChevronDown,
 } from 'lucide-react';
 import { useApp, go } from '../lib/context';
 import {
@@ -210,52 +211,59 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           </details>
         </div>
       )}
-      <div className="workspace-toolbar">
-        <Field label="Current page">
-          <select value={page.id} onChange={(e) => go(pageRoute(e.target.value))}>
-            {workspace.pages.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-                {p.id === workspace.homePageId ? ' · Home' : ''}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <RangeControls
-          value={page.range}
-          label="Page date range"
-          onChange={(range) => void run(() => commit({ ...page, range }))}
-        />
-        <div className="inline-actions">
-          <Button variant="secondary" onClick={() => setSharing(true)}>
-            <Download size={15} />
-            Share layout
-          </Button>
-          <label className="button secondary file-button">
-            <Upload size={15} />
-            Import layout
-            <input
-              type="file"
-              accept=".json,application/json"
-              aria-label="Choose a page layout"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file)
-                  void run(async () => {
-                    if (file.size > 500000) throw Error('Layout files are limited to 500 KB.');
-                    setLayout(parseLayout(await file.text()));
-                  });
-                e.target.value = '';
-              }}
-            />
-          </label>
+      <details className="workspace-page-options">
+        <summary>
+          <Settings2 size={16} aria-hidden="true" />
+          Page options
+          <ChevronDown className="page-options-chevron" size={16} aria-hidden="true" />
+        </summary>
+        <div className="workspace-toolbar">
+          <Field label="Current page">
+            <select value={page.id} onChange={(e) => go(pageRoute(e.target.value))}>
+              {workspace.pages.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {p.id === workspace.homePageId ? ' · Home' : ''}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <RangeControls
+            value={page.range}
+            label="Page date range"
+            onChange={(range) => void run(() => commit({ ...page, range }))}
+          />
+          <div className="inline-actions">
+            <Button variant="secondary" onClick={() => setSharing(true)}>
+              <Download size={15} />
+              Share layout
+            </Button>
+            <label className="button secondary file-button">
+              <Upload size={15} />
+              Import layout
+              <input
+                type="file"
+                accept=".json,application/json"
+                aria-label="Choose a page layout"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file)
+                    void run(async () => {
+                      if (file.size > 500000) throw Error('Layout files are limited to 500 KB.');
+                      setLayout(parseLayout(await file.text()));
+                    });
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          </div>
         </div>
-      </div>
-      {!editing && (
-        <p className="workspace-edit-hint">
-          Choose <strong>Edit page</strong> to move, resize or remove widgets.
-        </p>
-      )}
+        {!editing && (
+          <p className="workspace-edit-hint">
+            Choose <strong>Edit page</strong> to move, resize or remove widgets.
+          </p>
+        )}
+      </details>
       {editing && (
         <div className="workspace-edit-banner">
           <p>

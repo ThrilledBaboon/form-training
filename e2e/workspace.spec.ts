@@ -249,6 +249,7 @@ test('shares an actual private layout preview, imports safely, and catches dupli
   await page.getByRole('button', { name: 'Edit page', exact: true }).click();
   await addWidget(page, 'Personal notes', 'My reminder', 'PRIVATE REMINDER');
   await page.getByRole('button', { name: 'Done editing', exact: true }).click();
+  await page.locator('.workspace-page-options > summary').click();
   await page.getByRole('button', { name: 'Share layout', exact: true }).click();
   const share = page.getByRole('dialog');
   const exported = await share.getByLabel('Layout file preview').inputValue();

@@ -131,3 +131,12 @@ Climbing overview now offers optional weekly-goal setup, a current-week progress
 - An additional isolated preview passes axe checks at **1440 px and 320 px**, with no horizontal overflow or page errors. The map and saved goal setup reopen offline after caching.
 - Formatting and the TypeScript/production PWA build pass. The deferred climbing widget module is precached for offline use. The existing schema-5 backup format remains compatible with records that have no goal or wall style.
 - The local browser shows the populated map and setup button. Its weekly climbing target remains unset for the user to choose. This feature is saved in a separate local commit; no GitHub push or deployment was performed.
+
+## Compact page options — 19 October 2026
+
+Overview, system home pages and custom pages now group the current-page selector, page date range, layout sharing/import and edit hint in a native disclosure labelled **Page options**, closed by default. Page editing remains directly available in the header.
+
+- Formatting and the TypeScript/production PWA build pass.
+- **9/9 targeted browser checks** pass across desktop Chromium, mobile Chromium and phone-sized WebKit, covering independent system home layouts, sharing/import validation and narrow-screen widget editing with accessibility checks.
+- The populated local Overview shows a closed panel approximately **46 px** high without horizontal overflow. Expanding reveals all four controls; Return collapses it through the native keyboard interaction. Saved layouts, date ranges and records are unchanged.
+- This change is saved in a separate local commit and is not deployed to GitHub Pages.
