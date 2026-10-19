@@ -15,6 +15,20 @@ import {
 
 export const WIDGETS = [
   [
+    'climbing-wall-map',
+    'Climbing wall styles',
+    'Explore slab, vertical, overhang and roof attempts from recorded session tags.',
+    'climbing',
+    'range',
+  ],
+  [
+    'climbing-week',
+    'Climbing this week',
+    'Your weekly session goal and completed sessions across all climbing types.',
+    'climbing',
+    'today',
+  ],
+  [
     'weekly-review',
     'Weekly review',
     'Recorded training, climbing and food coverage for a chosen week; optional.',

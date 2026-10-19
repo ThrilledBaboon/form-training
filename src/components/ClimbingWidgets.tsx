@@ -3,6 +3,9 @@ import { emptyClimbing, climbingGradeGroups, climbingActivity } from '../lib/cli
 import { Button } from './ui';
 import { go } from '../lib/context';
 import { TrendChart } from './Chart';
+import { ClimbingWallMap } from './ClimbingWallMap';
+import { ClimbingWeeklyGoal } from './ClimbingSetup';
+export { ClimbingSetupButton } from './ClimbingSetup';
 export function ClimbingWidget({ type, from, to }: { type: string; from: string; to: string }) {
   const { data } = useApp();
   const c = data.climbing ?? emptyClimbing;
@@ -10,6 +13,8 @@ export function ClimbingWidget({ type, from, to }: { type: string; from: string;
     .filter((s) => s.status === 'completed' && s.date >= from && s.date <= to)
     .sort((a, b) => b.date.localeCompare(a.date));
   const drafts = c.sessions.filter((s) => s.status === 'draft');
+  if (type === 'climbing-week') return <ClimbingWeeklyGoal />;
+  if (type === 'climbing-wall-map') return <ClimbingWallMap sessions={sessions} />;
   if (type === 'climbing-trend')
     return (
       <>

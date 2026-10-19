@@ -3,7 +3,7 @@ import { emptyData, type Data, type Item, type Routine } from './model';
 import { emptyFood, IngredientSchema, RecipeSchema, type Recipe, type Unit } from './food-model';
 import { foodDay, shiftDay, recipeNutrition } from './food-calc';
 import { defaultWorkspace, makeWidget } from './workspace-model';
-import { climbSnapshot, emptyClimbing, type Climb } from './climbing-model';
+import { climbSnapshot, emptyClimbing, wallStyles, type Climb } from './climbing-model';
 
 export const DEMO_PREFIX = 'demo-jack-v1-';
 export const demoId = (value: string) => DEMO_PREFIX + value;
@@ -662,6 +662,7 @@ export function createJackDemo(today = foodDay()): Data {
         demoId('climbing-widget-note'),
       ),
       { ...makeWidget('climbing-trend', {}, demoId('climbing-widget-trend')), size: 'wide' },
+      { ...makeWidget('climbing-wall-map', {}, demoId('climbing-widget-wall-map')), size: 'wide' },
       makeWidget('climbing-totals', {}, demoId('climbing-widget-totals')),
       makeWidget('climbing-projects', {}, demoId('climbing-widget-projects')),
       makeWidget('climbing-sessions', {}, demoId('climbing-widget-sessions')),
@@ -743,6 +744,7 @@ function createClimbingDemo(
       type: p.type,
       grade,
       gradeScale: p.scale,
+      wallStyle: wallStyles[(pool + index) % wallStyles.length],
       notes:
         note +
         ' ' +

@@ -1,5 +1,5 @@
 import { SuggestMealButton } from '../components/MealSuggestions';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import {
   Plus,
   Pencil,
@@ -21,6 +21,7 @@ import {
   pageRoute,
   systemForPage,
   systemHomePage,
+  climbingHomeNeedsUpdate,
   type Widget,
   type WorkspacePage,
 } from '../lib/workspace-model';
@@ -56,6 +57,9 @@ import { RangeControls, WidgetEditor } from '../components/WorkspaceControls';
 import { FoodGoalBuilder, FoodDisplayPreference } from '../components/FoodGoals';
 import { TrainingPlanBuilder } from '../components/TrainingPlanBuilder';
 import { useWidgetDrag } from '../components/useWidgetDrag';
+const ClimbingSetupButton = lazy(() =>
+  import('../components/ClimbingWidgets').then((m) => ({ default: m.ClimbingSetupButton })),
+);
 
 export function CustomPages({ overview = false, pageId }: { overview?: boolean; pageId?: string }) {
   const { data, run, toast, pending } = useApp();
@@ -67,14 +71,15 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       workspace.homePageId);
   const storedPage = workspace.pages.find((p) => p.id === id);
   const system = systemForPage(id);
+  const updateClimbingHome = !!storedPage && climbingHomeNeedsUpdate(storedPage);
   const [openingFailed, setOpeningFailed] = useState(false);
   const openSystemHome = () => {
     if (system)
       void run(() => ensureSystemHomePage(system)).then((result) => setOpeningFailed(!result));
   };
   useEffect(() => {
-    if (system && !storedPage) openSystemHome();
-  }, [system, !!storedPage]);
+    if (system && (!storedPage || updateClimbingHome)) openSystemHome();
+  }, [system, !!storedPage, updateClimbingHome]);
   const [savedPage, setSavedPage] = useState<WorkspacePage>();
   const page =
     storedPage && savedPage?.id === id && savedPage.revision > storedPage.revision
@@ -181,6 +186,9 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       )}
       {system === 'climbing' && (
         <div className="food-actions">
+          <Suspense fallback={<p role="status">Opening climbing setup…</p>}>
+            <ClimbingSetupButton />
+          </Suspense>
           <a className="button primary" href="#/climbing-log?new=1">
             Log session
           </a>

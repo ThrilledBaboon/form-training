@@ -39,6 +39,14 @@ test('local demo fills six-month charts, persists, avoids duplicates and can be 
   await expect(page.getByText('Dashed line: Clean completions.', { exact: false })).toBeVisible();
   const climbingTotals = page.getByRole('region', { name: 'Climbing totals', exact: true });
   await expect(climbingTotals).toContainText(/\d+ attempts/);
+  const walls = page.getByRole('region', { name: 'Climbing wall styles', exact: true });
+  await expect(walls).toContainText('4 of 4 wall styles explored');
+  await walls.getByRole('button', { name: /Roof \d+ attempts/ }).focus();
+  await walls.getByRole('button', { name: /Roof \d+ attempts/ }).press('Enter');
+  await expect(walls.getByRole('button', { name: /Roof \d+ attempts/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.reload();

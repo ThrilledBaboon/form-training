@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FoodFileSchema } from './food-model';
+import { foodDay, weekDays } from './food-calc';
 
 const id = z.string().min(1).max(200);
 const text = z.string().max(10000);
@@ -11,6 +12,18 @@ export const ClimbingDay = z
     return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
   }, 'Invalid date');
 export const climbTypes = ['bouldering', 'top_rope', 'auto_belay', 'lead'] as const;
+export const wallStyles = ['slab', 'vertical', 'overhang', 'roof'] as const;
+export type WallStyle = (typeof wallStyles)[number];
+export const wallStyleName: Record<WallStyle, string> = {
+  slab: 'Slab',
+  vertical: 'Vertical',
+  overhang: 'Overhang',
+  roof: 'Roof',
+};
+export const ClimbingGoalSchema = z.object({
+  weeklySessions: z.number().int().min(1).max(14),
+  updatedAt: z.string().datetime(),
+});
 export const climbTypeName = {
   bouldering: 'Bouldering',
   top_rope: 'Top rope',
@@ -24,6 +37,7 @@ export const ClimbSnapshotSchema = z.object({
   type: z.enum(climbTypes).default('bouldering'),
   grade: z.string().trim().max(80).default(''),
   gradeScale: z.string().trim().max(80).default(''),
+  wallStyle: z.enum(wallStyles).optional(),
 });
 export const ClimbSchema = ClimbSnapshotSchema.extend({
   id,
@@ -77,6 +91,7 @@ export const ClimbingDataSchema = z
   .object({
     id: z.literal('climbing'),
     revision: z.number().int().nonnegative().default(0),
+    goal: ClimbingGoalSchema.optional(),
     climbs: z.array(ClimbSchema).max(20000).default([]),
     sessions: z.array(ClimbingSessionSchema).max(100000).default([]),
     plans: z.array(ClimbingPlanSchema).max(10000).default([]),
@@ -110,6 +125,7 @@ export const climbingAttachments = (data: ClimbingData) =>
 /** Keep local records in their entirety when importing the same identity. */
 export function mergeClimbing(current: ClimbingData, incoming: ClimbingData): ClimbingData {
   const result = structuredClone(current);
+  if (!result.goal && incoming.goal) result.goal = structuredClone(incoming.goal);
   for (const key of ['climbs', 'sessions', 'plans'] as const)
     Object.assign(result, {
       [key]: [
@@ -162,4 +178,47 @@ export function climbingActivity(sessions: ClimbingSession[]) {
     days.set(s.date, row);
   }
   return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function climbingWeek(data: ClimbingData, today = foodDay()) {
+  const days = weekDays(today);
+  const sessions = data.sessions.filter(
+    (s) => s.status === 'completed' && s.date >= days[0] && s.date <= days[6] && s.date <= today,
+  );
+  return {
+    from: days[0],
+    to: days[6],
+    completed: sessions.length,
+    target: data.goal?.weeklySessions,
+  };
+}
+
+/** Use the angle recorded at the time of the session. Library edits never retag history. */
+export function climbingWallSummary(sessions: ClimbingSession[]) {
+  const rows = wallStyles.map((style) => ({
+    style,
+    attempts: 0,
+    completions: 0,
+    flashes: 0,
+    climbs: new Set<string>(),
+    sessions: new Set<string>(),
+  }));
+  let untagged = 0;
+  for (const session of sessions.filter((s) => s.status === 'completed'))
+    for (const entry of session.entries) {
+      const row = rows.find((r) => r.style === entry.snapshot.wallStyle);
+      if (!row) {
+        untagged++;
+        continue;
+      }
+      row.attempts += entry.attempts;
+      row.completions += Number(entry.result === 'completed' || entry.result === 'flash');
+      row.flashes += Number(entry.result === 'flash');
+      row.climbs.add(entry.climbId);
+      row.sessions.add(session.id);
+    }
+  return {
+    rows: rows.map((r) => ({ ...r, climbs: r.climbs.size, sessions: r.sessions.size })),
+    untagged,
+  };
 }

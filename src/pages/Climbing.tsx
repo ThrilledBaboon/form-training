@@ -8,6 +8,8 @@ import {
   climbTypeName,
   climbSnapshot,
   emptyClimbing,
+  wallStyles,
+  wallStyleName,
   type Climb,
   type ClimbingSession,
   type ClimbingEntry,
@@ -87,6 +89,26 @@ function ClimbEditor({ initial, onClose }: { initial?: Climb; onClose: () => voi
             value={v.venue}
             onChange={(e) => patch({ venue: e.target.value })}
           />
+        </Field>
+        <Field
+          label="Wall style (optional)"
+          hint="Copied into new session entries. Past sessions keep the style recorded at the time."
+        >
+          <select
+            value={v.wallStyle ?? ''}
+            onChange={(e) =>
+              patch({
+                wallStyle: e.target.value ? (e.target.value as Climb['wallStyle']) : undefined,
+              })
+            }
+          >
+            <option value="">Not recorded</option>
+            {wallStyles.map((s) => (
+              <option key={s} value={s}>
+                {wallStyleName[s]}
+              </option>
+            ))}
+          </select>
         </Field>
         <div className="form-grid">
           <Field label="Grade (optional)">
@@ -334,6 +356,28 @@ function SessionEditor({ initial, onClose }: { initial?: ClimbingSession; onClos
                 </select>
               </Field>
             </div>
+            <Field label={`Wall style for ${e.snapshot.name}`}>
+              <select
+                value={e.snapshot.wallStyle ?? ''}
+                onChange={(ev) =>
+                  entry(e.id, {
+                    snapshot: {
+                      ...e.snapshot,
+                      wallStyle: ev.target.value
+                        ? (ev.target.value as Climb['wallStyle'])
+                        : undefined,
+                    },
+                  })
+                }
+              >
+                <option value="">Not recorded</option>
+                {wallStyles.map((s) => (
+                  <option key={s} value={s}>
+                    {wallStyleName[s]}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <Field label={`Notes for ${e.snapshot.name}`}>
               <textarea
                 value={e.notes}
@@ -377,7 +421,7 @@ export function Climbing({ view }: { view: 'library' | 'projects' | 'log' }) {
   const params = new URLSearchParams(location.hash.split('?')[1]);
   const [climb, editClimb] = useState<Climb | null>();
   const [session, editSession] = useState<ClimbingSession | null | undefined>(() =>
-    params.has('new') ? null : undefined,
+    params.has('new') ? null : climbing.sessions.find((s) => s.id === params.get('session')),
   );
   const [showArchived, archived] = useState(false);
   const [search, setSearch] = useState('');
@@ -445,6 +489,7 @@ export function Climbing({ view }: { view: 'library' | 'projects' | 'log' }) {
                 <p>
                   <strong>{c.grade || 'Ungraded'}</strong>
                   {c.gradeScale && ' · ' + c.gradeScale}
+                  {c.wallStyle && ' · ' + wallStyleName[c.wallStyle]}
                   {c.archived && ' · Archived'}
                 </p>
                 {c.project !== 'none' && (
@@ -497,6 +542,7 @@ export function Climbing({ view }: { view: 'library' | 'projects' | 'log' }) {
                           {climbTypeName[e.snapshot.type]} ·{' '}
                           {e.snapshot.venue || 'Venue unspecified'} ·{' '}
                           {e.snapshot.gradeScale || 'Scale unspecified'}
+                          {e.snapshot.wallStyle && ' · ' + wallStyleName[e.snapshot.wallStyle]}
                           <br />
                           {e.attempts} attempts · {e.result.replaceAll('_', ' ')}
                         </p>

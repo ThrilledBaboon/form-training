@@ -19,7 +19,56 @@ export async function loadJackDemo(database: TrainingDB = db, today?: string) {
         throw Error('The original demo recovery snapshot is missing. No records were changed.');
       const after = parseBackup(seeded.json).data;
       // Upgrade older Gym/Food demos once, without re-adding edited or removed records.
-      if (after.climbing.sessions.some((s) => isDemo(s.id))) return false;
+      if (after.climbing.sessions.some((s) => isDemo(s.id))) {
+        if (after.climbing.climbs.some((c) => c.wallStyle)) return false;
+        const current = await readData(database);
+        const demo = createJackDemo(today);
+        await database.backups.add({
+          id: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+          reason: 'Before adding Jack demo wall styles',
+          json: serialise(current),
+        });
+        const climbing = current.climbing!;
+        const styles = new Map(demo.climbing!.climbs.map((c) => [c.id, c.wallStyle]));
+        for (const baseline of after.climbing.climbs) {
+          const row = climbing.climbs.find((c) => c.id === baseline.id);
+          if (row && !row.wallStyle && JSON.stringify(row) === JSON.stringify(baseline))
+            row.wallStyle = styles.get(row.id);
+          baseline.wallStyle = styles.get(baseline.id);
+        }
+        for (const baseline of after.climbing.sessions) {
+          const session = climbing.sessions.find((s) => s.id === baseline.id);
+          for (const oldEntry of baseline.entries) {
+            const entry = session?.entries.find((e) => e.id === oldEntry.id);
+            if (
+              entry &&
+              !entry.snapshot.wallStyle &&
+              JSON.stringify(entry.snapshot) === JSON.stringify(oldEntry.snapshot)
+            )
+              entry.snapshot.wallStyle = styles.get(entry.climbId);
+            oldEntry.snapshot.wallStyle = styles.get(oldEntry.climbId);
+          }
+        }
+        const workspace = current.workspace!;
+        const template = demo.workspace!.pages.find((p) => p.id === demoId('climbing-page'))!;
+        const page = workspace.pages.find((p) => p.id === template.id);
+        const oldWidgets = template.widgets.filter((w) => w.type !== 'climbing-wall-map');
+        if (
+          page?.revision === 0 &&
+          page.name === template.name &&
+          JSON.stringify(page.widgets) === JSON.stringify(oldWidgets)
+        ) {
+          page.widgets = template.widgets;
+          page.revision++;
+          workspace.revision++;
+          await database.workspaces.put(WorkspaceSchema.parse(workspace));
+        }
+        climbing.revision++;
+        await database.climbing.put(ClimbingDataSchema.parse(climbing));
+        await database.backups.put({ ...seeded, json: serialise(after) });
+        return true;
+      }
       const current = await readData(database);
       const demo = createJackDemo(today);
       await database.backups.add({

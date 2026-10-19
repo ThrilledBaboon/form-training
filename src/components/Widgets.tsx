@@ -1,8 +1,7 @@
 import { WeeklyReviewView } from './WeeklyReview';
 import { SuggestMealButton } from './MealSuggestions';
 import { CombinedWeekWidget } from './WeekWidgets';
-import { ClimbingWidget } from './ClimbingWidgets';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, lazy, Suspense } from 'react';
 import {
   Play,
   Plus,
@@ -60,6 +59,9 @@ import { MacroProgress } from '../pages/FoodDiary';
 import { MacroSummary } from './FoodUI';
 import { FoodTrainingContext } from './FoodOverview';
 import { BodyweightForm } from '../pages/Weight';
+const ClimbingWidget = lazy(() =>
+  import('./ClimbingWidgets').then((m) => ({ default: m.ClimbingWidget })),
+);
 
 import {
   rangeBounds,
@@ -113,7 +115,12 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
       </>
     );
   if (w.type === 'combined-week') return <CombinedWeekWidget date={today} />;
-  if (w.type.startsWith('climbing-')) return <ClimbingWidget type={w.type} from={from} to={to} />;
+  if (w.type.startsWith('climbing-'))
+    return (
+      <Suspense fallback={<p role="status">Opening climbing view…</p>}>
+        <ClimbingWidget type={w.type} from={from} to={to} />
+      </Suspense>
+    );
   if (w.type === 'start')
     return (
       <div className="widget-start">

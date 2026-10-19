@@ -204,6 +204,8 @@ export function systemHomePage(system: System): WorkspacePage {
     system === 'climbing'
       ? [
           'climbing-start',
+          'climbing-week',
+          'climbing-wall-map',
           'climbing-totals',
           'climbing-trend',
           'climbing-sessions',
@@ -246,9 +248,27 @@ export function systemHomePage(system: System): WorkspacePage {
     revision: 0,
     widgets: types.map((type) => ({
       ...makeWidget(type, type === 'macro-trend' ? { metric: 'protein' } : {}, id + '-' + type),
-      size: type === 'training-totals' ? 'wide' : 'half',
+      size: type === 'training-totals' || type === 'climbing-wall-map' ? 'wide' : 'half',
     })),
   };
+}
+/** Refresh untouched early climbing templates; keep every customised home intact. */
+export function climbingHomeNeedsUpdate(page: WorkspacePage) {
+  if (page.id !== 'climbing-home' || page.revision !== 0) return false;
+  const latest = systemHomePage('climbing');
+  if (page.widgets.some((w) => w.type === 'climbing-wall-map' || w.type === 'climbing-week'))
+    return false;
+  const old = latest.widgets.filter(
+    (w) =>
+      w.type !== 'climbing-wall-map' &&
+      w.type !== 'climbing-week' &&
+      (w.type !== 'climbing-trend' || page.widgets.some((p) => p.type === 'climbing-trend')),
+  );
+  return (
+    page.name === latest.name &&
+    JSON.stringify(page.range) === JSON.stringify(latest.range) &&
+    JSON.stringify(page.widgets) === JSON.stringify(old)
+  );
 }
 export const defaultWorkspace = (): Workspace => ({
   planBuilds: [],

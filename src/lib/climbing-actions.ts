@@ -3,6 +3,7 @@ import { now, uid } from './model';
 import { foodDay } from './food-calc';
 import {
   ClimbingDataSchema,
+  ClimbingGoalSchema,
   emptyClimbing,
   type ClimbingData,
   type Climb,
@@ -20,6 +21,22 @@ export async function changeClimbing(
     data.revision++;
     await database.climbing.put(ClimbingDataSchema.parse(data));
   });
+}
+export async function saveClimbingGoal(
+  weeklySessions: number,
+  expectedUpdatedAt?: string,
+  database: TrainingDB = db,
+) {
+  await changeClimbing((data) => {
+    if (data.goal?.updatedAt !== expectedUpdatedAt)
+      throw Error('Your climbing goal changed in another tab. Reopen setup before saving.');
+    data.goal = ClimbingGoalSchema.parse({
+      weeklySessions,
+      updatedAt: new Date(
+        Math.max(Date.now(), data.goal ? Date.parse(data.goal.updatedAt) + 1 : 0),
+      ).toISOString(),
+    });
+  }, database);
 }
 export async function saveClimbingRecord<K extends 'climbs' | 'sessions' | 'plans'>(
   key: K,

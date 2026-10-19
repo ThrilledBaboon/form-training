@@ -14,7 +14,7 @@ import {
 } from './food-model';
 import { serialise, parseBackup, csv } from './backup';
 export const dataCategories = {
-  climbing: 'Climbing library, sessions, projects, plans & photos',
+  climbing: 'Climbing library, sessions, goals, projects, plans & photos',
   workspace: 'Pages, profile, systems, equipment & import drafts',
   workouts: 'Workouts & exercise history',
   exercises: 'Exercise library',

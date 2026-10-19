@@ -7,6 +7,7 @@ import { dailyMacros } from '../src/lib/food-calc';
 import { saveProfile } from '../src/lib/profile';
 import { startSession } from '../src/lib/actions';
 import { emptyClimbing } from '../src/lib/climbing-model';
+import { saveClimbingGoal } from '../src/lib/climbing-actions';
 
 const today = '2026-10-18';
 let database: TrainingDB;
@@ -80,6 +81,48 @@ it('clamps month ends and spans daylight-saving changes without skipped or dupli
     expect(days).toHaveLength(expected);
     expect(() => parseBackup(serialise(data))).not.toThrow();
   }
+});
+
+it('adds wall tags once to unchanged older demo records, preserving real records, corrections, goals and dates', async () => {
+  await loadJackDemo(database, today);
+  const original = await readData(database);
+  const old = structuredClone(original);
+  old.climbing!.climbs.forEach((c) => delete c.wallStyle);
+  old.climbing!.sessions.forEach((s) => s.entries.forEach((e) => delete e.snapshot.wallStyle));
+  old.workspace!.pages.find((p) => p.id === demoId('climbing-page'))!.widgets = old
+    .workspace!.pages.find((p) => p.id === demoId('climbing-page'))!
+    .widgets.filter((w) => w.type !== 'climbing-wall-map');
+  const seeded = (await database.backups.get(demoId('after')))!;
+  await database.backups.put({ ...seeded, json: serialise(old) });
+  const personal = { ...old.climbing!.climbs[0], id: 'my-real-climb', notes: 'My beta' };
+  old.climbing!.climbs.push(personal);
+  old.climbing!.climbs[0].notes = 'My corrected demo climb';
+  old.climbing!.sessions[0].entries[0].snapshot.name = 'My corrected route snapshot';
+  await database.climbing.put(old.climbing!);
+  await database.workspaces.put(old.workspace!);
+  await saveClimbingGoal(3, undefined, database);
+  expect(await loadJackDemo(database, '2026-10-19')).toBe(true);
+  const loaded = await readData(database);
+  expect(loaded.climbing!.goal!.weeklySessions).toBe(3);
+  expect(loaded.climbing!.climbs.find((c) => c.id === personal.id)).toEqual(personal);
+  expect(loaded.climbing!.climbs[0].wallStyle).toBeUndefined();
+  expect(loaded.climbing!.climbs[0].notes).toBe('My corrected demo climb');
+  expect(loaded.climbing!.climbs[1].wallStyle).toBeDefined();
+  expect(loaded.climbing!.sessions[0].entries[0].snapshot.wallStyle).toBeUndefined();
+  expect(loaded.climbing!.sessions[1].entries[0].snapshot.wallStyle).toBeDefined();
+  expect(loaded.climbing!.sessions.map((s) => s.date)).toEqual(
+    old.climbing!.sessions.map((s) => s.date),
+  );
+  const page = loaded.workspace!.pages.find((p) => p.id === demoId('climbing-page'))!;
+  expect(page.widgets.some((w) => w.type === 'climbing-wall-map')).toBe(true);
+  expect(page.range).toEqual(old.workspace!.pages.find((p) => p.id === page.id)!.range);
+  for (const key of ['sessions', 'sets', 'bodyweights', 'food'] as const)
+    expect(loaded[key]).toEqual(original[key]);
+  expect(await loadJackDemo(database, today)).toBe(false);
+  expect(await readData(database)).toEqual(loaded);
+  await removeJackDemo(database);
+  expect((await readData(database)).climbing!.goal!.weeklySessions).toBe(3);
+  expect((await readData(database)).climbing!.climbs).toEqual([personal]);
 });
 
 it('loads atomically, keeps existing data and preferences, and adds no duplicates on repeat', async () => {

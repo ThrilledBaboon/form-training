@@ -8,13 +8,21 @@ import {
   emptyClimbing,
   climbingGradeGroups,
   climbingActivity,
+  climbingWallSummary,
+  climbingWeek,
 } from '../src/lib/climbing-model';
-import { newClimb, saveClimbingRecord, deleteClimbingSession } from '../src/lib/climbing-actions';
+import {
+  newClimb,
+  saveClimbingRecord,
+  deleteClimbingSession,
+  saveClimbingGoal,
+} from '../src/lib/climbing-actions';
 import { importBackup, parseBackup, serialise } from '../src/lib/backup';
 import { categoryExport } from '../src/lib/category-backup';
 import { ensureSystemHomePage, setSystemEnabled } from '../src/lib/workspace';
 import { requiredSystems } from '../src/lib/widget-registry';
 import { exportLayout, parseLayout } from '../src/lib/layout-sharing';
+import { systemHomePage } from '../src/lib/workspace-model';
 let db: TrainingDB;
 beforeEach(async () => {
   db = new TrainingDB('climbing-' + uid());
@@ -59,6 +67,121 @@ async function sample() {
   };
 }
 describe('Climbing system', () => {
+  it('counts wall styles from historical snapshots, keeps missing styles unrecorded and excludes drafts', async () => {
+    const { c, s } = await sample();
+    const tagged = {
+      ...s,
+      entries: [
+        { ...s.entries[0], snapshot: { ...s.entries[0].snapshot, wallStyle: 'overhang' as const } },
+        {
+          ...s.entries[0],
+          id: 'flash',
+          attempts: 1,
+          result: 'flash' as const,
+          snapshot: { ...s.entries[0].snapshot, wallStyle: 'overhang' as const },
+        },
+        {
+          ...s.entries[0],
+          id: 'rested',
+          attempts: 2,
+          result: 'with_rests' as const,
+          snapshot: { ...s.entries[0].snapshot, wallStyle: 'roof' as const },
+        },
+        { ...s.entries[0], id: 'unknown' },
+      ],
+    };
+    await saveClimbingRecord('climbs', { ...c, wallStyle: 'slab' }, c.updatedAt, db);
+    const summary = climbingWallSummary([tagged, { ...tagged, status: 'draft' }]);
+    expect(summary.untagged).toBe(1);
+    expect(summary.rows.find((r) => r.style === 'overhang')).toMatchObject({
+      attempts: 4,
+      completions: 2,
+      flashes: 1,
+      climbs: 1,
+      sessions: 1,
+    });
+    expect(summary.rows.find((r) => r.style === 'roof')).toMatchObject({
+      attempts: 2,
+      completions: 0,
+    });
+    expect(summary.rows.find((r) => r.style === 'slab')!.attempts).toBe(0);
+    expect(
+      (await readData(db)).climbing!.sessions[0].entries[0].snapshot.wallStyle,
+    ).toBeUndefined();
+  });
+  it('counts only completed visits in the current Monday-Sunday week and keeps the climbing goal independent from Gym', async () => {
+    const { s } = await sample();
+    const sessions = ['2026-10-18', '2026-10-19', '2026-10-19', '2026-10-20'].map((date, i) => ({
+      ...s,
+      id: String(i),
+      date,
+    }));
+    sessions.push({ ...s, date: '2026-10-19', status: 'draft' });
+    const data = { ...emptyClimbing, sessions, goal: { weeklySessions: 3, updatedAt: now() } };
+    expect(climbingWeek(data, '2026-10-19')).toEqual({
+      from: '2026-10-19',
+      to: '2026-10-25',
+      completed: 2,
+      target: 3,
+    });
+    expect(climbingWeek(data, '2026-10-18').completed).toBe(1);
+    expect(climbingWeek(emptyClimbing, '2026-10-19').target).toBeUndefined();
+    const before = await readData(db);
+    await saveClimbingGoal(3, undefined, db);
+    const first = (await readData(db)).climbing!.goal!;
+    expect(first.weeklySessions).toBe(3);
+    expect((await readData(db)).settings).toEqual(before.settings);
+    await expect(saveClimbingGoal(4, undefined, db)).rejects.toThrow('another tab');
+    await expect(saveClimbingGoal(0, first.updatedAt, db)).rejects.toThrow();
+    await saveClimbingGoal(2, first.updatedAt, db);
+    expect((await readData(db)).climbing!.goal!.weeklySessions).toBe(2);
+  });
+  it('backs up wall snapshots and goals, keeps local goals on merge and defaults old backups to unrecorded styles', async () => {
+    const { c, s } = await sample();
+    await saveClimbingRecord(
+      'sessions',
+      {
+        ...s,
+        entries: [{ ...s.entries[0], snapshot: { ...s.entries[0].snapshot, wallStyle: 'roof' } }],
+      },
+      s.updatedAt,
+      db,
+    );
+    await saveClimbingGoal(3, undefined, db);
+    const data = await readData(db);
+    const exported = parseBackup(categoryExport(data, ['climbing']));
+    expect(exported.data.climbing.goal!.weeklySessions).toBe(3);
+    expect(exported.data.climbing.sessions[0].entries[0].snapshot.wallStyle).toBe('roof');
+    await saveClimbingGoal(2, data.climbing!.goal!.updatedAt, db);
+    await importBackup(exported, 'merge', db);
+    expect((await readData(db)).climbing!.goal!.weeklySessions).toBe(2);
+    expect(
+      parseBackup(
+        serialise({ ...data, climbing: { ...emptyClimbing, climbs: [c], sessions: [s] } }),
+      ).data.climbing.sessions[0].entries[0].snapshot.wallStyle,
+    ).toBeUndefined();
+    const page = systemHomePage('climbing');
+    const shared = parseLayout(exportLayout(page, data));
+    expect(shared.page.widgets.map((w) => w.type)).toEqual(
+      expect.arrayContaining(['climbing-wall-map', 'climbing-week']),
+    );
+    expect(exportLayout(page, data)).not.toContain('weeklySessions');
+  });
+  it('adds the new map and weekly widgets only to untouched early climbing homes', async () => {
+    const page = systemHomePage('climbing');
+    page.widgets = page.widgets.filter(
+      (w) => !['climbing-week', 'climbing-wall-map', 'climbing-trend'].includes(w.type),
+    );
+    const data = await readData(db);
+    await db.workspaces.put({ ...data.workspace!, pages: [...data.workspace!.pages, page] });
+    await ensureSystemHomePage('climbing', db);
+    const updated = (await readData(db)).workspace!.pages.find((p) => p.id === page.id)!;
+    expect(updated.widgets.map((w) => w.type)).toContain('climbing-wall-map');
+    const custom = { ...page, revision: 1, name: 'My wall' };
+    await db.workspaces.put({ ...data.workspace!, pages: [...data.workspace!.pages, custom] });
+    await ensureSystemHomePage('climbing', db);
+    expect((await readData(db)).workspace!.pages.find((p) => p.id === page.id)).toEqual(custom);
+  });
   it('charts recorded days chronologically, sums same-day visits and excludes drafts and rested completions', async () => {
     const { s } = await sample();
     const flash = {

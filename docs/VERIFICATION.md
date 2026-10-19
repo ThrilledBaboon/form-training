@@ -121,3 +121,13 @@ The new **Jack · climbing [Demo]** page spans the full period. Its reusable **C
 - All **188 unit/storage tests** pass. New coverage verifies the older-demo extension, repeat loading, preservation of existing records/layouts/preferences, transactional rollback, climbing removal with dependencies used by real sessions retained, and chronological activity aggregation excluding drafts and rested completions.
 - **6/6 targeted production browser checks** pass across desktop Chromium, mobile Chromium and phone-sized WebKit. These exercise the populated graph, reload, repeat load, safe removal, climbing logging, no horizontal overflow and axe accessibility checks. Chart tooltip text now uses the theme's text colour for adequate contrast.
 - Formatting and the TypeScript/production PWA build pass. The generated backup validates against schema 5 and remains in the ignored local artifact folder. This update is local only.
+
+## Climbing wall map and weekly setup — 19 October 2026
+
+Climbing overview now offers optional weekly-goal setup, a current-week progress widget and an interactive wall-style map. Both widgets can be added to custom pages and shared through layout exports. Untouched older climbing home templates are upgraded; customised layouts are preserved. Existing Jack demo data receives wall tags and a map without duplicating sessions or overwriting corrected records.
+
+- All **193 unit/storage tests** pass. Added coverage includes historical snapshot aggregation, missing styles, Monday–Sunday goal counts, future/draft exclusions, validation and conflicting edits, goal/tag backup round trips, default-layout compatibility and repeat-safe demo upgrades.
+- **15/15 targeted production browser checks** pass across desktop Chromium, mobile Chromium and phone-sized WebKit. These cover goal saving/reloading/cancelling, wall tags, source-session links, populated demo maps, keyboard selection, system toggles, shared chart pages and offline navigation.
+- An additional isolated preview passes axe checks at **1440 px and 320 px**, with no horizontal overflow or page errors. The map and saved goal setup reopen offline after caching.
+- Formatting and the TypeScript/production PWA build pass. The deferred climbing widget module is precached for offline use. The existing schema-5 backup format remains compatible with records that have no goal or wall style.
+- The local browser shows the populated map and setup button. Its weekly climbing target remains unset for the user to choose. This feature is saved in a separate local commit; no GitHub push or deployment was performed.
