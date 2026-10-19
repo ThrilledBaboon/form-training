@@ -1,3 +1,4 @@
+import { precedesSession } from './session-continuity';
 import { defaultWorkspace, SetupSnapshotSchema } from './workspace-model';
 import { db, type TrainingDB } from './db';
 import {
@@ -416,7 +417,11 @@ export async function applySuggestedTargets(sessionId: string, itemId: string, d
   const item = data.sessions.find((s) => s.id === sessionId)?.items.find((i) => i.id === itemId);
   if (!item || ['duration', 'distance'].includes(item.tracking))
     throw Error('Choose repetition targets for this exercise.');
-  const target = recommendation(data, item);
+  const current = data.sessions.find((s) => s.id === sessionId)!;
+  const target = recommendation(
+    { ...data, sessions: data.sessions.filter((s) => precedesSession(s, current)) },
+    item,
+  );
   await database.transaction('rw', [database.sessions, database.sets], async () => {
     if ((await database.sessions.get(sessionId))?.status !== 'active')
       throw Error('Resume an active workout to apply targets.');

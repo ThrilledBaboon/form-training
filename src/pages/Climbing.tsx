@@ -159,7 +159,7 @@ function ClimbEditor({ initial, onClose }: { initial?: Climb; onClose: () => voi
             }}
           />
         </Field>
-        <label className="check">
+        <label className="check-label">
           <input
             type="checkbox"
             checked={v.archived}
@@ -415,7 +415,7 @@ export function Climbing({ view }: { view: 'library' | 'projects' | 'log' }) {
             <Field label="Find a climb">
               <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
             </Field>
-            <label className="check">
+            <label className="check-label">
               <input
                 type="checkbox"
                 checked={showArchived}

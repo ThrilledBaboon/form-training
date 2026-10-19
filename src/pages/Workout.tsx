@@ -1,3 +1,4 @@
+import { previousExerciseSession, precedesSession } from '../lib/session-continuity';
 import { WorkoutSetup } from './EquipmentSetups';
 import { LinkButton as WorkspaceLink } from '../components/ui';
 import { useEffect, useMemo, useState } from 'react';
@@ -46,7 +47,6 @@ import {
   type Group,
 } from '../lib/model';
 import {
-  exerciseHistory,
   recommendation,
   sessionStats,
   fmt,
@@ -341,15 +341,14 @@ function WorkoutExercise({
     .sort((a, b) => a.order - b.order);
   const comparable = {
     ...data,
+    sessions: data.sessions.filter((s) => precedesSession(s, session)),
     sets: data.sets.filter(
       (s) =>
         (s.setup?.id ?? '') === (item.setup?.id ?? '') &&
         (s.setup?.basis ?? 'unspecified') === (item.setup?.basis ?? 'unspecified'),
     ),
   };
-  const previous = exerciseHistory(comparable, item.exerciseId, item.tracking).find(
-    (h) => h.session.id !== session.id,
-  );
+  const previous = previousExerciseSession(data, session, item);
   const exercise = data.exercises.find((e) => e.id === item.exerciseId);
   const suggested = recommendation(comparable, item);
   const currentName = exercise?.name || item.name;
@@ -472,6 +471,48 @@ function WorkoutExercise({
           </AsyncButton>
         )}
       </div>
+      {(exercise?.notes ||
+        previous?.item.notes ||
+        previous?.noteSets.some((s) => s.notes || s.partialReps)) && (
+        <aside className="session-continuity" aria-label={currentName + ' session reminders'}>
+          <strong>Session reminders</strong>
+          {exercise?.notes && (
+            <p className="preserve-lines">
+              <strong>Library cue: </strong>
+              {exercise.notes}
+            </p>
+          )}
+          {previous && (
+            <>
+              <p className="small-text muted">
+                From {previous.session.name} · {dateLabel(previous.session.startAt)} · same
+                equipment and load convention
+              </p>
+              {previous.item.notes && (
+                <p className="preserve-lines">
+                  <strong>Exercise note: </strong>
+                  {previous.item.notes}
+                </p>
+              )}
+              {previous.noteSets
+                .filter((s) => s.notes || s.partialReps)
+                .map((s) => (
+                  <p className="preserve-lines" key={s.id}>
+                    <strong>
+                      Set {s.order + 1}
+                      {s.label === 'warmup' ? ' (warm-up)' : ''}:{' '}
+                    </strong>
+                    {s.notes}
+                    {s.partialReps
+                      ? `${s.notes ? ' · ' : ''}${s.partialReps} partial reps recorded separately`
+                      : ''}
+                  </p>
+                ))}
+              <a href={'#/history?session=' + previous.session.id}>Open previous session</a>
+            </>
+          )}
+        </aside>
+      )}
       <div className="set-table">
         <div className="set-table-head">
           <span>SET</span>
@@ -574,7 +615,6 @@ function WorkoutExercise({
               Use suggested targets
             </AsyncButton>
           )}
-        {exercise?.notes && <p className="muted">Library notes: {exercise.notes}</p>}
         <Field label="Workout-specific exercise notes">
           <textarea
             defaultValue={item.notes}
@@ -1073,8 +1113,8 @@ export function History() {
   const id = q.get('session');
   const session = data.sessions.find((s) => s.id === id);
   const [search, setSearch] = useState('');
-  const [since, setSince] = useState('');
-  const [until, setUntil] = useState('');
+  const [since, setSince] = useState(q.get('from') ?? '');
+  const [until, setUntil] = useState(q.get('to') ?? '');
   const [cancelled, setCancelled] = useState(false);
   if (session)
     return (
