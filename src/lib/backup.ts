@@ -1,3 +1,9 @@
+import {
+  ClimbingDataSchema,
+  emptyClimbing,
+  climbingAttachments,
+  mergeClimbing,
+} from './climbing-model';
 import { WorkspaceSchema, defaultWorkspace } from './workspace-model';
 import { z } from 'zod';
 import { dateKey } from './calc';
@@ -21,12 +27,12 @@ import {
 } from './model';
 const BackupSchema = z.object({
   app: z.literal('FORM'),
-  schemaVersion: z.literal(4),
+  schemaVersion: z.literal(5),
   exportedAt: z.string().datetime({ offset: true }),
   manifest: z
     .object({
       format: z.enum(['FORM complete backup', 'FORM category export']),
-      version: z.literal(4),
+      version: z.literal(5),
       categories: z.array(z.string()),
       requested: z.array(z.string()).optional(),
       attachments: z.number().int().nonnegative(),
@@ -34,6 +40,7 @@ const BackupSchema = z.object({
     .optional(),
   scope: z.enum(['complete', 'categories']).default('complete'),
   data: z.object({
+    climbing: ClimbingDataSchema.default(emptyClimbing),
     workspace: WorkspaceSchema.optional(),
     exercises: z.array(ExerciseSchema).max(10000),
     mappings: z.array(MappingSchema).max(200000),
@@ -68,17 +75,26 @@ export function serialise(data: Data) {
   const output = JSON.stringify(
     {
       app: 'FORM',
-      schemaVersion: 4,
+      schemaVersion: 5,
       exportedAt: now(),
       scope: 'complete',
       manifest: {
         format: 'FORM complete backup',
-        version: 4,
-        categories: [...entities, 'workspace', 'settings', 'timer', ...foodTables, 'foodSettings'],
-        attachments: food.foodFiles.length,
+        version: 5,
+        categories: [
+          'climbing',
+          ...entities,
+          'workspace',
+          'settings',
+          'timer',
+          ...foodTables,
+          'foodSettings',
+        ],
+        attachments: food.foodFiles.length + climbingAttachments(data.climbing ?? emptyClimbing),
       },
       data: {
         ...data,
+        climbing: data.climbing ?? emptyClimbing,
         workspace: data.workspace ?? defaultWorkspace(),
         foodFileIds: undefined,
         sessions,
@@ -129,16 +145,33 @@ export function parseBackup(input: string): Backup {
       manifest: old.manifest ? { ...old.manifest, version: 4 } : undefined,
     };
   }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'schemaVersion' in value &&
+    value.schemaVersion === 4
+  ) {
+    const old = value as { manifest?: object; data?: object };
+    value = {
+      ...value,
+      schemaVersion: 5,
+      manifest: old.manifest ? { ...old.manifest, version: 5 } : undefined,
+      data: { ...old.data, climbing: structuredClone(emptyClimbing) },
+    };
+  }
   const parsed = BackupSchema.safeParse(value);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw Error(
-      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2, 3 or 4 backup.`,
+      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2, 3, 4 or 5 backup.`,
     );
   }
   const b = parsed.data;
   const d = b.data;
-  if (b.manifest && b.manifest.attachments !== d.food.foodFiles.length)
+  if (
+    b.manifest &&
+    b.manifest.attachments !== d.food.foodFiles.length + climbingAttachments(d.climbing)
+  )
     throw Error(
       'The attachment count does not match the backup manifest. No records were changed.',
     );
@@ -209,6 +242,13 @@ export function importPreview(backup: Backup, current: Data) {
   });
   return [
     ...gym,
+    ...(['climbs', 'sessions', 'plans'] as const).map((key) => ({
+      table: 'climbing ' + key,
+      total: backup.data.climbing[key].length,
+      duplicates: backup.data.climbing[key].filter((r) =>
+        (current.climbing ?? emptyClimbing)[key].some((c) => c.id === r.id),
+      ).length,
+    })),
     {
       table: 'workspace pages',
       total: backup.data.workspace?.pages.length ?? 0,
@@ -257,6 +297,7 @@ export async function importBackup(
       json: serialise(before),
     });
     if (mode === 'replace') {
+      await database.climbing.put(data.climbing);
       for (const key of entities) await database.table(key).clear();
       await database.workspaces.put(data.workspace ?? defaultWorkspace());
       await database.settings.clear();
@@ -272,6 +313,8 @@ export async function importBackup(
       await database.foodSettings.clear();
       await database.foodSettings.put(data.food.foodSettings);
     } else {
+      if (checked.scope === 'complete' || checked.manifest?.categories.includes('climbing'))
+        await database.climbing.put(mergeClimbing(before.climbing ?? emptyClimbing, data.climbing));
       const currentFood = before.food ?? emptyFood;
       const existingBatches = new Set(currentFood.batches.map((b) => b.id));
       const existingStock = new Set(currentFood.stock.map((s) => s.id));

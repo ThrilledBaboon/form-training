@@ -1,4 +1,5 @@
-import { defaultWorkspace, type Workspace } from './workspace-model';
+import { ClimbingDataSchema, emptyClimbing, type ClimbingData } from './climbing-model';
+import { WorkspaceSchema, defaultWorkspace, type Workspace } from './workspace-model';
 import Dexie, { type EntityTable } from 'dexie';
 import { catalogue } from './catalogue';
 import {
@@ -39,6 +40,7 @@ export interface RecoveryBackup {
   json: string;
 }
 export class TrainingDB extends Dexie {
+  climbing!: EntityTable<ClimbingData, 'id'>;
   workspaces!: EntityTable<Workspace, 'id'>;
   ingredients!: EntityTable<Ingredient, 'id'>;
   recipes!: EntityTable<Recipe, 'id'>;
@@ -100,6 +102,7 @@ export class TrainingDB extends Dexie {
       .upgrade(async (tx) => {
         await tx.table('workspaces').put(defaultWorkspace());
       });
+    this.version(5).stores({ climbing: 'id' });
     this.version(3).stores({
       ingredients: 'id,name,category,updatedAt',
       recipes: 'id,name,category,updatedAt',
@@ -124,6 +127,7 @@ export async function readData(
   return database.transaction(
     'r',
     [
+      database.climbing,
       database.workspaces,
       database.exercises,
       database.mappings,
@@ -173,7 +177,12 @@ export async function readData(
         (await database.foodSettings.get('food-preferences')) ??
         structuredClone(emptyFood.foodSettings);
       return {
-        workspace: (await database.workspaces.get('workspace')) ?? defaultWorkspace(),
+        workspace: WorkspaceSchema.parse(
+          (await database.workspaces.get('workspace')) ?? defaultWorkspace(),
+        ),
+        climbing: ClimbingDataSchema.parse(
+          (await database.climbing.get('climbing')) ?? emptyClimbing,
+        ),
         food,
         ...(options.includeFiles === false
           ? { foodFileIds: await database.foodFiles.toCollection().primaryKeys() }

@@ -12,7 +12,7 @@ import {
   type EquipmentSetup,
 } from './workspace-model';
 
-export function ensureSystemHomePage(system: 'gym' | 'food', database = db) {
+export function ensureSystemHomePage(system: 'gym' | 'food' | 'climbing', database = db) {
   return changeWorkspace((w) => {
     const page = systemHomePage(system);
     if (!w.pages.some((p) => p.id === page.id)) w.pages.push(page);
@@ -22,7 +22,9 @@ export function ensureSystemHomePage(system: 'gym' | 'food', database = db) {
 /** Read-modify-write in one transaction prevents a preference change losing page edits. */
 export async function changeWorkspace(change: (current: Workspace) => void, database = db) {
   return database.transaction('rw', database.workspaces, async () => {
-    const current = (await database.workspaces.get('workspace')) ?? defaultWorkspace();
+    const current = WorkspaceSchema.parse(
+      (await database.workspaces.get('workspace')) ?? defaultWorkspace(),
+    );
     change(current);
     current.revision++;
     const valid = WorkspaceSchema.parse(current);
@@ -98,7 +100,11 @@ export async function applyEquipmentSetup(
   );
 }
 
-export async function setSystemEnabled(system: 'gym' | 'food', enabled: boolean, database = db) {
+export async function setSystemEnabled(
+  system: 'gym' | 'food' | 'climbing',
+  enabled: boolean,
+  database = db,
+) {
   return database.transaction('rw', [database.workspaces, database.timers], async () => {
     if (system === 'gym' && enabled) {
       const timer = await database.timers.get('rest');

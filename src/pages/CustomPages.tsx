@@ -125,7 +125,10 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           Your saved pages and records are retained. Try opening this page again.
         </Empty>
       ) : (
-        <p role="status">Preparing your {system === 'gym' ? 'training' : 'food'} page…</p>
+        <p role="status">
+          Preparing your {system === 'gym' ? 'training' : system === 'food' ? 'food' : 'climbing'}{' '}
+          page…
+        </p>
       );
   if (!page)
     return (
@@ -145,12 +148,14 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
             ? 'YOUR TRAINING'
             : system === 'food'
               ? 'YOUR FOOD'
-              : 'YOUR WORKSPACE, YOUR VIEW'
+              : system === 'climbing'
+                ? 'YOUR CLIMBING'
+                : 'YOUR WORKSPACE, YOUR VIEW'
         }
         title={overview && page.name === 'Overview' ? 'Make room for progress.' : page.name}
         description={
           overview
-            ? 'Your training and food, arranged around you.'
+            ? 'Your training, climbing and food, arranged around you.'
             : `${page.widgets.length} saved widgets · ${rangeLabel(page.range)}`
         }
         action={
@@ -171,6 +176,19 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           <p className="small-text muted">
             New to training? Build an editable plan around your weekly schedule.
           </p>
+        </div>
+      )}
+      {system === 'climbing' && (
+        <div className="food-actions">
+          <a className="button primary" href="#/climbing-log?new=1">
+            Log session
+          </a>
+          <a className="button secondary" href="#/climbing-library">
+            Climb library
+          </a>
+          <a className="button secondary" href="#/climbing-projects">
+            Projects
+          </a>
         </div>
       )}
       {system === 'food' && (
@@ -251,8 +269,8 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           title="Make this page your own"
           action={<Button onClick={() => setEditing(true)}>Edit this page</Button>}
         >
-          Add widgets or enable Gym or Food in Settings. Hidden widgets and all your records are
-          retained.
+          Add widgets or enable Gym, Climbing or Food in Settings. Hidden widgets and all your
+          records are retained.
         </Empty>
       )}
       <div className="widget-grid">
@@ -622,7 +640,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                 run(async () => {
                   if (
                     !confirm(
-                      `Restore the default ${system === 'gym' ? 'Training overview' : system === 'food' ? 'Food overview' : 'Overview'} layout? Your records and other pages stay intact.`,
+                      `Restore the default ${system === 'gym' ? 'Training overview' : system === 'food' ? 'Food overview' : system === 'climbing' ? 'Climbing overview' : 'Overview'} layout? Your records and other pages stay intact.`,
                     )
                   )
                     return;

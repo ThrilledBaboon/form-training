@@ -1,3 +1,4 @@
+import type { ClimbingData } from './climbing-model';
 import { z } from 'zod';
 import { SetupSnapshotSchema, type Workspace } from './workspace-model';
 import type { FoodData } from './food-model';
@@ -231,6 +232,7 @@ export const defaults: Settings = {
   weekTarget: 4,
 };
 export type Data = {
+  climbing?: ClimbingData;
   workspace?: Workspace;
   food?: FoodData;
   /** Lightweight UI reads omit image payloads; backups always use a complete read. */

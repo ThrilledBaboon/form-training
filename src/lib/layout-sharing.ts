@@ -30,8 +30,8 @@ const SharedWidget = z
     title: z.string().max(150),
     size: z.enum(['compact', 'half', 'wide']),
     requiredSystems: z
-      .array(z.enum(['gym', 'food']))
-      .max(2)
+      .array(z.enum(['gym', 'food', 'climbing']))
+      .max(3)
       .default([]),
     config: PortableConfig.strict(),
     exercise: Hint.optional(),

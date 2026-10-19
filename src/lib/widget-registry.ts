@@ -14,6 +14,41 @@ import {
 } from './workspace-model';
 
 export const WIDGETS = [
+  [
+    'climbing-start',
+    'Log climbing',
+    'Start a session or resume a saved draft.',
+    'climbing',
+    'live',
+  ],
+  [
+    'climbing-totals',
+    'Climbing totals',
+    'Recorded sessions, attempts, clean completions and time.',
+    'climbing',
+    'range',
+  ],
+  [
+    'climbing-sessions',
+    'Recent climbing sessions',
+    'Completed sessions in the selected date range.',
+    'climbing',
+    'range',
+  ],
+  [
+    'climbing-projects',
+    'Climbing projects',
+    'Active projects and beta for the next try.',
+    'climbing',
+    'live',
+  ],
+  [
+    'climbing-grades',
+    'Climbing grade log',
+    'Attempts and completions grouped by discipline, venue and grade scale.',
+    'climbing',
+    'range',
+  ],
   ['start', 'Start or resume', 'Jump into your saved workout.', 'gym', 'live'],
   [
     'suggestion',
@@ -210,7 +245,11 @@ export function requiredSystems(widget: Widget): System[] {
   const group = widgetDefinition(widget.type)?.[3];
   if (!group) return widget.dependencies ?? [];
   if (widget.type === 'shortcut') return routeSystems(widget.config.link);
-  return group === 'both' ? ['gym', 'food'] : group === 'gym' || group === 'food' ? [group] : [];
+  return group === 'both'
+    ? ['gym', 'food']
+    : group === 'gym' || group === 'food' || group === 'climbing'
+      ? [group]
+      : [];
 }
 export const rangeLabel = (r: ViewRange) =>
   r.from || r.to
@@ -255,6 +294,8 @@ export function rangeData(data: Data, range: ViewRange): Data {
   return result;
 }
 export function widgetDestination(w: Widget) {
+  if (w.type.startsWith('climbing-'))
+    return w.type === 'climbing-projects' ? 'climbing-projects' : 'climbing-log';
   const range = w.config.range;
   const query = new URLSearchParams();
   if (w.config.exerciseId) query.set('exercise', w.config.exerciseId);

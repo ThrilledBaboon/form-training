@@ -115,10 +115,10 @@ describe('workspace persistence and portability', () => {
     });
     const before = await readData(database);
     for (const systems of [
-      { gym: true, food: false },
-      { gym: false, food: true },
-      { gym: false, food: false },
-      { gym: true, food: true },
+      { gym: true, food: false, climbing: true },
+      { gym: false, food: true, climbing: true },
+      { gym: false, food: false, climbing: true },
+      { gym: true, food: true, climbing: true },
     ]) {
       await changeWorkspace((w) => {
         w.systems = systems;
@@ -184,7 +184,7 @@ describe('workspace persistence and portability', () => {
     };
     const layout = parseLayout(exportLayout(page, data));
     await changeWorkspace((w) => {
-      w.systems = { gym: false, food: false };
+      w.systems = { gym: false, food: false, climbing: true };
     }, database);
     const result = await importLayout(layout, referenceMatches(layout, data), {}, database);
     expect(result.widgets[0].id).not.toBe(page.widgets[0].id);
@@ -192,7 +192,7 @@ describe('workspace persistence and portability', () => {
     expect(result.widgets[1].type).toBe('future-widget');
     expect(requiredSystems(result.widgets[1])).toEqual(['food']);
     const workspace = (await readData(database)).workspace!;
-    expect(workspace.systems).toEqual({ gym: false, food: false });
+    expect(workspace.systems).toEqual({ gym: false, food: false, climbing: true });
     expect(workspace.homePageId).toBe('overview');
     await expect(importLayout(layout, {}, {}, database)).rejects.toThrow('already imported');
     await expect(importLayout(layout, { 0: 'missing' }, { copy: true }, database)).rejects.toThrow(

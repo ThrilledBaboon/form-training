@@ -98,8 +98,8 @@ export const WidgetSchema = z
     size: z.enum(['compact', 'half', 'wide']).default('half'),
     config: WidgetConfigSchema,
     dependencies: z
-      .array(z.enum(['gym', 'food']))
-      .max(2)
+      .array(z.enum(['gym', 'food', 'climbing']))
+      .max(3)
       .optional(),
   })
   .refine((w) => validFilterBounds(w.config), 'Minimum filters must not exceed maximum filters.');
@@ -123,9 +123,9 @@ export const WorkspaceSchema = z
   .object({
     id: z.literal('workspace'),
     revision: z.number().int().nonnegative().default(0),
-    systems: z.object({ gym: z.boolean(), food: z.boolean() }),
+    systems: z.object({ gym: z.boolean(), food: z.boolean(), climbing: z.boolean().default(true) }),
     homePageId: id,
-    pages: z.array(PageSchema).min(1).max(52),
+    pages: z.array(PageSchema).min(1).max(53),
     setups: z.array(SetupSchema).max(2000).default([]),
     removedPages: z.array(PageSchema).max(20).default([]),
     planBuilds: z.array(id).max(1000).default([]),
@@ -188,39 +188,58 @@ export function overviewPage(): WorkspacePage {
   };
 }
 export function systemForPage(id: string): System | undefined {
-  return id === 'training-home' ? 'gym' : id === 'food-home' ? 'food' : undefined;
+  return id === 'training-home'
+    ? 'gym'
+    : id === 'food-home'
+      ? 'food'
+      : id === 'climbing-home'
+        ? 'climbing'
+        : undefined;
 }
 export const pageRoute = (id: string) =>
   id === 'overview' ? 'today' : systemForPage(id) ? id : 'pages?page=' + encodeURIComponent(id);
 export function systemHomePage(system: System): WorkspacePage {
-  const id = system === 'gym' ? 'training-home' : 'food-home';
+  const id = system === 'gym' ? 'training-home' : system === 'food' ? 'food-home' : 'climbing-home';
   const types =
-    system === 'gym'
+    system === 'climbing'
       ? [
-          'start',
-          'suggestion',
-          'week',
-          'streak',
-          'training-totals',
-          'highlights',
-          'routines',
-          'sessions',
-          'setups',
+          'climbing-start',
+          'climbing-totals',
+          'climbing-sessions',
+          'climbing-projects',
+          'climbing-grades',
         ]
-      : [
-          'macros',
-          'meal-plan',
-          'expiry',
-          'shopping',
-          'spending',
-          'stock',
-          'batches',
-          'shortages',
-          'macro-trend',
-        ];
+      : system === 'gym'
+        ? [
+            'start',
+            'suggestion',
+            'week',
+            'streak',
+            'training-totals',
+            'highlights',
+            'routines',
+            'sessions',
+            'setups',
+          ]
+        : [
+            'macros',
+            'meal-plan',
+            'expiry',
+            'shopping',
+            'spending',
+            'stock',
+            'batches',
+            'shortages',
+            'macro-trend',
+          ];
   return {
     id,
-    name: system === 'gym' ? 'Training overview' : 'Food overview',
+    name:
+      system === 'gym'
+        ? 'Training overview'
+        : system === 'food'
+          ? 'Food overview'
+          : 'Climbing overview',
     range: { days: 30 },
     revision: 0,
     widgets: types.map((type) => ({
@@ -233,7 +252,7 @@ export const defaultWorkspace = (): Workspace => ({
   planBuilds: [],
   id: 'workspace',
   revision: 0,
-  systems: { gym: true, food: true },
+  systems: { gym: true, food: true, climbing: true },
   homePageId: 'overview',
   pages: [overviewPage()],
   setups: [],
@@ -241,7 +260,7 @@ export const defaultWorkspace = (): Workspace => ({
   removedPages: [],
 });
 
-export type System = 'gym' | 'food';
+export type System = 'gym' | 'food' | 'climbing';
 export const gymRoutes = new Set([
   'training-home',
   'workout',
@@ -256,7 +275,13 @@ export const gymRoutes = new Set([
   'paste-workouts',
 ]);
 export const routeSystems = (route: string): System[] =>
-  route.startsWith('food-') ? ['food'] : gymRoutes.has(route) ? ['gym'] : [];
+  route.startsWith('climbing-')
+    ? ['climbing']
+    : route.startsWith('food-')
+      ? ['food']
+      : gymRoutes.has(route)
+        ? ['gym']
+        : [];
 
 export function validFilterBounds(c: {
   repMin?: number;

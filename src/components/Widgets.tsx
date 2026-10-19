@@ -1,3 +1,4 @@
+import { ClimbingWidget } from './ClimbingWidgets';
 import { useMemo, useState } from 'react';
 import {
   Play,
@@ -100,6 +101,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
     </Empty>
   );
   const exercise = data.exercises.find((e) => e.id === c.exerciseId);
+  if (w.type.startsWith('climbing-')) return <ClimbingWidget type={w.type} from={from} to={to} />;
   if (w.type === 'start')
     return (
       <div className="widget-start">

@@ -17,27 +17,35 @@ export function SystemSettings() {
   const { data, run, pending } = useApp();
   const w = data.workspace ?? defaultWorkspace();
   const [systems, setSystems] = useState(w.systems);
-  useEffect(() => setSystems(w.systems), [w.systems.gym, w.systems.food]);
+  useEffect(() => setSystems(w.systems), [w.systems.gym, w.systems.food, w.systems.climbing]);
   return (
     <Card>
       <SectionTitle
         title="Systems"
         sub="Show the tools you use. Turning a system off preserves all records, drafts and page positions."
       />
-      {(['gym', 'food'] as const).map((system) => (
+      {(['gym', 'climbing', 'food'] as const).map((system) => (
         <label className="system-switch" key={system}>
           <span>
-            <strong>{system === 'gym' ? 'Gym' : 'Food'}</strong>
+            <strong>{system === 'gym' ? 'Gym' : system === 'food' ? 'Food' : 'Climbing'}</strong>
             <small>
               {system === 'gym'
                 ? 'Workouts, routines and training insights'
-                : 'Recipes, diary, kitchen, shopping and spending'}
+                : system === 'food'
+                  ? 'Recipes, diary, kitchen, shopping and spending'
+                  : 'Climb library, mixed sessions, projects and climbing insights'}
             </small>
           </span>
           <input
             type="checkbox"
             role="switch"
-            aria-label={system === 'gym' ? 'Enable Gym system' : 'Enable Food system'}
+            aria-label={
+              system === 'gym'
+                ? 'Enable Gym system'
+                : system === 'food'
+                  ? 'Enable Food system'
+                  : 'Enable Climbing system'
+            }
             checked={systems[system]}
             disabled={pending}
             onChange={(e) => {
@@ -66,7 +74,7 @@ export function SystemSettings() {
       )}
       <p className="small-text muted">
         Custom pages, bodyweight, settings and complete backups remain available. Backups include
-        both systems even when hidden.
+        all systems even when hidden.
       </p>
     </Card>
   );

@@ -1,3 +1,4 @@
+import { Climbing } from './pages/Climbing';
 import { CustomPages } from './pages/CustomPages';
 import { EquipmentSetups } from './pages/EquipmentSetups';
 import { PasteWorkouts } from './pages/PasteWorkouts';
@@ -7,6 +8,7 @@ import { Component, useCallback, useEffect, useState, type ReactNode } from 'rea
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import {
+  Mountain,
   LayoutDashboard,
   Dumbbell,
   CalendarDays,
@@ -70,6 +72,15 @@ const navigation = [
       ['workout', 'Active workout', Dumbbell],
       ['routines', 'Routines & plans', Layers],
       ['history', 'Workout history', HistoryIcon],
+    ],
+  },
+  {
+    label: 'CLIMBING',
+    items: [
+      ['climbing-home', 'Climbing overview', Mountain],
+      ['climbing-log', 'Climbing sessions', HistoryIcon],
+      ['climbing-library', 'Climb library', BookOpen],
+      ['climbing-projects', 'Climbing projects', Mountain],
     ],
   },
   {
@@ -285,6 +296,19 @@ export default function App() {
     navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
   let page: ReactNode;
   switch (route) {
+    case 'climbing-log':
+    case 'climbing-library':
+    case 'climbing-projects':
+      page = (
+        <Climbing
+          key={effectiveHash}
+          view={
+            route === 'climbing-log' ? 'log' : route === 'climbing-library' ? 'library' : 'projects'
+          }
+        />
+      );
+      break;
+    case 'climbing-home':
     case 'training-home':
     case 'food-home':
       page = <CustomPages key={route} pageId={route} />;
@@ -374,13 +398,15 @@ export default function App() {
     ['today', 'Overview', LayoutDashboard],
     ['training-home', 'Train', Dumbbell],
     ['food-home', 'Food', Utensils],
-    ['routines', 'Plans', Layers],
+    ['climbing-home', 'Climb', Mountain],
   ].filter(([id]) => routeSystems(id as string).every((s) => workspace.systems[s]));
   if (disabled.length)
     page = (
       <Empty
         title={
-          disabled.map((s) => (s === 'gym' ? 'Gym' : 'Food')).join(' and ') + ' is switched off'
+          disabled
+            .map((s) => (s === 'gym' ? 'Gym' : s === 'food' ? 'Food' : 'Climbing'))
+            .join(' and ') + ' is switched off'
         }
         action={
           <Button
@@ -451,7 +477,7 @@ export default function App() {
           )}
           <div className="workspace-label">
             <span className="workspace-dot" />
-            TRAINING & FOOD
+            YOUR ACTIVE LIFE
           </div>
           <nav aria-label="Main navigation">
             {navigation

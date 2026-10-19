@@ -14,6 +14,7 @@ import {
 } from './food-model';
 import { serialise, parseBackup, csv } from './backup';
 export const dataCategories = {
+  climbing: 'Climbing library, sessions, projects, plans & photos',
   workspace: 'Pages, profile, systems, equipment & import drafts',
   workouts: 'Workouts & exercise history',
   exercises: 'Exercise library',
@@ -29,7 +30,7 @@ export const dataCategories = {
   shopping: 'Shopping lists',
   purchases: 'Purchases & prices',
   foodPreferences: 'Food goals, display, budgets & locations',
-  files: 'All uploaded images',
+  files: 'Food uploaded images',
   drafts: 'Food editor drafts',
 } as const;
 export type DataCategory = keyof typeof dataCategories;
@@ -113,6 +114,9 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
     source[key].forEach((r) => addFood(key, r.id));
   for (const category of selected)
     switch (category) {
+      case 'climbing':
+        result.climbing = structuredClone(data.climbing);
+        break;
       case 'workspace':
         result.workspace = structuredClone(data.workspace);
         break;
@@ -213,6 +217,7 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
       .filter(([key, value]) => key !== 'food' && Array.isArray(value) && value.length)
       .map(([key]) => key),
     ...foodTables.filter((key) => target[key].length),
+    ...(selected.includes('climbing') ? ['climbing'] : []),
     ...(selected.includes('workspace') ? ['workspace'] : []),
     ...(selected.includes('preferences') ? ['settings', 'timer'] : []),
     ...(selected.includes('foodPreferences') ? ['foodSettings'] : []),
