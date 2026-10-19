@@ -101,3 +101,13 @@ The app is published through GitHub Pages with HTTPS enforced. Source code is pu
 ## Data durability
 
 IndexedDB and local recovery snapshots share the same browser origin. Browser data can be removed or lost. Export JSON to an independent file regularly, especially before moving from this local address to a hosted site or another browser/device. A source-code push does not transfer personal workout history. See the [backup guide](BACKUPS.md).
+
+## Local systems update — 19 October 2026
+
+Climbing, combined week planning, saved-recipe meal suggestions, prior-session reminders and the optional weekly review are implemented locally in separate feature commits. No GitHub push or hosted deployment was performed.
+
+- Formatting check and TypeScript/production PWA build pass. Climbing editor code is loaded on demand and included in the offline precache.
+- All **184 unit/storage tests** pass, including a real v4 database upgrade, old backup migration, snapshot preservation, stale/concurrent edits, attachment round trips, merge/replace rollback, all eight system combinations and unknown macro/time/cost handling.
+- The complete **177-scenario browser suite** covers desktop Chromium, mobile Chromium and iPhone-sized WebKit. **176 checks pass** after updating and rerunning the three export-format assertions for schema 5; one existing WebKit-only touch-drag check is skipped. Existing logging, streaks, reset, OCR, library sharing, themes, layouts and offline flows remain covered.
+- An isolated populated preview at **320 px** passes accessibility checks with no horizontal overflow on Climbing home/library/projects/sessions, the combined planner, meal suggestions and weekly review. Offline reload/navigation to Climbing overview and the deferred library/editor module succeeds. This verification used synthetic records in a separate browser context and did not change the user's database.
+- The local preview at **http://127.0.0.1:4174/** is running and its served index matches the current production build. Existing browser data stays on that origin; refresh and use Update & reload if an older worker prompts. Garmin, Griptonite and Apple Health connections remain outside this implementation.

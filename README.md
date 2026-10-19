@@ -1,6 +1,6 @@
 # FORM · Personal Training
 
-An original mobile-first, local-first training and food tracker built with React, TypeScript, Vite, Dexie/IndexedDB and Recharts. No account, backend, telemetry or paid API. Exercise and routine templates are included; **no workout history, nutrition or bodyweight measurements are fabricated**. Core features work offline after the app is cached. Optional English receipt OCR loads bundled files on demand and processes images on the device.
+An original mobile-first, local-first training, climbing and food tracker built with React, TypeScript, Vite, Dexie/IndexedDB and Recharts. No account, backend, telemetry or paid API. Exercise and routine templates are included; **no workout history, nutrition or bodyweight measurements are fabricated**. Core features work offline after the app is cached. Optional English receipt OCR loads bundled files on demand and processes images on the device.
 
 [Open FORM](https://thrilledbaboon.github.io/form-training/) · [Source repository](https://github.com/ThrilledBaboon/form-training)
 
@@ -34,8 +34,11 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 
 ## What you can use
 
-- Editable mixed Overview, 40 reusable widget types, multiple custom pages/home choice, independent filters and responsive arrangement with keyboard/tap controls. Share private-data-free layouts with reference mapping and import previews.
-- Independent Gym/Food system switches, saved equipment setups with historical snapshots, and an offline pasted-workout review/import tool. See the [workspace guide](docs/WORKSPACE.md).
+- Editable mixed Overview, reusable widgets, multiple custom pages/home choice, independent filters and responsive arrangement with keyboard/tap controls. Share private-data-free layouts with reference mapping and import previews.
+- Independent Gym/Climbing/Food system switches, saved equipment setups with historical snapshots, and an offline pasted-workout review/import tool. See the [workspace guide](docs/WORKSPACE.md).
+
+- [Climbing](docs/CLIMBING.md): indoor/outdoor bouldering, top rope, auto belay and lead; a personal climb/photo library, project beta, mixed session logs, saved drafts and separate grade-aware widgets.
+- [Combined week planner](docs/WEEK-PLANNER.md), [meal suggestions](docs/MEAL-SUGGESTIONS.md), [workout session reminders](docs/SESSION-CONTINUITY.md) and an optional [weekly review](docs/WEEKLY-REVIEW.md).
 
 - Dashboard with real training totals, weekly consistency, latest sessions, records, exercise progression highlights, bodyweight trends and muscle contributions.
 - Workout-day streak with an earned rest-day bank, longest streak and a selectable monthly calendar. Open it from the flame in the top bar or the overview card.
@@ -54,7 +57,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 - Food diary, historical macro snapshots, independent optional macro targets, weekly summaries and shared training/bodyweight context. Nutrition uses protein, carbohydrates, fat and optional fibre only.
 - Kitchen stock, storage locations, expiry, confidence, waste and movement history; explicit cooking deducts ingredients and creates prepared portions, which can then be eaten or discarded.
 - Daily/weekly meal planning alongside training, stock-aware shopping with package rounding and preserved manual rows; reviewed receipt images, optional local OCR/manual fallback, purchases, recorded prices, budgets and estimated costs.
-- **Export everything** includes gym and food records, pages, system choices, equipment setups, preferences, drafts and supported images. Category JSON files include dependencies and import previews; food and gym CSV reports support analysis.
+- **Export everything** includes gym, climbing and food records, pages, system choices, equipment setups, preferences, drafts and supported images. Category JSON files include dependencies and import previews; food and gym CSV reports support analysis.
 - Validated JSON import preview/merge/replace; duplicate handling; atomic local recovery snapshots; complete JSON backups; separate CSV exports; light/dark/system themes; reduced motion; offline PWA shell and update prompts.
 - Full data reset in **Settings & data → Start fresh**, with a backup export and typed `RESET` confirmation. Restores starter exercises/routines and removes personal records, custom content, preferences and recovery snapshots from this browser.
 

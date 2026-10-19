@@ -119,7 +119,10 @@ describe('workspace persistence and portability', () => {
       { gym: false, food: true, climbing: true },
       { gym: false, food: false, climbing: true },
       { gym: true, food: true, climbing: true },
-    ]) {
+    ].flatMap((s) => [
+      { ...s, climbing: false },
+      { ...s, climbing: true },
+    ])) {
       await changeWorkspace((w) => {
         w.systems = systems;
         w.pasteDraft = 'private notes';

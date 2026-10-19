@@ -7,7 +7,7 @@
 3. Check your browser's download completed and keep the JSON file outside browser storage, for example in your normal backed-up documents folder.
 4. Repeat regularly and before changing browser/device/site address or installing updates.
 
-The app can start a download, but cannot verify that a file was actually retained on your disk. It therefore labels the timestamp **last file export requested**. Schema 3 includes all gym/food records, preferences, timers, editor drafts and supported receipt/recipe/step images as embedded base64 data. A manifest records version, timestamp, categories and attachment count. Local recovery snapshots are not recursively included. CSV is for analysis and does not restore the complete database.
+The app can start a download, but cannot verify that a file was actually retained on your disk. It therefore labels the timestamp **last file export requested**. Schema 5 includes all gym/climbing/food records, preferences, timers, editor drafts and supported receipt/recipe/step images as embedded base64 data. A manifest records version, timestamp, categories and attachment count. Local recovery snapshots are not recursively included. CSV is for analysis and does not restore the complete database.
 
 Your workouts belong to the browser origin: scheme + hostname + port. Development (`127.0.0.1:5173`), production preview (`127.0.0.1:4173`), `localhost`, GitHub Pages and another browser/device do not automatically share history. A GitHub push transfers source code only. Export locally and import on the hosted site when you move.
 
@@ -64,7 +64,7 @@ For a single mistaken workout, open it in **Workout history** and use **Delete s
 3. Type the exact word **RESET**. Until then, **Permanently reset FORM** is disabled. Cancel closes the dialog without changing records.
 4. Select **Permanently reset FORM**. A success message appears after the database transaction completes.
 
-Reset removes workouts, sets, measurements, custom exercises/mappings, routines/programmes/plans, all food records/images/drafts, preferences, timers and **all local recovery snapshots**. It restores the original starter exercises/routines and default preferences, without sample workouts or meals. Streaks and analytics return to empty states. If any reset write fails, the entire transaction rolls back.
+Reset removes climbing climbs/projects/sessions/plans/photos, workouts, sets, measurements, custom exercises/mappings, routines/programmes/plans, all food records/images/drafts, preferences, timers and **all local recovery snapshots**. It restores the original starter exercises/routines and default preferences, without sample workouts or meals. Streaks and analytics return to empty states. If any reset write fails, the entire transaction rolls back.
 
 This affects the FORM database at the current browser origin. Other browser profiles, devices and origins have separate data; downloaded files are retained. Offline application files are retained. Reset has no Undo or hidden recovery copy: use an exported JSON file with **Replace** to restore previous records.
 
@@ -74,10 +74,12 @@ Browser storage can be cleared manually, evicted under storage pressure, removed
 
 Production files are cached after the first successful service-worker installation. Test offline mode only after loading the production app online and reloading once. Development mode does not register the production worker. An update prompt lets you reload deliberately. Data stays in IndexedDB rather than the service-worker cache.
 
-## Workspace format 4
+## Workspace and Climbing format 5
 
-Complete backups now include the singleton workspace: pages/widget configurations, optional personal profile, systems/home, equipment profiles, recoverable layouts and private import draft/provenance. Existing version 2/3 files remain accepted. Merge preserves existing page/profile identities; system/home/draft preference restoration remains explicit. An older file does not erase local pages during merge. Replacement of an older file supplies one mixed Overview and enables both systems. The new workspace category includes setup exercise dependencies.
+Complete backups now include the singleton workspace: pages/widget configurations, optional personal profile, systems/home, equipment profiles, recoverable layouts and private import draft/provenance. Existing version 2/3/4 files remain accepted with empty Climbing data. Merge preserves existing page/profile identities; system/home/draft preference restoration remains explicit. An older file does not erase local pages during merge. Replacement of an older file supplies one mixed Overview and enables all systems. The new workspace category includes setup exercise dependencies.
 
 Page layout files (`page-layout`, format 1) and Gym libraries (schema 1) have separate preview/import tools and privacy rules. A complete/category workspace backup intentionally includes birthday, height, private notes and drafts; use Share layout to send a presentation without measurements. See the [workspace guide](WORKSPACE.md).
 
 Food preferences now include fibre and optional background energy targets, goal setup and the calorie visibility opt-in. Older files default visibility to off. Merge restores these only when preference restoration is selected; ordinary additive imports preserve the local display choice. The profile and plan-generation save ledger are additive workspace fields and need no destructive database migration.
+
+Climbing category exports include the personal library, session snapshots, project notes, dated plans and embedded climb photos. Complete replacements restore this singleton atomically with Gym, Food and workspace records. Additive imports keep local records with the same identity; no history or stock event is silently overwritten.

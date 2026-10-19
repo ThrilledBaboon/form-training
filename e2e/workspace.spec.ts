@@ -176,7 +176,7 @@ test('shared Overview stays outside Train, and each system home saves its own la
   await route(page, 'food-home');
   await expect(page.getByRole('heading', { name: 'Food overview', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Daily macros', exact: true })).toBeVisible();
-  await expect(page.locator('.workspace-widget')).toHaveCount(9);
+  await expect(page.locator('.workspace-widget')).toHaveCount(10);
   await route(page, 'today');
   await expect(page.locator('.workspace-widget')).toHaveCount(11);
   await route(page, 'settings');
@@ -194,15 +194,19 @@ test('all system combinations hide routes and widgets while retaining an active 
     .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-widget-id')));
   await page.getByRole('button', { name: 'Start a workout', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Freestyle workout', exact: true })).toBeVisible();
-  for (const [gym, food] of [
+  for (const [gym, food, climbing] of [
     [true, false],
     [false, true],
     [false, false],
     [true, true],
-  ]) {
+  ].flatMap(([gym, food]) => [
+    [gym, food, false],
+    [gym, food, true],
+  ])) {
     await route(page, 'settings');
     await page.getByRole('switch', { name: 'Enable Gym system' }).setChecked(gym);
     await page.getByRole('switch', { name: 'Enable Food system' }).setChecked(food);
+    await page.getByRole('switch', { name: 'Enable Climbing system' }).setChecked(climbing);
     await route(page, 'today');
     await expect(page.getByRole('button', { name: 'Resume workout', exact: true })).toHaveCount(
       gym ? 1 : 0,
@@ -221,6 +225,13 @@ test('all system combinations hide routes and widgets while retaining an active 
     if (!food)
       await expect(page.getByRole('heading', { name: /Food is switched off/ })).toBeVisible();
     else await expect(page.getByRole('heading', { name: 'Food diary', exact: true })).toBeVisible();
+    await route(page, 'climbing-home');
+    await expect(
+      page.getByRole('heading', {
+        name: climbing ? 'Climbing overview' : 'Climbing is switched off',
+        exact: true,
+      }),
+    ).toBeVisible();
     await route(page, 'weight');
     await expect(page.getByRole('heading', { name: 'Bodyweight', exact: true })).toBeVisible();
   }

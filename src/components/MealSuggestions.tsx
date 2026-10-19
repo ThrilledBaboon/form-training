@@ -8,6 +8,7 @@ import { FoodEntryEditor } from '../pages/FoodDiary';
 import { Button, Card, Empty, Field, Modal, PageTitle } from './ui';
 export function MealSuggestions({ onClose }: { onClose?: () => void }) {
   const food = useFood();
+  const Heading = onClose ? 'h3' : 'h2';
   const [priority, setPriority] = useState<MealPriority>('balanced'),
     [category, setCategory] = useState('');
   const [maxMinutes, setMaxMinutes] = useState(''),
@@ -92,7 +93,7 @@ export function MealSuggestions({ onClose }: { onClose?: () => void }) {
       <div className="meal-suggestion-list">
         {rows.slice(0, 12).map((s) => (
           <Card key={s.recipe.id}>
-            <h3>{s.recipe.name}</h3>
+            <Heading>{s.recipe.name}</Heading>
             <p>
               {s.minutes === undefined ? 'Time unrecorded' : s.minutes + ' min'} ·{' '}
               {s.nutrition.cost === undefined

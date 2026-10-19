@@ -38,7 +38,7 @@ function ClimbEditor({ initial, onClose }: { initial?: Climb; onClose: () => voi
   const [v, set] = useState(initial ?? newClimb());
   const [dirty, setDirty] = useState(false);
   const patch = (p: Partial<Climb>) => {
-    set({ ...v, ...p });
+    set((current) => ({ ...current, ...p }));
     setDirty(true);
   };
   const close = () => {
@@ -196,7 +196,7 @@ function SessionEditor({ initial, onClose }: { initial?: ClimbingSession; onClos
   const [selected, select] = useState('');
   const [dirty, setDirty] = useState(false);
   const patch = (p: Partial<ClimbingSession>) => {
-    set({ ...v, ...p });
+    set((current) => ({ ...current, ...p }));
     setDirty(true);
   };
   const entry = (id: string, p: Partial<ClimbingEntry>) =>

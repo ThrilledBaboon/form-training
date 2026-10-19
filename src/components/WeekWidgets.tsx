@@ -10,7 +10,7 @@ export function CombinedWeekWidget({ date }: { date?: string }) {
       {combinedWeek(data, date).map((d) => {
         const plans =
           d.plans.filter(
-            (p) => p.status !== 'started' && !d.workouts.some((s) => s.planId === p.id),
+            (p) => p.status === 'planned' && !d.workouts.some((s) => s.planId === p.id),
           ).length +
           d.routines.length +
           d.climbingPlans.length;
@@ -25,7 +25,7 @@ export function CombinedWeekWidget({ date }: { date?: string }) {
                 })}
               </strong>
               <small>
-                {plans} training plans · {d.meals.length} meals planned
+                {plans} session plans · {d.meals.length} meals planned
               </small>
             </span>
             <span>

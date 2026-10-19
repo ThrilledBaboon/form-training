@@ -11,20 +11,18 @@ test('active workout brings forward earlier exercise and set notes without openi
   data.sets[0].notes = 'Pause at the bottom';
   data.sets[0].partialReps = 2;
   await page.goto(base + '#/settings');
-  await page
-    .getByLabel('Choose a JSON backup', { exact: true })
-    .setInputFiles({
-      name: 'continuity.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(
-        JSON.stringify({
-          app: 'FORM',
-          schemaVersion: 2,
-          exportedAt: new Date().toISOString(),
-          data,
-        }),
-      ),
-    });
+  await page.getByLabel('Choose a JSON backup', { exact: true }).setInputFiles({
+    name: 'continuity.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        app: 'FORM',
+        schemaVersion: 2,
+        exportedAt: new Date().toISOString(),
+        data,
+      }),
+    ),
+  });
   let dialog = page.getByRole('dialog');
   await dialog.getByLabel('Import method').selectOption('replace');
   page.once('dialog', (d) => d.accept());

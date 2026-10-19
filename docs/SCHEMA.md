@@ -30,7 +30,7 @@ Completed set/item `setup` snapshots retain profile identity, load convention an
 - IndexedDB v2: adds the recovery snapshot table and merges missing settings defaults without replacing existing preferences.
 - IndexedDB v3: adds food stores without modifying or clearing gym tables.
 - IndexedDB v4: adds singleton `workspaces` without rewriting Gym/Food records. Its validated page revisions detect stale editors.
-- JSON envelope schema v4: `{app: "FORM", schemaVersion: 4, exportedAt, scope, manifest, data}`. Scope is `complete` or `categories`; the manifest records categories, format version and attachment count. Schema 2 gym backups migrate in memory with empty food stores; schema 3 Food backups also remain supported. Old backups omit workspace preferences: replacement creates one default Overview and merge preserves existing pages. Existing Food records survive a merge. Unsupported versions are rejected. Gym library-sharing files retain schema 1.
+- JSON envelope schema v5: `{app: "FORM", schemaVersion: 5, exportedAt, scope, manifest, data}`. Scope is `complete` or `categories`; the manifest records categories, format version and attachment count. Schema 2 gym backups migrate in memory with empty food stores; schema 3 Food and schema 4 Workspace backups also remain supported. Versions 2–4 initialize empty Climbing data. Old backups omit workspace preferences: replacement creates one default Overview and merge preserves existing pages. Existing Food records survive a merge. Unsupported versions are rejected. Gym library-sharing files retain schema 1.
 
 Dexie upgrades run transactionally. The current migration is additive; it does not rewrite or discard training history. A future destructive migration must first preserve a recoverable snapshot and be covered by upgrade/rollback tests. Users should export an independent file before upgrades.
 
@@ -74,3 +74,7 @@ and its recovery snapshot roll back together. Historical food snapshots delibera
 past values after recipe edits.
 
 Muscle analytics index session items and mappings and visit completed sets in linear passes, with per-exercise median sorting. Exercise history groups relevant sets before comparing sessions. A regression fixture exercises 30,000 sets across 1,500 sessions. Records are memoised in views until underlying data changes. The app still loads the local dataset into memory; archive pagination/worker-based aggregation may be useful for substantially larger datasets.
+
+## Climbing (IndexedDB version 5)
+
+The `climbing` store contains one validated singleton with a revision and ID-addressed climb, session and dated-plan arrays. Climb photos are embedded raster attachments. Session entries preserve literal name, grade/scale, environment, discipline and venue snapshots; library edits and archives do not rewrite history. Session results distinguish attempts, clean completions, rests and flashes. New records use date-only dates and optional recorded minutes. Writes are transactional and stale record editors are rejected. Complete/category backups include Climbing and count its photos in the attachment manifest. The workspace Climbing system flag defaults to enabled for older preferences.
