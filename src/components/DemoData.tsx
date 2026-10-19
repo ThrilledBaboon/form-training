@@ -10,6 +10,7 @@ export function DemoDataSettings() {
   const [loaded, setLoaded] = useState(false);
   if (!localDemoAvailable()) return null;
   const count = data.sessions.filter((s) => isDemo(s.id)).length;
+  const climbs = data.climbing?.sessions.filter((s) => isDemo(s.id)).length ?? 0;
   return (
     <Card>
       <SectionTitle
@@ -17,14 +18,15 @@ export function DemoDataSettings() {
         sub="Six months of fictional examples. Available only on localhost."
       />
       <p>
-        Explore training progression, weigh-ins, food logs, recipes, kitchen stock, meal plans and
-        spending. Existing records, page layouts and calorie visibility are preserved. A recovery
-        snapshot is saved before loading or removing samples.
+        Explore training progression, climbing, weigh-ins, food logs, recipes, kitchen stock, meal
+        plans and spending. Existing records, page layouts and calorie visibility are preserved. A
+        recovery snapshot is saved before loading or removing samples.
       </p>
-      {(count > 0 || loaded) && (
+      {(count > 0 || climbs > 0 || loaded) && (
         <p role="status">
-          {count} sample workouts loaded. Find the full-period charts in My pages → Jack · six
-          months [Demo].
+          {count} sample workouts loaded · {climbs} sample climbing sessions. Find the full-period
+          charts in My pages → <a href="#/pages?page=demo-jack-v1-page">Jack · six months [Demo]</a>{' '}
+          and <a href="#/pages?page=demo-jack-v1-climbing-page">Jack · climbing [Demo]</a>.
         </p>
       )}
       <div className="inline-actions">
@@ -45,7 +47,7 @@ export function DemoDataSettings() {
         </AsyncButton>
         <AsyncButton
           variant="secondary"
-          disabled={!count && !loaded}
+          disabled={!count && !climbs && !loaded}
           onAction={() =>
             run(async () => {
               const retained = await removeJackDemo();

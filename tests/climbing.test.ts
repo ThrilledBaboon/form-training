@@ -7,6 +7,7 @@ import {
   climbSnapshot,
   emptyClimbing,
   climbingGradeGroups,
+  climbingActivity,
 } from '../src/lib/climbing-model';
 import { newClimb, saveClimbingRecord, deleteClimbingSession } from '../src/lib/climbing-actions';
 import { importBackup, parseBackup, serialise } from '../src/lib/backup';
@@ -58,6 +59,24 @@ async function sample() {
   };
 }
 describe('Climbing system', () => {
+  it('charts recorded days chronologically, sums same-day visits and excludes drafts and rested completions', async () => {
+    const { s } = await sample();
+    const flash = {
+      ...s,
+      date: '2026-10-10',
+      entries: [{ ...s.entries[0], attempts: 1, result: 'flash' as const }],
+    };
+    const rested = {
+      ...s,
+      entries: [{ ...s.entries[0], attempts: 2, result: 'with_rests' as const }],
+    };
+    const draft = { ...s, status: 'draft' as const };
+    expect(climbingActivity([s, flash, rested, draft])).toEqual([
+      { date: '2026-10-10', value: 1, completions: 1 },
+      { date: '2026-10-15', value: 5, completions: 1 },
+    ]);
+    expect(climbingActivity([draft])).toEqual([]);
+  });
   it('persists a mixed history snapshot independently from library edits, archives and disabled systems', async () => {
     const { c, s } = await sample();
     await saveClimbingRecord(

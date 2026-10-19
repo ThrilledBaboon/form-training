@@ -3,6 +3,7 @@ import { emptyData, type Data, type Item, type Routine } from './model';
 import { emptyFood, IngredientSchema, RecipeSchema, type Recipe, type Unit } from './food-model';
 import { foodDay, shiftDay, recipeNutrition } from './food-calc';
 import { defaultWorkspace, makeWidget } from './workspace-model';
+import { climbSnapshot, emptyClimbing, type Climb } from './climbing-model';
 
 export const DEMO_PREFIX = 'demo-jack-v1-';
 export const demoId = (value: string) => DEMO_PREFIX + value;
@@ -31,6 +32,7 @@ export function createJackDemo(today = foodDay()): Data {
   const food = structuredClone(emptyFood);
   const workspace = defaultWorkspace();
   const data: Data = { ...structuredClone(emptyData), ...c, routines: [], workspace, food };
+  data.climbing = createClimbingDemo(from, today, stamp);
   data.settings = { ...data.settings, weekTarget: 4, goalKg: 78 };
   workspace.profile = { name: 'Jack', onboarding: 'completed', updatedAt: at };
   food.foodSettings = {
@@ -646,5 +648,191 @@ export function createJackDemo(today = foodDay()): Data {
       makeWidget('context', {}, demoId('widget-context')),
     ],
   });
+  workspace.pages.push({
+    id: demoId('climbing-page'),
+    name: 'Jack · climbing [Demo]',
+    range: { from, to: today, days: 0 },
+    revision: 0,
+    widgets: [
+      makeWidget(
+        'notes',
+        {
+          note: 'Six months of fictional climbing for Jack: indoor and outdoor bouldering, top rope, auto belay and lead. Attempts include unsuccessful tries; clean completions exclude climbs with rests. All venues and climbs are invented. Remove the samples in Settings & data → Jack demo data.',
+        },
+        demoId('climbing-widget-note'),
+      ),
+      { ...makeWidget('climbing-trend', {}, demoId('climbing-widget-trend')), size: 'wide' },
+      makeWidget('climbing-totals', {}, demoId('climbing-widget-totals')),
+      makeWidget('climbing-projects', {}, demoId('climbing-widget-projects')),
+      makeWidget('climbing-sessions', {}, demoId('climbing-widget-sessions')),
+      makeWidget('climbing-grades', {}, demoId('climbing-widget-grades')),
+    ],
+  });
+  return data;
+}
+
+function createClimbingDemo(
+  from: string,
+  today: string,
+  stamp: (day: string, hour?: number) => string,
+) {
+  const data = structuredClone(emptyClimbing);
+  const pools: {
+    venue: string;
+    environment: Climb['environment'];
+    type: Climb['type'];
+    scale: string;
+    grades: string[];
+  }[] = [
+    {
+      venue: 'Demo Boulder Works',
+      environment: 'indoor',
+      type: 'bouldering',
+      scale: 'Font',
+      grades: ['4', '4+', '5', '5+', '6A', '6A+', '6B', '6B+'],
+    },
+    {
+      venue: 'Demo Rope Centre',
+      environment: 'indoor',
+      type: 'top_rope',
+      scale: 'French',
+      grades: ['4+', '5', '5+', '6a', '6a+', '6b', '6b+', '6c'],
+    },
+    {
+      venue: 'Demo Rope Centre',
+      environment: 'indoor',
+      type: 'auto_belay',
+      scale: 'French',
+      grades: ['4', '4+', '5', '5+', '6a', '6a+'],
+    },
+    {
+      venue: 'Demo Rope Centre',
+      environment: 'indoor',
+      type: 'lead',
+      scale: 'French',
+      grades: ['4+', '5', '5+', '6a', '6a+', '6b', '6b+', '6c'],
+    },
+    {
+      venue: 'Demo Gritstone Edge',
+      environment: 'outdoor',
+      type: 'bouldering',
+      scale: 'Font',
+      grades: ['3', '4', '4+', '5', '5+', '6A', '6A+'],
+    },
+    {
+      venue: 'Demo Limestone Crag',
+      environment: 'outdoor',
+      type: 'lead',
+      scale: 'French',
+      grades: ['4+', '5', '5+', '6a', '6a+', '6b', '6b+'],
+    },
+    {
+      venue: 'Demo Colour Wall',
+      environment: 'indoor',
+      type: 'bouldering',
+      scale: 'Gym colours',
+      grades: ['Green', 'Blue', 'Red', 'Purple', 'Black'],
+    },
+  ];
+  const library = pools.map((p, pool) =>
+    p.grades.map((grade, index): Climb => ({
+      id: demoId(`climb-${pool}-${index}`),
+      name: `${['Corner balance', 'Slab steps', 'Pocket line', 'Overhang', 'Technical traverse', 'Small edges', 'Steep finish', 'Roof line'][index]} [Demo]`,
+      venue: p.venue,
+      environment: p.environment,
+      type: p.type,
+      grade,
+      gradeScale: p.scale,
+      notes:
+        note +
+        ' ' +
+        ['Focus on quiet feet.', 'Try the high right foot.', 'Rest before the final section.'][
+          index % 3
+        ],
+      nextTry:
+        index === p.grades.length - 1
+          ? 'DEMO · revisit the crux after warming up; try the higher left foot.'
+          : '',
+      project:
+        index === p.grades.length - 1
+          ? 'active'
+          : index === p.grades.length - 2
+            ? 'completed'
+            : 'none',
+      archived: false,
+      updatedAt: stamp(today),
+    })),
+  );
+  data.climbs = library.flat();
+  let sessionIndex = 0;
+  for (let date = from, day = 0; date <= today; date = shiftDay(date, 1), day++) {
+    const weekday = new Date(date + 'T12:00:00').getDay();
+    const week = Math.floor(day / 7);
+    // Build from one to two sessions a week, with a holiday and occasional missed visits.
+    if (
+      (weekday !== 0 && (weekday !== 3 || week < 4)) ||
+      week === 12 ||
+      [46, 112, 151].includes(day)
+    )
+      continue;
+    const pool = sessionIndex % pools.length;
+    const climbs = library[pool];
+    const count = 4 + (sessionIndex % 3);
+    const limit = Math.min(climbs.length - 1, 3 + Math.floor(week / 5));
+    const entries = Array.from({ length: count }, (_, i) => {
+      const difficulty = i === count - 1 ? limit : i % Math.max(1, limit);
+      const climb = climbs[difficulty];
+      const hard = difficulty >= limit;
+      const flash = !hard && (sessionIndex + i) % 3 === 0;
+      const result = flash
+        ? 'flash'
+        : hard && sessionIndex % 3 !== 0
+          ? climb.type !== 'bouldering' && sessionIndex % 2 === 0
+            ? 'with_rests'
+            : 'attempt'
+          : 'completed';
+      return {
+        id: demoId(`climbing-entry-${date}-${i}`),
+        climbId: climb.id,
+        snapshot: climbSnapshot(climb),
+        attempts: flash ? 1 : hard ? 3 + (sessionIndex % 4) : 1 + ((sessionIndex + i) % 3),
+        result: result as 'flash' | 'with_rests' | 'attempt' | 'completed',
+        notes:
+          note +
+          (hard
+            ? ' Working on the crux; try a higher left foot next time.'
+            : ' Controlled movement and quieter feet.'),
+      };
+    });
+    data.sessions.push({
+      id: demoId('climbing-session-' + date),
+      name: `${pools[pool].environment === 'outdoor' ? 'Outdoor' : 'Evening'} climbing [Demo]`,
+      date,
+      durationMinutes: sessionIndex % 9 === 0 ? undefined : 55 + (sessionIndex % 6) * 10,
+      notes:
+        note +
+        (week % 6 === 0
+          ? ' Easier technique session.'
+          : ' Warm-ups, a few steady climbs and project attempts.'),
+      status: 'completed',
+      entries,
+      updatedAt: stamp(date, 20),
+    });
+    sessionIndex++;
+  }
+  for (const [index, offset] of [1, 4, 8].entries()) {
+    const pool = [0, 1, 4][index];
+    data.plans.push({
+      id: demoId('climbing-plan-' + offset),
+      name: ['Bouldering technique [Demo]', 'Rope session [Demo]', 'Outdoor projects [Demo]'][
+        index
+      ],
+      date: shiftDay(today, offset),
+      venue: pools[pool].venue,
+      notes: note,
+      type: pools[pool].type,
+      updatedAt: stamp(today),
+    });
+  }
   return data;
 }

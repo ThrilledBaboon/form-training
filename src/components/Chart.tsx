@@ -73,6 +73,7 @@ export function TrendChart({
             }
           />
           <Tooltip
+            itemStyle={{ color: 'var(--ink)' }}
             contentStyle={{
               borderRadius: 12,
               border: '1px solid var(--line)',
@@ -108,7 +109,7 @@ export function TrendChart({
       </ResponsiveContainer>
       <p className="chart-caption">
         {data.length} recorded points · latest {fmt(Number(data[data.length - 1].value))} {unit}.{' '}
-        {secondary && 'Dashed line: moving average.'}
+        {secondary && `Dashed line: ${secondaryLabel}.`}
       </p>
     </div>
   );

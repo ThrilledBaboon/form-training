@@ -1,7 +1,8 @@
 import { useApp } from '../lib/context';
-import { emptyClimbing, climbingGradeGroups } from '../lib/climbing-model';
+import { emptyClimbing, climbingGradeGroups, climbingActivity } from '../lib/climbing-model';
 import { Button } from './ui';
 import { go } from '../lib/context';
+import { TrendChart } from './Chart';
 export function ClimbingWidget({ type, from, to }: { type: string; from: string; to: string }) {
   const { data } = useApp();
   const c = data.climbing ?? emptyClimbing;
@@ -9,6 +10,21 @@ export function ClimbingWidget({ type, from, to }: { type: string; from: string;
     .filter((s) => s.status === 'completed' && s.date >= from && s.date <= to)
     .sort((a, b) => b.date.localeCompare(a.date));
   const drafts = c.sessions.filter((s) => s.status === 'draft');
+  if (type === 'climbing-trend')
+    return (
+      <>
+        <TrendChart
+          data={climbingActivity(sessions)}
+          label="Climbing attempts"
+          secondary="completions"
+          secondaryLabel="Clean completions"
+        />
+        <p className="small-text muted">
+          Each point is a recorded climbing day across all disciplines. Clean completions include
+          flashes and exclude climbs with rests. Grades are not combined.
+        </p>
+      </>
+    );
   if (type === 'climbing-start')
     return (
       <div className="widget-start">

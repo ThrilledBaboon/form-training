@@ -14,6 +14,11 @@ try {
       {
         path: '.local/jack-demo/jack-six-month-demo.json',
         workouts: data.sessions.length,
+        climbingSessions: data.climbing.sessions.length,
+        climbs: data.climbing.climbs.length,
+        climbingAttempts: data.climbing.sessions
+          .flatMap((s) => s.entries)
+          .reduce((n, e) => n + e.attempts, 0),
         sets: data.sets.length,
         weighIns: data.bodyweights.length,
         meals: data.food.foodEntries.length,

@@ -43,6 +43,13 @@ export const WIDGETS = [
     'live',
   ],
   [
+    'climbing-trend',
+    'Climbing activity',
+    'Attempts and clean completions over recorded climbing days.',
+    'climbing',
+    'range',
+  ],
+  [
     'climbing-totals',
     'Climbing totals',
     'Recorded sessions, attempts, clean completions and time.',

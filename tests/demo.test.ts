@@ -6,6 +6,7 @@ import { parseBackup, serialise } from '../src/lib/backup';
 import { dailyMacros } from '../src/lib/food-calc';
 import { saveProfile } from '../src/lib/profile';
 import { startSession } from '../src/lib/actions';
+import { emptyClimbing } from '../src/lib/climbing-model';
 
 const today = '2026-10-18';
 let database: TrainingDB;
@@ -32,6 +33,26 @@ it('generates a valid, deterministic six-month backup with progression and linke
   expect(data.food!.purchases.length).toBeGreaterThan(25);
   expect(dailyMacros(data.food!, today).protein).toBeGreaterThan(90);
   expect(data.food!.foodSettings.showCalories).toBe(false);
+  const climbing = data.climbing!;
+  expect(climbing.sessions.length).toBeGreaterThan(40);
+  expect(climbing.climbs.length).toBeGreaterThan(40);
+  expect(new Set(climbing.sessions.map((s) => s.date.slice(0, 7))).size).toBe(7);
+  expect(
+    new Set(climbing.sessions.flatMap((s) => s.entries.map((e) => e.snapshot.type))).size,
+  ).toBe(4);
+  expect(
+    new Set(climbing.sessions.flatMap((s) => s.entries.map((e) => e.snapshot.environment))).size,
+  ).toBe(2);
+  expect(new Set(climbing.sessions.flatMap((s) => s.entries.map((e) => e.result))).size).toBe(4);
+  expect(climbing.sessions.every((s) => s.date >= '2026-04-18' && s.date <= today)).toBe(true);
+  expect(climbing.sessions.some((s) => s.durationMinutes === undefined)).toBe(true);
+  expect(climbing.climbs.some((c) => c.project === 'active')).toBe(true);
+  expect(climbing.climbs.some((c) => c.project === 'completed')).toBe(true);
+  expect(data.workspace!.pages.find((p) => p.id === demoId('climbing-page'))!.range).toEqual({
+    days: 0,
+    from: '2026-04-18',
+    to: today,
+  });
   for (const purchase of data.food!.purchases)
     expect(purchase.total).toBeCloseTo(
       purchase.lines.reduce((sum, l) => sum + l.paid, 0),
@@ -142,7 +163,73 @@ it('returns a fresh database to its original records and allows loading again', 
   expect(after.food).toEqual(before.food);
   expect(after.workspace!.profile).toEqual(before.workspace!.profile);
   expect(after.sessions).toEqual([]);
+  expect(after.climbing!.sessions).toEqual([]);
+  expect(after.climbing!.climbs).toEqual([]);
+  expect(after.climbing!.plans).toEqual([]);
   expect(await loadJackDemo(database, today)).toBe(true);
+});
+
+async function legacyDemo() {
+  await loadJackDemo(database, today);
+  const current = await readData(database);
+  const climb = { ...current.climbing!.climbs[0], id: 'my-own-climb', notes: 'Keep my beta' };
+  await database.climbing.put({ ...emptyClimbing, climbs: [climb] });
+  const workspace = current.workspace!;
+  workspace.pages = workspace.pages.filter((p) => p.id !== demoId('climbing-page'));
+  workspace.pages.find((p) => p.id === demoId('page'))!.name = 'My customised charts';
+  await database.workspaces.put(workspace);
+  await database.bodyweights.delete(current.bodyweights[0].id);
+  const snapshot = (await database.backups.get(demoId('after')))!;
+  const seeded = parseBackup(snapshot.json).data;
+  seeded.climbing = structuredClone(emptyClimbing);
+  seeded.workspace!.pages = seeded.workspace!.pages.filter((p) => p.id !== demoId('climbing-page'));
+  await database.backups.put({ ...snapshot, json: serialise(seeded) });
+  return readData(database);
+}
+
+it('extends an older Jack demo once without replacing records, preferences or customised pages', async () => {
+  const before = await legacyDemo();
+  expect(await loadJackDemo(database, today)).toBe(true);
+  const loaded = await readData(database);
+  expect(loaded.climbing!.climbs).toEqual(expect.arrayContaining(before.climbing!.climbs));
+  expect(loaded.climbing!.sessions.length).toBeGreaterThan(40);
+  for (const key of ['sessions', 'sets', 'bodyweights', 'food', 'settings'] as const)
+    expect(loaded[key]).toEqual(before[key]);
+  expect(loaded.workspace!.pages).toEqual(expect.arrayContaining(before.workspace!.pages));
+  expect(loaded.workspace!.systems).toEqual(before.workspace!.systems);
+  expect(await loadJackDemo(database, today)).toBe(false);
+  expect(await readData(database)).toEqual(loaded);
+  expect(() => parseBackup(serialise(loaded))).not.toThrow();
+  await removeJackDemo(database);
+  expect((await readData(database)).climbing!.climbs).toEqual(before.climbing!.climbs);
+  expect((await readData(database)).climbing!.sessions).toEqual([]);
+});
+
+it('rolls back a failed older-demo extension together with its recovery snapshot', async () => {
+  const before = await legacyDemo();
+  const count = await database.backups.count();
+  const spy = vi.spyOn(database.workspaces, 'put').mockRejectedValueOnce(Error('disk full'));
+  await expect(loadJackDemo(database, today)).rejects.toThrow('disk full');
+  spy.mockRestore();
+  expect(await readData(database)).toEqual(before);
+  expect(await database.backups.count()).toBe(count);
+  expect(await loadJackDemo(database, today)).toBe(true);
+});
+
+it('keeps sample climbs and plans used by real climbing sessions when removing the demo', async () => {
+  await loadJackDemo(database, today);
+  const current = (await readData(database)).climbing!;
+  const sample = current.sessions[0];
+  const session = { ...sample, id: 'my-climbing-session', planId: current.plans[0].id };
+  await database.climbing.put({ ...current, sessions: [...current.sessions, session] });
+  expect(await removeJackDemo(database)).toBeGreaterThan(0);
+  const removed = await readData(database);
+  expect(removed.climbing!.sessions).toEqual([session]);
+  expect(removed.climbing!.plans.map((p) => p.id)).toEqual([session.planId]);
+  expect(removed.climbing!.climbs.map((c) => c.id).sort()).toEqual(
+    [...new Set(session.entries.map((e) => e.climbId))].sort(),
+  );
+  expect(() => parseBackup(serialise(removed))).not.toThrow();
 });
 
 it('rolls back records and recovery markers if loading fails after the merge', async () => {

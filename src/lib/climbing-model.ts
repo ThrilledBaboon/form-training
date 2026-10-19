@@ -149,3 +149,17 @@ export function climbingGradeGroups(sessions: ClimbingSession[]) {
     }
   return [...groups.values()];
 }
+
+/** Counts can be combined across disciplines; grades cannot. Drafts never enter charts. */
+export function climbingActivity(sessions: ClimbingSession[]) {
+  const days = new Map<string, { date: string; value: number; completions: number }>();
+  for (const s of sessions.filter((s) => s.status === 'completed')) {
+    const row = days.get(s.date) ?? { date: s.date, value: 0, completions: 0 };
+    row.value += s.entries.reduce((n, e) => n + e.attempts, 0);
+    row.completions += s.entries.filter(
+      (e) => e.result === 'completed' || e.result === 'flash',
+    ).length;
+    days.set(s.date, row);
+  }
+  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
+}

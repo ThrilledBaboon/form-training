@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 const base = process.env.TEST_SUBPATH || '/';
 
 test('local demo fills six-month charts, persists, avoids duplicates and can be removed', async ({
@@ -27,11 +28,33 @@ test('local demo fills six-month charts, persists, avoids duplicates and can be 
     path: `test-results/jack-demo-${test.info().project.name}.png`,
     fullPage: true,
   });
+  await page.goto(base + '#/pages?page=demo-jack-v1-climbing-page');
+  await expect(
+    page.getByRole('heading', { name: 'Jack · climbing [Demo]', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Climbing activity', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('img', { name: /Climbing attempts: \d+ recorded points/ }),
+  ).toBeVisible();
+  await expect(page.getByText('Dashed line: Clean completions.', { exact: false })).toBeVisible();
+  const climbingTotals = page.getByRole('region', { name: 'Climbing totals', exact: true });
+  await expect(climbingTotals).toContainText(/\d+ attempts/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.reload();
+  await expect(
+    page.getByRole('img', { name: /Climbing attempts: \d+ recorded points/ }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: `test-results/jack-climbing-demo-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   await page.goto(base + '#/settings');
   const panel = page
     .locator('section')
     .filter({ has: page.getByRole('heading', { name: 'Jack demo data', exact: true }) });
   await expect(panel.getByRole('status')).toContainText('sample workouts loaded');
+  await expect(panel.getByRole('status')).toContainText(/\d+ sample climbing sessions/);
   const counts = await panel.getByRole('status').textContent();
   await page.reload();
   await panel.getByRole('button', { name: 'Load Jack’s demo data', exact: true }).click();
@@ -48,5 +71,9 @@ test('local demo fills six-month charts, persists, avoids duplicates and can be 
   ).toBeDisabled();
   await page.goto(base + '#/today');
   await expect(page.locator('.streak-card')).toContainText('0 workout days');
+  await page.goto(base + '#/climbing-home');
+  await expect(
+    page.getByText('0 attempts · 0 clean completions · 0 flashes', { exact: true }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });

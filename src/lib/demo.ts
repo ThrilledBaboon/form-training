@@ -3,6 +3,7 @@ import { importBackup, parseBackup, serialise } from './backup';
 import { createJackDemo, DEMO_PREFIX, demoId } from './demo-data';
 import { foodTables, validateFood } from './food-model';
 import { WorkspaceSchema } from './workspace-model';
+import { ClimbingDataSchema, emptyClimbing, mergeClimbing } from './climbing-model';
 
 const beforeId = demoId('before');
 const afterId = demoId('after');
@@ -12,7 +13,36 @@ export const isDemo = (id: string) => id.startsWith(DEMO_PREFIX);
 
 export async function loadJackDemo(database: TrainingDB = db, today?: string) {
   return database.transaction('rw', database.tables, async () => {
-    if (await database.backups.get(beforeId)) return false;
+    if (await database.backups.get(beforeId)) {
+      const seeded = await database.backups.get(afterId);
+      if (!seeded)
+        throw Error('The original demo recovery snapshot is missing. No records were changed.');
+      const after = parseBackup(seeded.json).data;
+      // Upgrade older Gym/Food demos once, without re-adding edited or removed records.
+      if (after.climbing.sessions.some((s) => isDemo(s.id))) return false;
+      const current = await readData(database);
+      const demo = createJackDemo(today);
+      await database.backups.add({
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        reason: 'Before adding Jack climbing demo data',
+        json: serialise(current),
+      });
+      await database.climbing.put(mergeClimbing(current.climbing ?? emptyClimbing, demo.climbing!));
+      const workspace = current.workspace!;
+      const page = demo.workspace!.pages.find((p) => p.id === demoId('climbing-page'))!;
+      if (
+        !workspace.pages.some((p) => p.id === page.id) &&
+        !workspace.removedPages.some((p) => p.id === page.id)
+      ) {
+        workspace.pages.push(page);
+        workspace.revision++;
+        await database.workspaces.put(WorkspaceSchema.parse(workspace));
+      }
+      after.climbing = demo.climbing!;
+      await database.backups.put({ ...seeded, json: serialise(after) });
+      return true;
+    }
     const before = await readData(database);
     const demo = createJackDemo(today);
     const at = new Date().toISOString();
@@ -107,6 +137,9 @@ export async function removeJackDemo(database: TrainingDB = db) {
     const rows: { table: string; row: { id: string } }[] = [];
     for (const table of tables)
       for (const row of await database.table(table).toArray()) rows.push({ table, row });
+    const climbing = current.climbing ?? structuredClone(emptyClimbing);
+    for (const key of ['climbs', 'sessions', 'plans'] as const)
+      for (const row of climbing[key]) rows.push({ table: 'climbing.' + key, row });
     const sampleRows = new Map(
       rows.filter(({ row }) => isDemo(row.id)).map(({ row }) => [row.id, row]),
     );
@@ -150,6 +183,12 @@ export async function removeJackDemo(database: TrainingDB = db) {
             )
             .map(({ row }) => row.id),
         );
+    for (const key of ['climbs', 'sessions', 'plans'] as const)
+      Object.assign(climbing, {
+        [key]: climbing[key].filter((row) => !isDemo(row.id) || keep.has(row.id)),
+      });
+    climbing.revision++;
+    await database.climbing.put(ClimbingDataSchema.parse(climbing));
     await database.workspaces.put(WorkspaceSchema.parse(workspace));
     await database.settings.put(undoDefaults(before.settings, after.settings, current.settings));
     await database.foodSettings.put(

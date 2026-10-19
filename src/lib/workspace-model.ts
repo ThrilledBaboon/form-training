@@ -205,6 +205,7 @@ export function systemHomePage(system: System): WorkspacePage {
       ? [
           'climbing-start',
           'climbing-totals',
+          'climbing-trend',
           'climbing-sessions',
           'climbing-projects',
           'climbing-grades',
