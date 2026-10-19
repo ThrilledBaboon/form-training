@@ -1,12 +1,12 @@
+import { WeeklyReviewPage } from './components/WeeklyReview';
 import { MealSuggestions } from './components/MealSuggestions';
 import { WeekPlanner } from './pages/WeekPlanner';
-import { Climbing } from './pages/Climbing';
 import { CustomPages } from './pages/CustomPages';
 import { EquipmentSetups } from './pages/EquipmentSetups';
 import { PasteWorkouts } from './pages/PasteWorkouts';
 import { defaultWorkspace, routeSystems, pageRoute } from './lib/workspace-model';
 import { changeWorkspace, setSystemEnabled } from './lib/workspace';
-import { Component, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import {
@@ -59,6 +59,9 @@ import { FoodBudget } from './pages/FoodBudget';
 import { Button, Empty } from './components/ui';
 import { RestTimer } from './components/Timer';
 import { StreakTrigger, WorkoutStreakDialog, useWorkoutStreak } from './components/WorkoutStreak';
+const Climbing = lazy(() =>
+  import('./pages/Climbing').then((module) => ({ default: module.Climbing })),
+);
 const navigation = [
   {
     label: 'YOUR WORKSPACE',
@@ -66,6 +69,7 @@ const navigation = [
       ['today', 'Overview', LayoutDashboard],
       ['pages', 'My pages', LayoutDashboard],
       ['week-planner', 'Week planner', CalendarDays],
+      ['weekly-review', 'Weekly review', BookOpen],
     ],
   },
   {
@@ -300,6 +304,9 @@ export default function App() {
     navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
   let page: ReactNode;
   switch (route) {
+    case 'weekly-review':
+      page = <WeeklyReviewPage key={effectiveHash} />;
+      break;
     case 'week-planner':
       page = <WeekPlanner key={effectiveHash} />;
       break;
@@ -585,7 +592,7 @@ export default function App() {
             </div>
           </header>
           <main id="main-content" tabIndex={-1} key={route}>
-            {page}
+            <Suspense fallback={<p role="status">Opening this system…</p>}>{page}</Suspense>
           </main>
           <footer className="app-footer">
             <span>MADE FOR YOUR NEXT PERSONAL BEST.</span>

@@ -1,3 +1,4 @@
+import { WeeklyReviewView } from './WeeklyReview';
 import { SuggestMealButton } from './MealSuggestions';
 import { CombinedWeekWidget } from './WeekWidgets';
 import { ClimbingWidget } from './ClimbingWidgets';
@@ -103,6 +104,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
     </Empty>
   );
   const exercise = data.exercises.find((e) => e.id === c.exerciseId);
+  if (w.type === 'weekly-review') return <WeeklyReviewView date={today} />;
   if (w.type === 'suggest-meal')
     return (
       <>

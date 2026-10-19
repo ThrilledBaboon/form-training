@@ -6667,3 +6667,23 @@ select {
 .session-continuity p {
   margin-block: 10px;
 }
+
+.weekly-review > section {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 18px;
+}
+.weekly-review .widget-row > span > small,
+.widget-row > span > small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.meal-suggestion-list {
+  display: grid;
+  gap: 16px;
+}
+.weekly-review .widget-row > strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}

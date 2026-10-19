@@ -15,6 +15,13 @@ import {
 
 export const WIDGETS = [
   [
+    'weekly-review',
+    'Weekly review',
+    'Recorded training, climbing and food coverage for a chosen week; optional.',
+    'shared',
+    'today',
+  ],
+  [
     'suggest-meal',
     'Suggest a meal',
     'Review options from saved recipes, stock, time, prices and gram goals.',
@@ -308,7 +315,11 @@ export function rangeData(data: Data, range: ViewRange): Data {
   return result;
 }
 export function widgetDestination(w: Widget) {
-  if (w.type === 'combined-week') return 'week-planner';
+  if (w.type === 'combined-week' || w.type === 'weekly-review')
+    return (
+      (w.type === 'combined-week' ? 'week-planner' : 'weekly-review') +
+      (w.config.date ? '?date=' + w.config.date : '')
+    );
   if (w.type.startsWith('climbing-'))
     return w.type === 'climbing-projects' ? 'climbing-projects' : 'climbing-log';
   const range = w.config.range;
