@@ -166,7 +166,7 @@ export function overviewPage(): WorkspacePage {
   const types = [
     'start',
     'suggestion',
-    'week',
+    'combined-week',
     'streak',
     'training-totals',
     'highlights',

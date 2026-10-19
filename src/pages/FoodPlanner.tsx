@@ -32,7 +32,7 @@ import {
   Badge,
 } from '../components/ui';
 import { db } from '../lib/db';
-function PlanEditor({
+export function PlanEditor({
   date,
   initial,
   recipeId,

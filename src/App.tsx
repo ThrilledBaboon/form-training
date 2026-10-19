@@ -1,3 +1,4 @@
+import { WeekPlanner } from './pages/WeekPlanner';
 import { Climbing } from './pages/Climbing';
 import { CustomPages } from './pages/CustomPages';
 import { EquipmentSetups } from './pages/EquipmentSetups';
@@ -63,6 +64,7 @@ const navigation = [
     items: [
       ['today', 'Overview', LayoutDashboard],
       ['pages', 'My pages', LayoutDashboard],
+      ['week-planner', 'Week planner', CalendarDays],
     ],
   },
   {
@@ -296,6 +298,9 @@ export default function App() {
     navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
   let page: ReactNode;
   switch (route) {
+    case 'week-planner':
+      page = <WeekPlanner key={effectiveHash} />;
+      break;
     case 'climbing-log':
     case 'climbing-library':
     case 'climbing-projects':

@@ -15,6 +15,13 @@ import {
 
 export const WIDGETS = [
   [
+    'combined-week',
+    'Combined week planner',
+    'Training, climbing and meal plans with completed records, for enabled systems.',
+    'shared',
+    'today',
+  ],
+  [
     'climbing-start',
     'Log climbing',
     'Start a session or resume a saved draft.',
@@ -294,6 +301,7 @@ export function rangeData(data: Data, range: ViewRange): Data {
   return result;
 }
 export function widgetDestination(w: Widget) {
+  if (w.type === 'combined-week') return 'week-planner';
   if (w.type.startsWith('climbing-'))
     return w.type === 'climbing-projects' ? 'climbing-projects' : 'climbing-log';
   const range = w.config.range;

@@ -49,6 +49,7 @@ export const ClimbingSessionSchema = z
     id,
     name: z.string().trim().min(1).max(200),
     date: ClimbingDay,
+    planId: id.optional(),
     durationMinutes: z.number().finite().positive().max(1440).optional(),
     notes: text.default(''),
     status: z.enum(['draft', 'completed']),

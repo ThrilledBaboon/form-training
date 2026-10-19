@@ -179,12 +179,15 @@ function ClimbEditor({ initial, onClose }: { initial?: Climb; onClose: () => voi
 function SessionEditor({ initial, onClose }: { initial?: ClimbingSession; onClose: () => void }) {
   const { data, run } = useApp();
   const library = (data.climbing ?? emptyClimbing).climbs.filter((c) => !c.archived);
+  const planId = new URLSearchParams(location.hash.split('?')[1]).get('plan');
+  const plan = (data.climbing ?? emptyClimbing).plans.find((p) => p.id === planId);
   const [v, set] = useState<ClimbingSession>(
     initial ?? {
       id: uid(),
-      name: 'Climbing session',
-      date: foodDay(),
-      notes: '',
+      name: plan?.name ?? 'Climbing session',
+      date: plan?.date ?? foodDay(),
+      notes: plan?.notes ?? '',
+      planId: plan?.id,
       status: 'draft',
       entries: [],
       updatedAt: now(),

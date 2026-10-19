@@ -6631,3 +6631,27 @@ select {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.week-planner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 18px;
+}
+.week-planner-grid section {
+  border-top: 1px solid var(--border);
+  margin-top: 18px;
+  padding-top: 8px;
+}
+.week-plan-row {
+  margin-block: 12px;
+  overflow-wrap: anywhere;
+}
+.week-plan-row > small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.week-planner-grid .button {
+  white-space: normal;
+  text-align: left;
+}
