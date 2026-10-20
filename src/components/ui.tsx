@@ -220,7 +220,9 @@ export function Metric({
         {value}
         <small>{unit}</small>
       </div>
-      <p>{foot || 'Based on completed working sets'}</p>
+      <p className={foot ? undefined : 'metric-default-note'}>
+        {foot || 'Based on completed working sets'}
+      </p>
     </Card>
   );
 }

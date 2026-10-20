@@ -12,6 +12,8 @@ The page date range applies to historical widgets. Their configuration can overr
 
 **Workout actions** combines **Start a workout** (or **Resume workout**), **Choose a routine** and **Suggest session** in one widget. Suggestions open the existing editable preview and require acceptance before starting. Existing Start or resume widgets gain these buttons automatically, keeping their saved IDs, titles and positions. New Overview and Training templates use this combined widget without a separate suggestion card. Saved layouts stay as arranged; remove any unwanted standalone **Suggested session** widget in **Edit page**, or add one independently from the widget catalogue.
 
+Widgets adapt to the width of their card, including half-width phone layouts. Streaks put **View streak** below the count and rest bank. Other **Explore** links sit below the widget content. Narrow cards stack rows and controls, simplify training totals, and show macro goals beside their recorded amounts with small progress bars. Charts, practice wheels, wall styles and calendar controls resize to fit. These presentation changes keep saved layouts, filters and records intact.
+
 ## Share a layout
 
 **Share layout** previews the exact file before **Download layout**. Send that file to another FORM user. They choose **Import layout**, review the arrangement and required systems, map exercises/ingredients to their library, and confirm. Unresolved references remain configurable. Unsupported widget types remain inert placeholders. A repeated import is blocked unless another copy is explicitly selected. Import creates a new page by default; replacement requires confirmation and retains a recoverable previous layout.

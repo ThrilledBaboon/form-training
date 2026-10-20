@@ -1,4 +1,4 @@
-import { useId, useContext } from 'react';
+import { useId, useContext, useState } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -35,6 +35,7 @@ export function TrendChart({
   zeroBaseline?: boolean;
 }) {
   const gradientId = 'chart-' + useId().replaceAll(':', '');
+  const [narrow, setNarrow] = useState(false);
   const { data: appData } = useApp();
   const overrides = useContext(ChartOptionsContext);
   const options = overrides ?? personalisation(appData.settings).charts;
@@ -52,8 +53,15 @@ export function TrendChart({
       role="img"
       aria-label={`${label}: ${points.length} ${grouped ? 'weekly averages' : 'recorded points'}. Latest ${fmt(Number(points[points.length - 1].value))} ${unit}.`}
     >
-      <ResponsiveContainer width="100%" height={210}>
-        <ComposedChart data={points} margin={{ top: 15, right: 15, left: 0, bottom: 5 }}>
+      <ResponsiveContainer
+        width="100%"
+        height={narrow ? 180 : 210}
+        onResize={(width) => setNarrow(width < 240)}
+      >
+        <ComposedChart
+          data={points}
+          margin={{ top: 15, right: narrow ? 6 : 15, left: 0, bottom: 5 }}
+        >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.2} />
@@ -75,15 +83,15 @@ export function TrendChart({
             dataKey="date"
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 11, fill: 'var(--muted)' }}
+            tick={{ fontSize: narrow ? 10 : 11, fill: 'var(--muted)' }}
             minTickGap={24}
           />
           <YAxis
             hide={!options.axes}
-            width={48}
+            width={narrow ? 36 : 48}
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 11, fill: 'var(--muted)' }}
+            tick={{ fontSize: narrow ? 10 : 11, fill: 'var(--muted)' }}
             tickFormatter={(v) => fmt(v, Math.abs(v) < 10 ? 2 : 0)}
             domain={
               zeroBaseline

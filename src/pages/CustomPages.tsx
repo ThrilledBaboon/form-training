@@ -18,6 +18,7 @@ import {
   Upload,
   Home,
   ChevronDown,
+  ArrowUpRight,
 } from 'lucide-react';
 import { useApp, go } from '../lib/context';
 import {
@@ -439,26 +440,6 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                       </p>
                     )}
                   </div>
-                  {!editing &&
-                    look.showExplore &&
-                    meta &&
-                    !['start', 'suggestion', 'streak', 'notes', 'shortcut'].includes(
-                      widget.type,
-                    ) && (
-                      <a
-                        className="text-link"
-                        aria-label={'Explore ' + (widget.title || meta[1])}
-                        href={
-                          '#/' +
-                          widgetDestination({
-                            ...widget,
-                            config: { ...widget.config, range: widget.config.range ?? page.range },
-                          })
-                        }
-                      >
-                        Explore
-                      </a>
-                    )}
                 </div>
                 {editing && (
                   <div className="widget-editor-controls">
@@ -607,6 +588,26 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                     />
                   </ChartOptionsContext.Provider>
                 )}
+                {!editing &&
+                  !missing.length &&
+                  look.showExplore &&
+                  meta &&
+                  !['start', 'suggestion', 'streak', 'notes', 'shortcut'].includes(widget.type) &&
+                  !widget.type.endsWith('-streak') && (
+                    <a
+                      className="text-link widget-explore"
+                      aria-label={'Explore ' + (widget.title || meta[1])}
+                      href={
+                        '#/' +
+                        widgetDestination({
+                          ...widget,
+                          config: { ...widget.config, range: widget.config.range ?? page.range },
+                        })
+                      }
+                    >
+                      Explore <ArrowUpRight size={16} aria-hidden="true" />
+                    </a>
+                  )}
               </section>
             </Fragment>
           );

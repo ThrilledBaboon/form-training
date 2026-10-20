@@ -671,7 +671,7 @@ export function WidgetContent({
   if (w.type === 'calendar')
     return (
       <>
-        <div className="inline-actions">
+        <div className="widget-calendar-heading">
           <Button
             variant="ghost"
             aria-label="Previous widget month"

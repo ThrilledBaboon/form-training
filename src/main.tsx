@@ -5,6 +5,7 @@ import './styles.css';
 import './themes.css';
 import './personalisation.css';
 import './practice.css';
+import './widget-layout.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

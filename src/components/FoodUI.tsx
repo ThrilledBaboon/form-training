@@ -82,6 +82,16 @@ export function MacroSummary({
                   : `${foodNumber(remaining)} g remaining`}
               </dd>
             )}
+            {targets?.[key] !== undefined && targets[key]! > 0 && (
+              <dd className="macro-mini-target">
+                <small>of {foodNumber(targets[key])} g goal</small>
+                <progress
+                  aria-label={`${macroNames[key]} goal`}
+                  max={targets[key]}
+                  value={Math.min(targets[key]!, macros[key] ?? 0)}
+                />
+              </dd>
+            )}
           </div>
         );
       })}

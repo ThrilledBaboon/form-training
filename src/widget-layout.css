@@ -1,0 +1,242 @@
+/* A widget adapts to its own width, including phone halves and desktop previews. */
+.workspace-widget {
+  container: widget / inline-size;
+  overflow-wrap: anywhere;
+}
+.workspace-widget .widget-heading > div {
+  min-width: 0;
+}
+.workspace-widget :is(.button, button) {
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.workspace-widget .button svg {
+  flex-shrink: 0;
+}
+.workspace-widget :is(input, select, progress) {
+  min-width: 0;
+  max-width: 100%;
+}
+.workspace-widget .practice-wheel {
+  width: min(100%, 180px);
+  height: auto;
+  aspect-ratio: 1;
+}
+.workspace-widget .practice-row > div:first-child {
+  min-width: 0;
+}
+.workspace-widget .widget-metrics > .metric {
+  min-width: 0;
+  margin: 0;
+  box-shadow: none;
+}
+.workspace-widget .metric-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+.workspace-widget .metric-value small {
+  margin-left: 0;
+}
+.workspace-widget .streak-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 12px;
+}
+.workspace-widget .streak-card-copy {
+  min-width: 0;
+  gap: 6px;
+}
+.workspace-widget .streak-card-link {
+  grid-column: 2;
+  justify-self: start;
+  margin-left: 0;
+  font-size: 12px;
+}
+.widget-explore {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 12px;
+  font-size: 12px;
+}
+.widget-calendar-heading {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
+}
+.macro-summary dd.macro-mini-target {
+  display: none;
+}
+
+@container widget (max-width: 240px) {
+  .widget-heading h2 {
+    font-size: 15px;
+  }
+  .workspace-widget .streak-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-widget .streak-card-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .workspace-widget .streak-card-link {
+    grid-column: 1;
+    margin-top: 4px;
+  }
+  .widget-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .workspace-widget .widget-row > strong {
+    max-width: 100%;
+    text-align: left;
+  }
+  .widget-number small {
+    display: block;
+    margin-top: 4px;
+  }
+  .workspace-widget .metric {
+    padding: 10px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    border-bottom: 1px solid var(--line);
+  }
+  .workspace-widget .widget-metrics {
+    gap: 0;
+  }
+  .workspace-widget .metric:last-child {
+    border-bottom: 0;
+  }
+  .metric-default-note {
+    display: none;
+  }
+  .workspace-widget .metric-top {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .workspace-widget .metric-value {
+    font-size: 27px;
+    margin-block: 4px;
+  }
+  .workspace-widget .metric-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .macro-summary {
+    gap: 8px;
+    margin-block: 10px;
+  }
+  .macro-summary > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 4px 6px;
+    grid-column: 1 / -1;
+    padding: 10px 12px;
+  }
+  .macro-summary dd {
+    margin: 0;
+    font-size: 18px;
+    justify-content: flex-end;
+  }
+  .macro-summary dd.macro-mini-target {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 6px;
+    justify-content: stretch;
+  }
+  .macro-summary dd.macro-remaining {
+    grid-column: 1 / -1;
+  }
+  .macro-mini-target small {
+    white-space: normal;
+  }
+  .macro-mini-target progress {
+    width: 100%;
+    height: 6px;
+    accent-color: var(--green);
+  }
+  .macro-summary:has(.macro-mini-target) ~ .macro-target {
+    display: none;
+  }
+  .workspace-widget .practice-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .workspace-widget .practice-row .button {
+    width: 100%;
+  }
+  .practice-metrics {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .widget-week {
+    gap: 2px;
+  }
+  .widget-week a {
+    padding-inline: 0;
+    font-size: 11px;
+  }
+  .widget-week span {
+    font-size: 10px;
+  }
+  .widget-calendar-heading > strong {
+    grid-row: 1;
+    grid-column: 1 / -1;
+  }
+  .widget-calendar-heading > .button {
+    grid-row: 2;
+  }
+  .widget-calendar-heading > .button:last-child {
+    grid-column: 3;
+  }
+  .widget-calendar {
+    gap: 2px;
+    font-size: 10px;
+  }
+  .widget-calendar a {
+    border-radius: 4px;
+  }
+  .widget-calendar small {
+    font-size: 8px;
+    overflow-wrap: anywhere;
+  }
+  .workspace-widget .climbing-wall-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-widget .climbing-wall-button {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    text-align: left;
+    gap: 4px;
+    padding: 8px;
+  }
+  .climbing-wall-button svg {
+    grid-row: span 3;
+  }
+  .climbing-wall-button :is(strong, span) {
+    min-width: 0;
+  }
+  .workspace-widget .anatomy.small {
+    width: 100%;
+  }
+}
+@container macro-summary (max-width: 120px) {
+  .workspace-widget .macro-summary > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-widget .macro-summary dd {
+    justify-content: flex-start;
+  }
+}
