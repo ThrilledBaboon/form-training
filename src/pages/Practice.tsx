@@ -36,8 +36,7 @@ import {
 } from '../lib/practice-actions';
 import {
   freshDrill,
-  rocketLeagueStarters,
-  footballStarters,
+  addPracticeStarters,
   parsePracticeLibrary,
   sharePractice,
   importPracticeLibrary,
@@ -222,23 +221,10 @@ function Library({ p }: { p: PracticeData }) {
           <AsyncButton
             variant="secondary"
             onAction={() =>
-              run(
-                () =>
-                  changePractice(p.id, (current) => {
-                    const starters =
-                      p.id === 'football' ? footballStarters() : rocketLeagueStarters();
-                    starters.drills.forEach((d) => {
-                      if (!current.drills.some((x) => x.id === d.id)) current.drills.push(d);
-                    });
-                    starters.routines.forEach((r) => {
-                      if (!current.routines.some((x) => x.id === r.id)) current.routines.push(r);
-                    });
-                  }),
-                'Starter templates added',
-              )
+              run(() => addPracticeStarters(p.id), 'Starter routines added; existing edits kept')
             }
           >
-            {p.id === 'football' ? 'Add starter football drills' : 'Add starter warm-ups'}
+            Add starter routines
           </AsyncButton>
           <Button
             variant="secondary"

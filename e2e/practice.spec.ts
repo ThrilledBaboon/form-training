@@ -1,6 +1,51 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 const base = process.env.TEST_SUBPATH || '/';
+for (const template of [
+  {
+    system: 'rocket-league',
+    label: 'Rocket League',
+    name: 'Playlist preparation',
+    drill: 'Ball control',
+  },
+  {
+    system: 'football',
+    label: 'Football',
+    name: 'Touch, pass & shoot',
+    drill: 'Close-control touches',
+  },
+]) {
+  test(`${template.label} starter catalogue survives repeat additions and runs a new routine`, async ({
+    page,
+  }) => {
+    await page.goto(base + '#/settings');
+    await page
+      .getByRole('switch', { name: `Enable ${template.label} system`, exact: true })
+      .check();
+    await page.goto(base + `#/${template.system}-library`);
+    await page.getByRole('button', { name: 'Add starter routines', exact: true }).click();
+    await expect(page.getByRole('button', { name: /^Edit / })).toHaveCount(18);
+    await page.getByRole('button', { name: 'Add starter routines', exact: true }).click();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: template.name, exact: true })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: /^Edit / })).toHaveCount(18);
+    await page.getByRole('button', { name: `Edit ${template.name}`, exact: true }).click();
+    await expect(page.getByLabel('Routine name', { exact: true })).toHaveValue(template.name);
+    await page.getByRole('button', { name: 'Save routine', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.goto(base + `#/${template.system}-session`);
+    await page.getByRole('button', { name: `Start ${template.name}`, exact: true }).click();
+    await expect(page.getByRole('heading', { name: template.drill, exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Pause timer', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Resume timer', exact: true })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: template.drill, exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Resume timer', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  });
+}
 test('Rocket League is opt-in, runs a saved warm-up, records results and keeps them when hidden', async ({
   page,
 }) => {
@@ -9,7 +54,7 @@ test('Rocket League is opt-in, runs a saved warm-up, records results and keeps t
   await page.goto(base + '#/settings');
   await page.getByRole('switch', { name: 'Enable Rocket League system', exact: true }).check();
   await page.goto(base + '#/rocket-league-library');
-  await page.getByRole('button', { name: 'Add starter warm-ups', exact: true }).click();
+  await page.getByRole('button', { name: 'Add starter routines', exact: true }).click();
   await expect(page.getByRole('heading', { name: '5-minute warm-up', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Practice goals', exact: true }).click();
   await page.getByLabel('Sessions per week').fill('4');
@@ -78,7 +123,7 @@ test('Football tracks keepy-ups, editable courses, foot-specific shooting and sh
   await page.goto(base + '#/settings');
   await page.getByRole('switch', { name: 'Enable Football system', exact: true }).check();
   await page.goto(base + '#/football-library');
-  await page.getByRole('button', { name: 'Add starter football drills', exact: true }).click();
+  await page.getByRole('button', { name: 'Add starter routines', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Ball control warm-up', exact: true }),
   ).toBeVisible();

@@ -21,6 +21,8 @@ import {
 } from '../src/lib/practice-model';
 import {
   rocketLeagueStarters,
+  footballStarters,
+  addPracticeStarters,
   importPracticeLibrary,
   parsePracticeLibrary,
   sharePractice,
@@ -183,8 +185,8 @@ describe('practice portability and meaningful comparisons', () => {
     await importPracticeLibrary(file, 'rocket-league', db);
     await importPracticeLibrary(file, 'rocket-league', db);
     const after = (await db.practice.get(p.id))!;
-    expect(after.routines).toHaveLength(4);
-    expect(after.routines[3].weekdays).toEqual([]);
+    expect(after.routines).toHaveLength(p.routines.length + 1);
+    expect(after.routines.at(-1)!.weekdays).toEqual([]);
     await expect(importPracticeLibrary(file, 'football', db)).rejects.toThrow('other practice');
     expect(() => parsePracticeLibrary(JSON.stringify({ ...file, sessions: [] }))).toThrow();
     expect(() => parsePracticeLibrary(JSON.stringify({ ...file, drills: [] }))).toThrow();
@@ -268,6 +270,53 @@ describe('practice portability and meaningful comparisons', () => {
     );
     expect(practiceData({}, 'football').sessions).toEqual([]);
   });
+});
+
+describe('starter routine additions', () => {
+  it.each(['rocket-league', 'football'] as const)(
+    'adds the %s catalogue once while preserving edited starters, custom content and active history',
+    async (system) => {
+      const starters = system === 'football' ? footballStarters() : rocketLeagueStarters();
+      expect(starters.routines).toHaveLength(9);
+      expect(new Set(starters.routines.map((r) => r.name)).size).toBe(9);
+      expect(starters.routines.every((r) => r.weekdays.length === 0)).toBe(true);
+      expect(starters.drills.every((d) => d.cue.length > 0 && !d.packCode && !d.link)).toBe(true);
+      // Model an existing user with the original three templates, personal edits and a session.
+      await changePractice(
+        system,
+        (p) => {
+          p.drills = starters.drills.slice(0, 5);
+          p.routines = starters.routines.slice(0, 3);
+          p.drills[0].name = 'My own control drill';
+          p.drills[0].setup = 'My saved setup';
+          p.drills[0].archived = true;
+          p.routines[0].name = 'My own warm-up';
+          p.routines[0].blocks[0].seconds = 45;
+          p.routines[0].weekdays = [2, 4];
+          p.routines.push({ ...structuredClone(p.routines[0]), id: 'my-routine', name: 'Custom' });
+          p.goal = 4;
+          p.focus = 'My own focus';
+        },
+        db,
+      );
+      await startPractice(system, starters.routines[0].id, db);
+      const before = await readData(db);
+      const original = (await db.practice.get(system))!;
+      const added = await addPracticeStarters(system, db);
+      expect(added.routines).toHaveLength(10);
+      expect(added.drills.slice(0, 5)).toEqual(original.drills);
+      expect(added.routines.slice(0, 4)).toEqual(original.routines);
+      expect(added.sessions).toEqual(original.sessions);
+      expect(added.goal).toBe(4);
+      expect(added.focus).toBe('My own focus');
+      expect(added.routines.slice(4).every((r) => !r.weekdays.length)).toBe(true);
+      expect(PracticeDataSchema.safeParse(added).success).toBe(true);
+      const repeated = await addPracticeStarters(system, db);
+      expect({ ...repeated, revision: added.revision }).toEqual(added);
+      const after = await readData(db);
+      expect({ ...after, practice: [] }).toEqual({ ...before, practice: [] });
+    },
+  );
 });
 
 describe('football', () => {
