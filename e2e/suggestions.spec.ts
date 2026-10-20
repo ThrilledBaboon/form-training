@@ -208,3 +208,23 @@ test('existing saved layouts gain merged actions without losing their standalone
   await expect(page.getByRole('button', { name: 'Suggest session', exact: true })).toHaveCount(2);
   await expect(actions.getByRole('button')).toHaveCount(3);
 });
+
+test('merged workout actions fit a half-width widget on a narrow phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  const actions = page.getByRole('region', { name: 'Workout actions', exact: true });
+  await page.getByRole('button', { name: 'Edit page', exact: true }).click();
+  await actions.getByRole('button', { name: 'Configure widget', exact: true }).click();
+  await page.getByText('Appearance & phone layout', { exact: true }).click();
+  await page.getByLabel('Phone widget width', { exact: true }).selectOption('half');
+  await page.getByRole('button', { name: 'Save widget', exact: true }).click();
+  await page.getByRole('button', { name: 'Done editing', exact: true }).click();
+  const buttons = actions.getByRole('button');
+  await expect(buttons).toHaveCount(3);
+  expect(
+    await buttons.evaluateAll((nodes) =>
+      nodes.every((node) => node.scrollWidth <= node.clientWidth),
+    ),
+  ).toBe(true);
+  await buttons.filter({ hasText: 'Suggest session' }).click();
+  await expect(page.getByRole('dialog', { name: 'Suggested session', exact: true })).toBeVisible();
+});

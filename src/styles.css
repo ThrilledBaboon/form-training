@@ -296,6 +296,10 @@
 .workout-actions > .button svg {
   flex-shrink: 0;
 }
+.workout-actions > .button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .workout-actions > p {
   margin: 0;
   overflow-wrap: anywhere;

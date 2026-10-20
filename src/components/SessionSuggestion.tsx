@@ -47,8 +47,8 @@ export function SessionSuggestionCard({ buttonOnly = false }: { buttonOnly?: boo
       }}
     >
       <Sparkles size={16} />
-      Suggest session
-      <ArrowUpRight size={16} />
+      <span>Suggest session</span>
+      {!buttonOnly && <ArrowUpRight size={16} />}
     </Button>
   );
   return (

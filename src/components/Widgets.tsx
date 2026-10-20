@@ -196,12 +196,11 @@ export function WidgetContent({
           }
         >
           <Play size={16} />
-          {active ? 'Resume workout' : 'Start a workout'}
+          <span>{active ? 'Resume workout' : 'Start a workout'}</span>
         </AsyncButton>
         <Button variant="secondary" onClick={() => go('routines')}>
           <Dumbbell size={16} />
-          Choose a routine
-          <ArrowUpRight size={16} />
+          <span>Choose a routine</span>
         </Button>
         <SessionSuggestionCard buttonOnly />
       </div>
