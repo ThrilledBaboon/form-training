@@ -9,6 +9,10 @@ export const destinations = [
   ['workout', 'Active workout'],
   ['routines', 'Routines & plans'],
   ['history', 'Workout history'],
+  ['rocket-league-home', 'Rocket League'],
+  ['rocket-league-library', 'Rocket League drills & routines'],
+  ['rocket-league-session', 'Rocket League practice'],
+  ['rocket-league-history', 'Rocket League history'],
   ['climbing-home', 'Climbing overview'],
   ['climbing-log', 'Climbing sessions'],
   ['climbing-library', 'Climb library'],
@@ -61,7 +65,7 @@ export const PersonalisationSchema = z.object({
         hidden: z.boolean(),
       }),
     )
-    .max(30)
+    .max(40)
     .refine((v) => new Set(v.map((r) => r.route)).size === v.length, 'Duplicate navigation links')
     .default([]),
   mobileRoutes: z

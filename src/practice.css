@@ -1,0 +1,127 @@
+.practice-nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.practice-nav a {
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  color: var(--muted);
+}
+.practice-nav a[aria-current] {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+}
+.practice-stack {
+  display: grid;
+  gap: 1rem;
+}
+.practice-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.practice-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.practice-row > div:first-child {
+  flex: 1;
+  min-width: 140px;
+}
+.practice-row h3,
+.practice-row p {
+  margin: 0.2rem 0;
+}
+.practice-block {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  margin: 0.75rem 0;
+}
+.practice-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.practice-form-grid input,
+.practice-form-grid select {
+  min-width: 0;
+  width: 100%;
+}
+.practice-clock {
+  font-size: clamp(3rem, 12vw, 5rem);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  margin: 1rem 0;
+  font-weight: 700;
+}
+.practice-cue {
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+.practice-targets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+}
+.practice-targets button {
+  min-height: 54px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 8px;
+  color: var(--ink);
+}
+.practice-targets button[aria-pressed='true'] {
+  outline: 3px solid var(--green);
+}
+.practice-diagram {
+  width: 100%;
+  max-height: 260px;
+  background: #274f3b;
+  border-radius: 12px;
+  touch-action: manipulation;
+}
+.practice-diagram[role='button'] {
+  cursor: crosshair;
+}
+.practice-wheel {
+  display: block;
+  width: 180px;
+  height: 180px;
+  margin: 0.5rem auto;
+}
+.practice-metrics {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+}
+.practice-metrics strong {
+  display: block;
+  font-size: 1.7rem;
+}
+.practice-filters {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  align-items: end;
+}
+.practice-filters > * {
+  flex: 1;
+  min-width: 120px;
+}
+@media (max-width: 480px) {
+  .practice-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .practice-row .inline-actions {
+    width: 100%;
+  }
+}

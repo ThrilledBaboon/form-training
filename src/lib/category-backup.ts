@@ -14,6 +14,8 @@ import {
 } from './food-model';
 import { serialise, parseBackup, csv } from './backup';
 export const dataCategories = {
+  'rocket-league': 'Rocket League drills, routines, goals & history',
+  football: 'Football drills, routines, goals & history',
   climbing: 'Climbing library, sessions, goals, projects, plans & photos',
   workspace: 'Pages, profile, systems, equipment & import drafts',
   workouts: 'Workouts & exercise history',
@@ -114,6 +116,13 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
     source[key].forEach((r) => addFood(key, r.id));
   for (const category of selected)
     switch (category) {
+      case 'rocket-league':
+      case 'football':
+        result.practice = [
+          ...(result.practice ?? []),
+          ...(data.practice ?? []).filter((p) => p.id === category),
+        ];
+        break;
       case 'climbing':
         result.climbing = structuredClone(data.climbing);
         break;
@@ -216,6 +225,7 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
     ...Object.entries(result)
       .filter(([key, value]) => key !== 'food' && Array.isArray(value) && value.length)
       .map(([key]) => key),
+    ...selected.filter((c) => c === 'rocket-league' || c === 'football'),
     ...foodTables.filter((key) => target[key].length),
     ...(selected.includes('climbing') ? ['climbing'] : []),
     ...(selected.includes('workspace') ? ['workspace'] : []),

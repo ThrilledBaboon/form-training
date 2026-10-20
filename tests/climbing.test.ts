@@ -274,7 +274,7 @@ describe('Climbing system', () => {
     await saveClimbingRecord('climbs', { ...c, photo }, c.updatedAt, db);
     const original = await readData(db),
       backup = parseBackup(serialise(original));
-    expect(backup.schemaVersion).toBe(5);
+    expect(backup.schemaVersion).toBe(6);
     expect(backup.manifest!.attachments).toBe(1);
     const changed = (await readData(db)).climbing!.climbs[0];
     await saveClimbingRecord('climbs', { ...changed, notes: 'Keep local' }, changed.updatedAt, db);
@@ -307,7 +307,12 @@ describe('Climbing system', () => {
     const upgraded = new TrainingDB(name);
     await upgraded.open();
     const data = await readData(upgraded);
-    expect(data.workspace!.systems).toEqual({ ...oldSystems, climbing: true });
+    expect(data.workspace!.systems).toEqual({
+      ...oldSystems,
+      climbing: true,
+      'rocket-league': false,
+      football: false,
+    });
     expect(data.climbing).toEqual(emptyClimbing);
     await upgraded.delete();
     const backup = JSON.parse(serialise(await readData(db)));

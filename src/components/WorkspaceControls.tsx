@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '../lib/context';
 import {
   defaultWorkspace,
+  systemNames,
   makeWidget,
   WidgetSchema,
   type Widget,
@@ -20,35 +21,40 @@ export function SystemSettings() {
   const { data, run, pending } = useApp();
   const w = data.workspace ?? defaultWorkspace();
   const [systems, setSystems] = useState(w.systems);
-  useEffect(() => setSystems(w.systems), [w.systems.gym, w.systems.food, w.systems.climbing]);
+  useEffect(
+    () => setSystems(w.systems),
+    [
+      w.systems.gym,
+      w.systems.food,
+      w.systems.climbing,
+      w.systems['rocket-league'],
+      w.systems.football,
+    ],
+  );
   return (
     <Card>
       <SectionTitle
         title="Systems"
         sub="Show the tools you use. Turning a system off preserves all records, drafts and page positions."
       />
-      {(['gym', 'climbing', 'food'] as const).map((system) => (
+      {(['gym', 'climbing', 'food', 'rocket-league'] as const).map((system) => (
         <label className="system-switch" key={system}>
           <span>
-            <strong>{system === 'gym' ? 'Gym' : system === 'food' ? 'Food' : 'Climbing'}</strong>
+            <strong>{systemNames[system]}</strong>
             <small>
               {system === 'gym'
                 ? 'Workouts, routines and training insights'
                 : system === 'food'
                   ? 'Recipes, diary, kitchen, shopping and spending'
-                  : 'Climb library, mixed sessions, projects and climbing insights'}
+                  : system === 'climbing'
+                    ? 'Climb library, mixed sessions, projects and climbing insights'
+                    : 'Drills, timed warm-ups, training packs and practice results'}
             </small>
           </span>
           <input
             type="checkbox"
             role="switch"
-            aria-label={
-              system === 'gym'
-                ? 'Enable Gym system'
-                : system === 'food'
-                  ? 'Enable Food system'
-                  : 'Enable Climbing system'
-            }
+            aria-label={'Enable ' + systemNames[system] + ' system'}
             checked={systems[system]}
             disabled={pending}
             onChange={(e) => {

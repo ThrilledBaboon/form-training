@@ -1,3 +1,4 @@
+import { PracticeRowsSchema, emptyPractice, mergePractice } from './practice-model';
 import {
   ClimbingDataSchema,
   emptyClimbing,
@@ -27,12 +28,12 @@ import {
 } from './model';
 const BackupSchema = z.object({
   app: z.literal('FORM'),
-  schemaVersion: z.literal(5),
+  schemaVersion: z.literal(6),
   exportedAt: z.string().datetime({ offset: true }),
   manifest: z
     .object({
       format: z.enum(['FORM complete backup', 'FORM category export']),
-      version: z.literal(5),
+      version: z.literal(6),
       categories: z.array(z.string()),
       requested: z.array(z.string()).optional(),
       attachments: z.number().int().nonnegative(),
@@ -40,6 +41,7 @@ const BackupSchema = z.object({
     .optional(),
   scope: z.enum(['complete', 'categories']).default('complete'),
   data: z.object({
+    practice: PracticeRowsSchema.default([]),
     climbing: ClimbingDataSchema.default(emptyClimbing),
     workspace: WorkspaceSchema.optional(),
     exercises: z.array(ExerciseSchema).max(10000),
@@ -75,13 +77,15 @@ export function serialise(data: Data) {
   const output = JSON.stringify(
     {
       app: 'FORM',
-      schemaVersion: 5,
+      schemaVersion: 6,
       exportedAt: now(),
       scope: 'complete',
       manifest: {
         format: 'FORM complete backup',
-        version: 5,
+        version: 6,
         categories: [
+          'rocket-league',
+          'football',
           'climbing',
           ...entities,
           'workspace',
@@ -94,6 +98,7 @@ export function serialise(data: Data) {
       },
       data: {
         ...data,
+        practice: data.practice ?? [],
         climbing: data.climbing ?? emptyClimbing,
         workspace: data.workspace ?? defaultWorkspace(),
         foodFileIds: undefined,
@@ -159,11 +164,25 @@ export function parseBackup(input: string): Backup {
       data: { ...old.data, climbing: structuredClone(emptyClimbing) },
     };
   }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'schemaVersion' in value &&
+    value.schemaVersion === 5
+  ) {
+    const old = value as { manifest?: object; data?: object };
+    value = {
+      ...value,
+      schemaVersion: 6,
+      manifest: old.manifest ? { ...old.manifest, version: 6 } : undefined,
+      data: { ...old.data, practice: [] },
+    };
+  }
   const parsed = BackupSchema.safeParse(value);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw Error(
-      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2, 3, 4 or 5 backup.`,
+      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2, 3, 4, 5 or 6 backup.`,
     );
   }
   const b = parsed.data;
@@ -249,6 +268,13 @@ export function importPreview(backup: Backup, current: Data) {
         (current.climbing ?? emptyClimbing)[key].some((c) => c.id === r.id),
       ).length,
     })),
+    ...backup.data.practice.map((p) => ({
+      table: p.id + ' practice sessions',
+      total: p.sessions.length,
+      duplicates: p.sessions.filter((s) =>
+        current.practice?.find((c) => c.id === p.id)?.sessions.some((x) => x.id === s.id),
+      ).length,
+    })),
     {
       table: 'workspace pages',
       total: backup.data.workspace?.pages.length ?? 0,
@@ -297,6 +323,8 @@ export async function importBackup(
       json: serialise(before),
     });
     if (mode === 'replace') {
+      await database.practice.clear();
+      if (data.practice.length) await database.practice.bulkPut(data.practice);
       await database.climbing.put(data.climbing);
       for (const key of entities) await database.table(key).clear();
       await database.workspaces.put(data.workspace ?? defaultWorkspace());
@@ -313,6 +341,14 @@ export async function importBackup(
       await database.foodSettings.clear();
       await database.foodSettings.put(data.food.foodSettings);
     } else {
+      for (const row of data.practice)
+        if (checked.scope === 'complete' || checked.manifest?.categories.includes(row.id))
+          await database.practice.put(
+            mergePractice(
+              before.practice?.find((p) => p.id === row.id) ?? emptyPractice(row.id),
+              row,
+            ),
+          );
       if (checked.scope === 'complete' || checked.manifest?.categories.includes('climbing'))
         await database.climbing.put(mergeClimbing(before.climbing ?? emptyClimbing, data.climbing));
       const currentFood = before.food ?? emptyFood;

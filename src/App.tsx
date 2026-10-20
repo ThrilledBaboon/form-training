@@ -4,13 +4,14 @@ import { WeekPlanner } from './pages/WeekPlanner';
 import { CustomPages } from './pages/CustomPages';
 import { EquipmentSetups } from './pages/EquipmentSetups';
 import { PasteWorkouts } from './pages/PasteWorkouts';
-import { defaultWorkspace, routeSystems, pageRoute } from './lib/workspace-model';
+import { defaultWorkspace, routeSystems, pageRoute, systemNames } from './lib/workspace-model';
 import { personalisation, navigationRows, linkName } from './lib/personalisation';
 import { changeWorkspace, setSystemEnabled } from './lib/workspace';
 import { Component, Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import {
+  Gamepad2,
   Mountain,
   LayoutDashboard,
   Dumbbell,
@@ -62,6 +63,7 @@ import { StreakTrigger, WorkoutStreakDialog, useWorkoutStreak } from './componen
 const Climbing = lazy(() =>
   import('./pages/Climbing').then((module) => ({ default: module.Climbing })),
 );
+const Practice = lazy(() => import('./pages/Practice').then((m) => ({ default: m.Practice })));
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })));
 const navigation = [
   {
@@ -80,6 +82,15 @@ const navigation = [
       ['workout', 'Active workout', Dumbbell],
       ['routines', 'Routines & plans', Layers],
       ['history', 'Workout history', HistoryIcon],
+    ],
+  },
+  {
+    label: 'ROCKET LEAGUE',
+    items: [
+      ['rocket-league-home', 'Rocket League', Gamepad2],
+      ['rocket-league-library', 'Drills & routines', Layers],
+      ['rocket-league-session', 'Practice', Gamepad2],
+      ['rocket-league-history', 'Practice history', HistoryIcon],
     ],
   },
   {
@@ -355,6 +366,25 @@ export default function App() {
         />
       );
       break;
+    case 'rocket-league-library':
+    case 'rocket-league-session':
+    case 'rocket-league-history':
+      page = (
+        <Suspense fallback={<p role="status">Opening practice…</p>}>
+          <Practice
+            system="rocket-league"
+            view={
+              route.endsWith('library')
+                ? 'library'
+                : route.endsWith('history')
+                  ? 'history'
+                  : 'session'
+            }
+          />
+        </Suspense>
+      );
+      break;
+    case 'rocket-league-home':
     case 'climbing-home':
     case 'training-home':
     case 'food-home':
@@ -465,11 +495,7 @@ export default function App() {
   if (disabled.length)
     page = (
       <Empty
-        title={
-          disabled
-            .map((s) => (s === 'gym' ? 'Gym' : s === 'food' ? 'Food' : 'Climbing'))
-            .join(' and ') + ' is switched off'
-        }
+        title={disabled.map((s) => systemNames[s]).join(' and ') + ' is switched off'}
         action={
           <Button
             onClick={() =>

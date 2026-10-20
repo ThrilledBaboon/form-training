@@ -1,3 +1,6 @@
+const PracticeWidget = lazy(() =>
+  import('./PracticeWidgets').then((m) => ({ default: m.PracticeWidget })),
+);
 import { WeeklyReviewView } from './WeeklyReview';
 import { SuggestMealButton } from './MealSuggestions';
 import { CombinedWeekWidget } from './WeekWidgets';
@@ -157,6 +160,12 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
       </>
     );
   if (w.type === 'combined-week') return <CombinedWeekWidget date={today} />;
+  if (w.type.startsWith('rocket-league-') || w.type.startsWith('football-'))
+    return (
+      <Suspense fallback={<p role="status">Opening practice view…</p>}>
+        <PracticeWidget widget={w} range={range} />
+      </Suspense>
+    );
   if (w.type.startsWith('climbing-'))
     return (
       <Suspense fallback={<p role="status">Opening climbing view…</p>}>

@@ -26,6 +26,7 @@ import {
   pageRoute,
   systemForPage,
   systemHomePage,
+  systemNames,
   climbingHomeNeedsUpdate,
   type Widget,
   type WorkspacePage,
@@ -144,10 +145,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           Your saved pages and records are retained. Try opening this page again.
         </Empty>
       ) : (
-        <p role="status">
-          Preparing your {system === 'gym' ? 'training' : system === 'food' ? 'food' : 'climbing'}{' '}
-          page…
-        </p>
+        <p role="status">Preparing your {system ? systemNames[system] : 'custom'} page…</p>
       );
   if (!page)
     return (
@@ -174,7 +172,9 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
               ? 'YOUR FOOD'
               : system === 'climbing'
                 ? 'YOUR CLIMBING'
-                : 'YOUR WORKSPACE, YOUR VIEW'
+                : system
+                  ? systemNames[system].toUpperCase()
+                  : 'YOUR WORKSPACE, YOUR VIEW'
         }
         title={overview && page.name === 'Overview' ? 'Make room for progress.' : page.name}
         description={

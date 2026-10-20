@@ -1,3 +1,4 @@
+import { practiceName } from '../lib/practice-model';
 import { useState } from 'react';
 import { useApp } from '../lib/context';
 import { uid, now, type Plan } from '../lib/model';
@@ -339,6 +340,25 @@ export function WeekPlanner() {
                 </Button>
               </section>
             )}
+            {w.practice.map((p) => (
+              <section key={p.system} aria-label={practiceName(p.system) + ' for ' + w.day}>
+                <h3>{practiceName(p.system)}</h3>
+                {p.completed.map((s) => (
+                  <p key={s.id}>
+                    <a href={'#/' + p.system + '-history'}>{s.name}</a> · Completed
+                  </p>
+                ))}
+                {p.routines.map((r) => (
+                  <p key={r.id}>
+                    <a href={'#/' + p.system + '-library'}>{r.name}</a> · Weekly routine
+                  </p>
+                ))}
+                {!p.completed.length && !p.routines.length && (
+                  <p className="small-text muted">No practice scheduled.</p>
+                )}
+                <a href={'#/' + p.system + '-library'}>Edit recurring practice</a>
+              </section>
+            ))}
             {systems.food && (
               <section aria-label={'Food for ' + w.day}>
                 <h3>Food</h3>

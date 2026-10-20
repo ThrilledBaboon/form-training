@@ -15,6 +15,35 @@ import {
 
 export const WIDGETS = [
   [
+    'rocket-league-start',
+    'Start a warm-up',
+    'Choose a routine or resume practice.',
+    'rocket-league',
+    'live',
+  ],
+  [
+    'rocket-league-week',
+    'Rocket League this week',
+    'Completed practice against your weekly goal.',
+    'rocket-league',
+    'today',
+  ],
+  [
+    'rocket-league-skills',
+    'Practice balance',
+    'Recorded practice minutes by category, not a skill rating.',
+    'rocket-league',
+    'range',
+  ],
+  [
+    'rocket-league-progress',
+    'Rocket League progress',
+    'Compare the same drill and setup over time.',
+    'rocket-league',
+    'range',
+  ],
+
+  [
     'quick-actions',
     'My quick actions',
     'Your chosen shortcuts for enabled systems.',
@@ -303,8 +332,8 @@ export function requiredSystems(widget: Widget): System[] {
   if (widget.type === 'shortcut') return routeSystems(widget.config.link);
   return group === 'both'
     ? ['gym', 'food']
-    : group === 'gym' || group === 'food' || group === 'climbing'
-      ? [group]
+    : (['gym', 'food', 'climbing', 'rocket-league', 'football'] as string[]).includes(group)
+      ? [group as System]
       : [];
 }
 export const rangeLabel = (r: ViewRange) =>
@@ -354,6 +383,11 @@ export function widgetDestination(w: Widget) {
     return (
       (w.type === 'combined-week' ? 'week-planner' : 'weekly-review') +
       (w.config.date ? '?date=' + w.config.date : '')
+    );
+  if (w.type.startsWith('rocket-league-') || w.type.startsWith('football-'))
+    return (
+      (w.type.startsWith('football-') ? 'football' : 'rocket-league') +
+      (w.type.endsWith('-start') ? '-session' : '-history')
     );
   if (w.type.startsWith('climbing-'))
     return w.type === 'climbing-projects' ? 'climbing-projects' : 'climbing-log';

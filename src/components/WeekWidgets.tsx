@@ -13,8 +13,12 @@ export function CombinedWeekWidget({ date }: { date?: string }) {
             (p) => p.status === 'planned' && !d.workouts.some((s) => s.planId === p.id),
           ).length +
           d.routines.length +
-          d.climbingPlans.length;
-        const completed = d.workouts.length + d.climbs.length;
+          d.climbingPlans.length +
+          d.practice.reduce((n, p) => n + p.routines.length, 0);
+        const completed =
+          d.workouts.length +
+          d.climbs.length +
+          d.practice.reduce((n, p) => n + p.completed.length, 0);
         return (
           <a className="widget-row" key={d.day} href={'#/week-planner?date=' + d.day}>
             <span>

@@ -1,3 +1,4 @@
+import type { PracticeData } from './practice-model';
 import type { ClimbingData } from './climbing-model';
 import { z } from 'zod';
 import { PersonalisationSchema } from './personalisation';
@@ -234,6 +235,7 @@ export const defaults: Settings = {
   weekTarget: 4,
 };
 export type Data = {
+  practice?: PracticeData[];
   climbing?: ClimbingData;
   workspace?: Workspace;
   food?: FoodData;

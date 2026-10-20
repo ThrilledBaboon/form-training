@@ -1,3 +1,4 @@
+import { practiceSystems, practiceData } from './practice-model';
 import { dateKey } from './calc';
 import { foodDay, weekDays } from './food-calc';
 import { emptyClimbing } from './climbing-model';
@@ -28,6 +29,23 @@ export function combinedWeek(data: Data, date = foodDay()) {
       : [];
     return {
       day,
+      practice: practiceSystems
+        .filter((system) => systems[system])
+        .map((system) => {
+          const p = practiceData(data, system);
+          const completed = p.sessions.filter(
+            (s) => s.status === 'completed' && dateKey(s.startAt) === day,
+          );
+          return {
+            system,
+            completed,
+            routines: p.routines.filter(
+              (r) =>
+                r.weekdays.includes(new Date(day + 'T12:00:00').getDay()) &&
+                !completed.some((s) => s.routineId === r.id),
+            ),
+          };
+        }),
       plans,
       workouts,
       routines,

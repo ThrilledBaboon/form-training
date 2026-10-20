@@ -109,8 +109,8 @@ export const WidgetSchema = z
     presentation: WidgetPresentationSchema.optional(),
     config: WidgetConfigSchema,
     dependencies: z
-      .array(z.enum(['gym', 'food', 'climbing']))
-      .max(3)
+      .array(z.enum(['gym', 'food', 'climbing', 'rocket-league', 'football']))
+      .max(5)
       .optional(),
   })
   .refine((w) => validFilterBounds(w.config), 'Minimum filters must not exceed maximum filters.');
@@ -146,9 +146,15 @@ export const WorkspaceSchema = z
   .object({
     id: z.literal('workspace'),
     revision: z.number().int().nonnegative().default(0),
-    systems: z.object({ gym: z.boolean(), food: z.boolean(), climbing: z.boolean().default(true) }),
+    systems: z.object({
+      gym: z.boolean(),
+      food: z.boolean(),
+      climbing: z.boolean().default(true),
+      'rocket-league': z.boolean().default(false),
+      football: z.boolean().default(false),
+    }),
     homePageId: id,
-    pages: z.array(PageSchema).min(1).max(53),
+    pages: z.array(PageSchema).min(1).max(55),
     setups: z.array(SetupSchema).max(2000).default([]),
     removedPages: z.array(PageSchema).max(20).default([]),
     planBuilds: z.array(id).max(1000).default([]),
@@ -211,6 +217,8 @@ export function overviewPage(): WorkspacePage {
   };
 }
 export function systemForPage(id: string): System | undefined {
+  if (id === 'rocket-league-home') return 'rocket-league';
+  if (id === 'football-home') return 'football';
   return id === 'training-home'
     ? 'gym'
     : id === 'food-home'
@@ -222,6 +230,16 @@ export function systemForPage(id: string): System | undefined {
 export const pageRoute = (id: string) =>
   id === 'overview' ? 'today' : systemForPage(id) ? id : 'pages?page=' + encodeURIComponent(id);
 export function systemHomePage(system: System): WorkspacePage {
+  if (system === 'rocket-league' || system === 'football')
+    return {
+      id: system + '-home',
+      name: systemNames[system],
+      range: { days: 30 },
+      revision: 0,
+      widgets: ['start', 'week', 'skills', 'progress'].map((type) =>
+        makeWidget(system + '-' + type, {}, system + '-' + type),
+      ),
+    };
   const id = system === 'gym' ? 'training-home' : system === 'food' ? 'food-home' : 'climbing-home';
   const types =
     system === 'climbing'
@@ -297,7 +315,7 @@ export const defaultWorkspace = (): Workspace => ({
   planBuilds: [],
   id: 'workspace',
   revision: 0,
-  systems: { gym: true, food: true, climbing: true },
+  systems: { gym: true, food: true, climbing: true, 'rocket-league': false, football: false },
   homePageId: 'overview',
   pages: [overviewPage()],
   setups: [],
@@ -305,7 +323,14 @@ export const defaultWorkspace = (): Workspace => ({
   removedPages: [],
 });
 
-export type System = 'gym' | 'food' | 'climbing';
+export type System = 'gym' | 'food' | 'climbing' | 'rocket-league' | 'football';
+export const systemNames: Record<System, string> = {
+  gym: 'Gym',
+  food: 'Food',
+  climbing: 'Climbing',
+  'rocket-league': 'Rocket League',
+  football: 'Football',
+};
 export const gymRoutes = new Set([
   'training-home',
   'workout',
@@ -320,13 +345,17 @@ export const gymRoutes = new Set([
   'paste-workouts',
 ]);
 export const routeSystems = (route: string): System[] =>
-  route.startsWith('climbing-')
-    ? ['climbing']
-    : route.startsWith('food-')
-      ? ['food']
-      : gymRoutes.has(route)
-        ? ['gym']
-        : [];
+  route.startsWith('rocket-league-')
+    ? ['rocket-league']
+    : route.startsWith('football-')
+      ? ['football']
+      : route.startsWith('climbing-')
+        ? ['climbing']
+        : route.startsWith('food-')
+          ? ['food']
+          : gymRoutes.has(route)
+            ? ['gym']
+            : [];
 
 export function validFilterBounds(c: {
   repMin?: number;

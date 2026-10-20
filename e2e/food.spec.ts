@@ -346,7 +346,7 @@ test('complete and category exports preserve food records and images with safe i
   await page.getByRole('button', { name: 'Export everything', exact: true }).click();
   let file = await event;
   const backup = JSON.parse(await readFile((await file.path())!, 'utf8'));
-  expect(backup.schemaVersion).toBe(5);
+  expect(backup.schemaVersion).toBe(6);
   expect(backup.data.food.recipes).toHaveLength(1);
   expect(backup.data.food.foodFiles).toHaveLength(1);
   expect(backup.manifest.attachments).toBe(1);

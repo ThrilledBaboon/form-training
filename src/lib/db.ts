@@ -1,3 +1,4 @@
+import { PracticeRowsSchema, type PracticeData } from './practice-model';
 import { ClimbingDataSchema, emptyClimbing, type ClimbingData } from './climbing-model';
 import { WorkspaceSchema, defaultWorkspace, type Workspace } from './workspace-model';
 import Dexie, { type EntityTable } from 'dexie';
@@ -40,6 +41,7 @@ export interface RecoveryBackup {
   json: string;
 }
 export class TrainingDB extends Dexie {
+  practice!: EntityTable<PracticeData, 'id'>;
   climbing!: EntityTable<ClimbingData, 'id'>;
   workspaces!: EntityTable<Workspace, 'id'>;
   ingredients!: EntityTable<Ingredient, 'id'>;
@@ -102,6 +104,7 @@ export class TrainingDB extends Dexie {
       .upgrade(async (tx) => {
         await tx.table('workspaces').put(defaultWorkspace());
       });
+    this.version(6).stores({ practice: 'id' });
     this.version(5).stores({ climbing: 'id' });
     this.version(3).stores({
       ingredients: 'id,name,category,updatedAt',
@@ -127,6 +130,7 @@ export async function readData(
   return database.transaction(
     'r',
     [
+      database.practice,
       database.climbing,
       database.workspaces,
       database.exercises,
@@ -177,6 +181,7 @@ export async function readData(
         (await database.foodSettings.get('food-preferences')) ??
         structuredClone(emptyFood.foodSettings);
       return {
+        practice: PracticeRowsSchema.parse(await database.practice.toArray()),
         workspace: WorkspaceSchema.parse(
           (await database.workspaces.get('workspace')) ?? defaultWorkspace(),
         ),

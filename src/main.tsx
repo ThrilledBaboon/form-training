@@ -5,6 +5,7 @@ import { loadJackDemo, localDemoAvailable } from './lib/demo';
 import './styles.css';
 import './themes.css';
 import './personalisation.css';
+import './practice.css';
 const root = createRoot(document.getElementById('root')!);
 async function start() {
   const url = new URL(location.href);

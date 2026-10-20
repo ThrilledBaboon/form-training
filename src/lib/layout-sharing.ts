@@ -41,8 +41,8 @@ const SharedWidget = z
     section: z.number().int().min(0).max(11).optional(),
     presentation: WidgetPresentationSchema.optional(),
     requiredSystems: z
-      .array(z.enum(['gym', 'food', 'climbing']))
-      .max(3)
+      .array(z.enum(['gym', 'food', 'climbing', 'rocket-league', 'football']))
+      .max(5)
       .default([]),
     config: PortableConfig.strict(),
     exercise: Hint.optional(),

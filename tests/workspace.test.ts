@@ -133,7 +133,11 @@ describe('workspace persistence and portability', () => {
       expect(after.timer).toEqual(before.timer);
       expect(after.sessions.find((s) => s.id === id)?.status).toBe('active');
       const backup = parseBackup(serialise(after));
-      expect(backup.data.workspace!.systems).toEqual(systems);
+      expect(backup.data.workspace!.systems).toEqual({
+        ...systems,
+        'rocket-league': false,
+        football: false,
+      });
       expect(backup.data.workspace!.pasteDraft).toBe('private notes');
     }
   });
@@ -195,7 +199,13 @@ describe('workspace persistence and portability', () => {
     expect(result.widgets[1].type).toBe('future-widget');
     expect(requiredSystems(result.widgets[1])).toEqual(['food']);
     const workspace = (await readData(database)).workspace!;
-    expect(workspace.systems).toEqual({ gym: false, food: false, climbing: true });
+    expect(workspace.systems).toEqual({
+      gym: false,
+      food: false,
+      climbing: true,
+      'rocket-league': false,
+      football: false,
+    });
     expect(workspace.homePageId).toBe('overview');
     await expect(importLayout(layout, {}, {}, database)).rejects.toThrow('already imported');
     await expect(importLayout(layout, { 0: 'missing' }, { copy: true }, database)).rejects.toThrow(

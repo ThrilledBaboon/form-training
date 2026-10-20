@@ -13,7 +13,10 @@ import {
   type EquipmentSetup,
 } from './workspace-model';
 
-export function ensureSystemHomePage(system: 'gym' | 'food' | 'climbing', database = db) {
+export function ensureSystemHomePage(
+  system: 'gym' | 'food' | 'climbing' | 'rocket-league' | 'football',
+  database = db,
+) {
   return changeWorkspace((w) => {
     const page = systemHomePage(system);
     if (!w.pages.some((p) => p.id === page.id)) w.pages.push(page);
@@ -110,7 +113,7 @@ export async function applyEquipmentSetup(
 }
 
 export async function setSystemEnabled(
-  system: 'gym' | 'food' | 'climbing',
+  system: 'gym' | 'food' | 'climbing' | 'rocket-league' | 'football',
   enabled: boolean,
   database = db,
 ) {
