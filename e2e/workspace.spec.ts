@@ -164,22 +164,22 @@ test('shared Overview stays outside Train, and each system home saves its own la
   await route(page, 'training-home');
   await expect(page.getByRole('heading', { name: 'Training overview', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Daily macros', exact: true })).toHaveCount(0);
-  await expect(page.locator('.workspace-widget')).toHaveCount(9);
+  await expect(page.locator('.workspace-widget')).toHaveCount(8);
   await page.getByRole('button', { name: 'Edit page', exact: true }).click();
   await page
     .locator('.workspace-widget')
     .last()
     .getByRole('button', { name: 'Remove widget', exact: true })
     .click();
-  await expect(page.locator('.workspace-widget')).toHaveCount(8);
+  await expect(page.locator('.workspace-widget')).toHaveCount(7);
   await page.reload();
-  await expect(page.locator('.workspace-widget')).toHaveCount(8);
+  await expect(page.locator('.workspace-widget')).toHaveCount(7);
   await route(page, 'food-home');
   await expect(page.getByRole('heading', { name: 'Food overview', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Daily macros', exact: true })).toBeVisible();
   await expect(page.locator('.workspace-widget')).toHaveCount(10);
   await route(page, 'today');
-  await expect(page.locator('.workspace-widget')).toHaveCount(11);
+  await expect(page.locator('.workspace-widget')).toHaveCount(10);
   await route(page, 'settings');
   await page.getByRole('switch', { name: 'Enable Food system' }).setChecked(false);
   await route(page, 'food-home');

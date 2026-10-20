@@ -185,7 +185,7 @@ export function WidgetContent({
     );
   if (w.type === 'start')
     return (
-      <div className="widget-start">
+      <div className="widget-start workout-actions">
         {active && <p>{active.name}</p>}
         <AsyncButton
           onAction={() =>
@@ -198,9 +198,12 @@ export function WidgetContent({
           <Play size={16} />
           {active ? 'Resume workout' : 'Start a workout'}
         </AsyncButton>
-        <a href="#/routines">
-          Choose a routine <ArrowUpRight size={14} />
-        </a>
+        <Button variant="secondary" onClick={() => go('routines')}>
+          <Dumbbell size={16} />
+          Choose a routine
+          <ArrowUpRight size={16} />
+        </Button>
+        <SessionSuggestionCard buttonOnly />
       </div>
     );
   if (w.type === 'suggestion') return <SessionSuggestionCard />;

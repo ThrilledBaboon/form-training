@@ -15,7 +15,7 @@ const changeLabel = {
   unchanged: 'Keep targets',
 };
 
-export function SessionSuggestionCard() {
+export function SessionSuggestionCard({ buttonOnly = false }: { buttonOnly?: boolean }) {
   const { data, run, streak } = useApp();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState('');
@@ -37,33 +37,40 @@ export function SessionSuggestionCard() {
         : `${fmt(fromKg(set.loadKg, data.settings.unit), 2)} ${data.settings.unit}`;
     return `${tracking === 'bodyweight' ? '' : load + (tracking === 'assisted' ? ' assistance · ' : ' · ')}${set.reps === undefined ? 'Choose reps' : `${fmt(set.reps)} reps`}`;
   };
+  const trigger = (
+    <Button
+      variant="secondary"
+      onClick={(e) => {
+        e.currentTarget.focus();
+        setSelected(choices[0]?.key || '');
+        setOpen(true);
+      }}
+    >
+      <Sparkles size={16} />
+      Suggest session
+      <ArrowUpRight size={16} />
+    </Button>
+  );
   return (
     <>
-      <Card className="session-suggestion-card">
-        <span className="session-suggestion-icon" aria-hidden="true">
-          <Sparkles size={23} />
-        </span>
-        <div>
-          <h2>Your next session</h2>
-          <p>
-            {choice
-              ? `${choice.source.name}${choice.date ? ` · ${dateLabel(choice.date + 'T12:00:00')}` : ''}. Review targets based on your last session of this routine.`
-              : 'Choose a routine and build a plan from your training history.'}
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          onClick={(e) => {
-            e.currentTarget.focus();
-            setSelected(choices[0]?.key || '');
-            setOpen(true);
-          }}
-        >
-          <Sparkles size={16} />
-          Suggest session
-          <ArrowUpRight size={16} />
-        </Button>
-      </Card>
+      {buttonOnly ? (
+        trigger
+      ) : (
+        <Card className="session-suggestion-card">
+          <span className="session-suggestion-icon" aria-hidden="true">
+            <Sparkles size={23} />
+          </span>
+          <div>
+            <h2>Your next session</h2>
+            <p>
+              {choice
+                ? `${choice.source.name}${choice.date ? ` · ${dateLabel(choice.date + 'T12:00:00')}` : ''}. Review targets based on your last session of this routine.`
+                : 'Choose a routine and build a plan from your training history.'}
+            </p>
+          </div>
+          {trigger}
+        </Card>
+      )}
       {open && (
         <Modal
           title="Suggested session"

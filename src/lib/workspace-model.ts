@@ -198,7 +198,6 @@ export function makeWidget(
 export function overviewPage(): WorkspacePage {
   const types = [
     'start',
-    'suggestion',
     'combined-week',
     'streak',
     'training-totals',
@@ -261,7 +260,6 @@ export function systemHomePage(system: System): WorkspacePage {
       : system === 'gym'
         ? [
             'start',
-            'suggestion',
             'week',
             'streak',
             'training-totals',

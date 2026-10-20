@@ -1,6 +1,6 @@
 # Your FORM workspace
 
-This extension is local only on `codex/custom-workspace`. It includes the unpublished Food extension. The public GitHub Pages site has not been updated.
+FORM supports a shared Overview, independent system home pages and custom pages on the live GitHub Pages app.
 
 ## Arrange a page
 
@@ -9,6 +9,8 @@ Open Overview and choose **Edit page**. Every card is a widget. **Add widget** s
 **My pages → Create page** starts an empty page or a mixed Overview template. The page manager can rename the current page, duplicate, reorder, choose a home, delete, and recover the last 20 removed/replaced layouts. Deleting the home falls back to Overview. An explicit deep link wins over the home preference. **Restore default Overview** only changes its arrangement, after confirmation.
 
 The page date range applies to historical widgets. Their configuration can override it; the card shows which range it uses. Daily, monthly and live views show their different time semantics. Exercise load bounds are stored in kg, so changing display units preserves the filter. **Add to page** on Exercise progress, Muscle insights, Bodyweight, Food diary and Food spending carries applicable selected filters into a new independent widget. **Explore** opens the detailed view.
+
+**Workout actions** combines **Start a workout** (or **Resume workout**), **Choose a routine** and **Suggest session** in one widget. Suggestions open the existing editable preview and require acceptance before starting. Existing Start or resume widgets gain these buttons automatically, keeping their saved IDs, titles and positions. New Overview and Training templates use this combined widget without a separate suggestion card. Saved layouts stay as arranged; remove any unwanted standalone **Suggested session** widget in **Edit page**, or add one independently from the widget catalogue.
 
 ## Share a layout
 

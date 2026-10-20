@@ -185,7 +185,13 @@ export const WIDGETS = [
     'climbing',
     'range',
   ],
-  ['start', 'Start or resume', 'Jump into your saved workout.', 'gym', 'live'],
+  [
+    'start',
+    'Workout actions',
+    'Start or resume a workout, choose a routine, or review a suggested session.',
+    'gym',
+    'live',
+  ],
   [
     'suggestion',
     'Suggested session',

@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { sessionFixture } from '../tests/session-fixture';
 import type { Data } from '../src/lib/model';
+import { defaultWorkspace, makeWidget } from '../src/lib/workspace-model';
 const base = process.env.TEST_SUBPATH || '/';
 
 async function importData(page: Page, data: Data) {
@@ -37,7 +38,9 @@ test('suggest session reviews scheduled routine progression and starts the shown
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await importData(page, sessionFixture());
-  const opener = page.getByRole('button', { name: 'Suggest session', exact: true });
+  const opener = page
+    .getByRole('region', { name: 'Workout actions', exact: true })
+    .getByRole('button', { name: 'Suggest session', exact: true });
   for (const theme of ['light', 'dark']) {
     if ((await page.locator('html').getAttribute('data-theme')) !== theme)
       await page.getByRole('button', { name: 'Toggle colour theme' }).click();
@@ -146,4 +149,62 @@ test('suggest session explains how to begin when no routines exist', async ({ pa
   ).toBeVisible();
   await dialog.getByRole('button', { name: 'Create a routine', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Create a routine', exact: true })).toBeVisible();
+});
+
+test('workout actions choose routines, start a workout and resume the saved workout from either home', async ({
+  page,
+}) => {
+  const actions = page.getByRole('region', { name: 'Workout actions', exact: true });
+  await expect(actions.getByRole('button')).toHaveCount(3);
+  await actions.getByRole('button', { name: 'Choose a routine', exact: true }).click();
+  await expect(page).toHaveURL(/#\/routines$/);
+  await page.goto(base + '#/training-home');
+  await expect(actions.getByRole('button')).toHaveCount(3);
+  await actions.getByRole('button', { name: 'Start a workout', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Freestyle workout', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Details', exact: true }).click();
+  await page.getByLabel('Workout name', { exact: true }).fill('Saved widget workout');
+  await page.getByRole('button', { name: 'Save details', exact: true }).click();
+  await page.goto(base + '#/today');
+  await page.reload();
+  await expect(actions.getByText('Saved widget workout', { exact: true })).toBeVisible();
+  await expect(actions.getByRole('button', { name: 'Start a workout', exact: true })).toHaveCount(
+    0,
+  );
+  await actions.getByRole('button', { name: 'Resume workout', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Saved widget workout', exact: true }),
+  ).toBeVisible();
+  await page.goto(base + '#/training-home');
+  await actions.getByRole('button', { name: 'Resume workout', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Saved widget workout', exact: true }),
+  ).toBeVisible();
+});
+
+test('existing saved layouts gain merged actions without losing their standalone suggestion widget', async ({
+  page,
+}) => {
+  const data = sessionFixture();
+  data.workspace = defaultWorkspace();
+  const overview = data.workspace.pages[0];
+  overview.revision = 4;
+  overview.widgets[0].title = 'My workout buttons';
+  overview.widgets.splice(1, 0, makeWidget('suggestion', {}, 'saved-suggestion'));
+  await importData(page, data);
+  await expect(page.getByRole('button', { name: 'Suggest session', exact: true })).toHaveCount(2);
+  const actions = page.getByRole('region', { name: 'My workout buttons', exact: true });
+  await expect(actions.getByRole('button')).toHaveCount(3);
+  await actions.getByRole('button', { name: 'Suggest session', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Suggested session', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page
+    .getByRole('region', { name: 'Suggested session', exact: true })
+    .getByRole('button', { name: 'Suggest session', exact: true })
+    .click();
+  await expect(page.getByRole('dialog', { name: 'Suggested session', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Suggest session', exact: true })).toHaveCount(2);
+  await expect(actions.getByRole('button')).toHaveCount(3);
 });
