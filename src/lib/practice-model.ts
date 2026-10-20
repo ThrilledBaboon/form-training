@@ -60,6 +60,7 @@ export const PracticeRoutineSchema = z
 export type PracticeRoutine = z.infer<typeof PracticeRoutineSchema>;
 export const PracticeResultSchema = z
   .object({
+    tries: z.array(count).max(1000).default([]),
     attempts: count.optional(),
     hits: count.optional(),
     best: count.optional(),
@@ -73,6 +74,16 @@ export const PracticeResultSchema = z
   .refine(
     (r) => r.hits === undefined || (r.attempts !== undefined && r.hits <= r.attempts),
     'Hits cannot exceed attempts',
+  )
+  .refine(
+    (r) =>
+      !r.shots.length ||
+      (r.attempts === r.shots.length && r.hits === r.shots.filter((s) => s.hit).length),
+    'Target map counts must match recorded attempts and hits',
+  )
+  .refine(
+    (r) => !r.tries.length || r.best === Math.max(...r.tries),
+    'Best streak must match the recorded attempts',
   );
 export type PracticeResult = z.infer<typeof PracticeResultSchema>;
 export const PracticeEntrySchema = z.object({
@@ -196,4 +207,18 @@ export function resultValue(entry: PracticeEntry): number | undefined {
   if (entry.drill.metric === 'streak') return r?.best;
   if (entry.drill.metric === 'course') return r?.courseSeconds;
   return entry.elapsedSeconds / 60;
+}
+
+export function typicalStreak(entries: PracticeEntry[]) {
+  const values = entries
+    .filter((e) => e.status === 'completed')
+    .flatMap((e) => e.result?.tries ?? [])
+    .sort((a, b) => a - b);
+  if (!values.length) return undefined;
+  const middle = Math.floor(values.length / 2);
+  return {
+    median: values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2,
+    attempts: values.length,
+    best: values[values.length - 1],
+  };
 }

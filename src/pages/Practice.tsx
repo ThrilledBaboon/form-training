@@ -37,6 +37,7 @@ import {
 import {
   freshDrill,
   rocketLeagueStarters,
+  footballStarters,
   parsePracticeLibrary,
   sharePractice,
   importPracticeLibrary,
@@ -148,6 +149,8 @@ function Library({ p }: { p: PracticeData }) {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('');
   const [category, setCategory] = useState('');
+  const [space, setSpace] = useState('');
+  const [solo, setSolo] = useState(false);
   const [settings, setSettings] = useState(false);
   const saveLibrary = (
     patch: Partial<Pick<PracticeData, 'drills' | 'routines' | 'goal' | 'focus'>>,
@@ -222,7 +225,8 @@ function Library({ p }: { p: PracticeData }) {
               run(
                 () =>
                   changePractice(p.id, (current) => {
-                    const starters = rocketLeagueStarters();
+                    const starters =
+                      p.id === 'football' ? footballStarters() : rocketLeagueStarters();
                     starters.drills.forEach((d) => {
                       if (!current.drills.some((x) => x.id === d.id)) current.drills.push(d);
                     });
@@ -234,7 +238,7 @@ function Library({ p }: { p: PracticeData }) {
               )
             }
           >
-            Add starter warm-ups
+            {p.id === 'football' ? 'Add starter football drills' : 'Add starter warm-ups'}
           </AsyncButton>
           <Button
             variant="secondary"
@@ -302,6 +306,24 @@ function Library({ p }: { p: PracticeData }) {
             </select>
           </Field>
         </div>
+        {p.id === 'football' && (
+          <div className="practice-filters">
+            <Field label="Available space">
+              <select value={space} onChange={(e) => setSpace(e.target.value)}>
+                <option value="">Any space</option>
+                <option value="small">Small space</option>
+                <option value="pitch">Pitch / open space</option>
+              </select>
+            </Field>
+            <label className="check-label">
+              <input type="checkbox" checked={solo} onChange={(e) => setSolo(e.target.checked)} />
+              Solo drills only
+            </label>
+            <p className="small-text muted">
+              Search also matches equipment such as cones, wall or goal.
+            </p>
+          </div>
+        )}
         {!p.drills.length && (
           <Empty compact title="Your drills live here">
             Create your own or add the starter warm-ups.
@@ -311,6 +333,8 @@ function Library({ p }: { p: PracticeData }) {
           .filter(
             (d) =>
               (!category || d.category === category) &&
+              (!space || d.space === 'any' || d.space === space) &&
+              (!solo || !d.partner) &&
               (d.name + ' ' + d.equipment).toLowerCase().includes(filter.toLowerCase()),
           )
           .map((d) => (
@@ -540,6 +564,48 @@ function DrillEditor({
                 onChange={(e) => patch({ link: e.target.value })}
               />
             </Field>
+          </>
+        )}
+        {system === 'football' && (
+          <>
+            <div className="practice-form-grid">
+              <Field label="Foot">
+                <select
+                  value={d.foot}
+                  onChange={(e) => patch({ foot: e.target.value as PracticeDrill['foot'] })}
+                >
+                  {['both', 'left', 'right', 'alternating'].map((f) => (
+                    <option key={f}>{f}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Equipment">
+                <input
+                  maxLength={300}
+                  value={d.equipment}
+                  onChange={(e) => patch({ equipment: e.target.value })}
+                />
+              </Field>
+              <Field label="Space needed">
+                <select
+                  value={d.space}
+                  onChange={(e) => patch({ space: e.target.value as PracticeDrill['space'] })}
+                >
+                  <option value="any">Any</option>
+                  <option value="small">Small space</option>
+                  <option value="pitch">Pitch / open space</option>
+                </select>
+              </Field>
+            </div>
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={d.partner}
+                onChange={(e) => patch({ partner: e.target.checked })}
+              />
+              Needs a partner
+            </label>
+            <CourseEditor drill={d} onChange={(cones) => patch({ cones })} />
           </>
         )}
         <label className="check-label">
@@ -801,6 +867,12 @@ function Runner({ system, session: s }: { system: PracticeSystem; session: Pract
             you choose.
           </p>
         )}
+        {system === 'football' && (
+          <>
+            <p>Foot: {entry.drill.foot}</p>
+            {entry.drill.cones.length > 0 && <CourseDiagram drill={entry.drill} />}
+          </>
+        )}
         <div className="practice-clock" aria-label={rest ? 'Rest timer' : 'Practice timer'}>
           {clockText(s.timer.targetSeconds ? remaining : elapsed)}
         </div>
@@ -820,6 +892,7 @@ function Runner({ system, session: s }: { system: PracticeSystem; session: Pract
         {!rest ? (
           <ResultForm
             key={entry.id}
+            system={system}
             entry={entry}
             onSave={async (result) => {
               await command('complete', result);
@@ -883,16 +956,22 @@ function Runner({ system, session: s }: { system: PracticeSystem; session: Pract
   );
 }
 function ResultForm({
+  system,
   entry,
   onSave,
   onQuick,
   onSkip,
 }: {
+  system: PracticeSystem;
   entry: PracticeEntry;
   onSave: (r: PracticeResult) => Promise<void>;
   onQuick?: () => Promise<void>;
   onSkip?: () => Promise<void>;
 }) {
+  const [shots, setShots] = useState(entry.result?.shots ?? []);
+  const [zone, setZone] = useState(0);
+  const [useMap, setUseMap] = useState(Boolean(entry.result?.shots.length));
+  const [tries, setTries] = useState(entry.result?.tries?.join(', ') ?? '');
   const [attempts, setAttempts] = useState(entry.result?.attempts?.toString() ?? '');
   const [hits, setHits] = useState(entry.result?.hits?.toString() ?? '');
   const [best, setBest] = useState(entry.result?.best?.toString() ?? '');
@@ -903,17 +982,33 @@ function ResultForm({
       onSubmit={(e) => {
         e.preventDefault();
         void onSave({
-          attempts: attempts === '' ? undefined : Number(attempts),
-          hits: hits === '' ? undefined : Number(hits),
-          best: best === '' ? undefined : Number(best),
+          attempts: useMap ? shots.length : attempts === '' ? undefined : Number(attempts),
+          hits: useMap ? shots.filter((s) => s.hit).length : hits === '' ? undefined : Number(hits),
+          best: tries.trim()
+            ? Math.max(...tries.split(',').map((s) => Number(s.trim())))
+            : best === ''
+              ? undefined
+              : Number(best),
+          tries: tries.trim() ? tries.split(',').map((s) => Number(s.trim())) : [],
           courseSeconds: course === '' ? undefined : Number(course),
           notes,
-          shots: [],
+          shots: useMap ? shots : [],
         });
       }}
     >
+      {system === 'football' && entry.drill.metric === 'accuracy' && (
+        <>
+          <label className="check-label">
+            <input type="checkbox" checked={useMap} onChange={(e) => setUseMap(e.target.checked)} />
+            Record each attempt on the target map
+          </label>
+          {useMap && (
+            <ShotRecorder shots={shots} zone={zone} setZone={setZone} onChange={setShots} />
+          )}
+        </>
+      )}
       <div className="practice-form-grid">
-        {entry.drill.metric === 'accuracy' && (
+        {entry.drill.metric === 'accuracy' && !useMap && (
           <>
             <Field label="Attempts">
               <input
@@ -938,6 +1033,16 @@ function ResultForm({
           </>
         )}
         {entry.drill.metric === 'streak' && (
+          <Field label="Attempt streaks (comma separated, optional)">
+            <input
+              value={tries}
+              pattern={String.raw`[0-9]+(\s*,\s*[0-9]+)*`}
+              onChange={(e) => setTries(e.target.value)}
+              placeholder="8, 12, 7, 15"
+            />
+          </Field>
+        )}
+        {entry.drill.metric === 'streak' && !tries.trim() && (
           <Field label="Best consecutive streak">
             <input
               type="number"
@@ -1046,6 +1151,7 @@ function PracticeHistory({ p }: { p: PracticeData }) {
                 <>
                   <p>Practice time: {clockText(e.elapsedSeconds)}</p>
                   <ResultForm
+                    system={p.id}
                     entry={e}
                     onSave={async (result) => {
                       const saved = await run(
@@ -1090,5 +1196,184 @@ function PracticeHistory({ p }: { p: PracticeData }) {
         </Modal>
       )}
     </>
+  );
+}
+
+export function CourseDiagram({ drill }: { drill: PracticeDrill }) {
+  return (
+    <svg
+      className="practice-diagram"
+      viewBox="0 0 100 100"
+      role="img"
+      aria-label={`${drill.name}: ${drill.cones.length} numbered cones, connected in order. ${drill.setup}`}
+    >
+      <rect x="3" y="3" width="94" height="94" fill="none" stroke="#d3e6d9" strokeWidth="0.5" />
+      <path d="M3 50H97" fill="none" stroke="#d3e6d9" strokeWidth="0.3" />
+      <polyline
+        points={drill.cones.map((p) => `${p.x},${p.y}`).join(' ')}
+        stroke="#fff"
+        strokeWidth=".8"
+        fill="none"
+        strokeDasharray="2 2"
+      />
+      {drill.cones.map((p, i) => (
+        <g key={i}>
+          <path
+            d={`M${p.x},${p.y - 3}l-2.5,5h5z`}
+            fill="#ffba68"
+            stroke="#163727"
+            strokeWidth=".5"
+          />
+          <text x={p.x + 4} y={p.y + 1} fill="white" fontSize="4">
+            {i + 1}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+function CourseEditor({
+  drill,
+  onChange,
+}: {
+  drill: PracticeDrill;
+  onChange: (cones: PracticeDrill['cones']) => void;
+}) {
+  const [open, setOpen] = useState(drill.cones.length > 0);
+  return (
+    <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)} className="practice-block">
+      <summary>Cone course diagram (optional)</summary>
+      <p>
+        Tap to add cones in route order, or use Add cone and edit the positions below. Enter real
+        distances in Setup; this diagram is a sketch.
+      </p>
+      <button
+        type="button"
+        className="practice-course-button"
+        disabled={drill.cones.length >= 30}
+        aria-label="Add cone at a point on the course"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = e.detail
+            ? Math.min(98, Math.max(2, Math.round(((e.clientX - rect.left) / rect.width) * 100)))
+            : 50;
+          const y = e.detail
+            ? Math.min(98, Math.max(2, Math.round(((e.clientY - rect.top) / rect.height) * 100)))
+            : 50;
+          onChange([...drill.cones, { x, y }]);
+        }}
+      >
+        <CourseDiagram drill={drill} />
+      </button>
+      <div className="inline-actions">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={drill.cones.length >= 30}
+          onClick={() => onChange([...drill.cones, { x: 50, y: 50 }])}
+        >
+          Add cone
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!drill.cones.length}
+          onClick={() => onChange(drill.cones.slice(0, -1))}
+        >
+          Remove last cone
+        </Button>
+      </div>
+      {drill.cones.map((p, i) => (
+        <div className="practice-form-grid" key={i}>
+          {(['x', 'y'] as const).map((axis) => (
+            <Field key={axis} label={`Cone ${i + 1} ${axis}`}>
+              <input
+                type="number"
+                min="2"
+                max="98"
+                value={p[axis]}
+                onChange={(e) =>
+                  onChange(
+                    drill.cones.map((p, n) =>
+                      n === i ? { ...p, [axis]: Number(e.target.value) } : p,
+                    ),
+                  )
+                }
+                required
+              />
+            </Field>
+          ))}
+        </div>
+      ))}
+    </details>
+  );
+}
+const zoneNames = [
+  'Top left',
+  'Top centre',
+  'Top right',
+  'Bottom left',
+  'Bottom centre',
+  'Bottom right',
+];
+function ShotRecorder({
+  shots,
+  zone,
+  setZone,
+  onChange,
+}: {
+  shots: PracticeResult['shots'];
+  zone: number;
+  setZone: (zone: number) => void;
+  onChange: (shots: PracticeResult['shots']) => void;
+}) {
+  return (
+    <fieldset className="practice-block">
+      <legend>Shot target map</legend>
+      <p>
+        Choose your intended target, then record whether you hit it. These are target zones, rather
+        than measured landing positions.
+      </p>
+      <div className="practice-targets">
+        {zoneNames.map((label, i) => {
+          const rows = shots.filter((s) => s.zone === i);
+          return (
+            <button type="button" key={label} aria-pressed={zone === i} onClick={() => setZone(i)}>
+              {label}
+              <br />
+              {rows.filter((s) => s.hit).length} / {rows.length}
+            </button>
+          );
+        })}
+      </div>
+      <div className="inline-actions">
+        <Button
+          type="button"
+          disabled={shots.length >= 1000}
+          onClick={() => onChange([...shots, { zone, hit: true }])}
+        >
+          Hit target
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={shots.length >= 1000}
+          onClick={() => onChange([...shots, { zone, hit: false }])}
+        >
+          Missed target
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={!shots.length}
+          onClick={() => onChange(shots.slice(0, -1))}
+        >
+          Undo last attempt
+        </Button>
+      </div>
+      <p aria-live="polite">
+        {shots.filter((s) => s.hit).length} hits / {shots.length} attempts
+      </p>
+    </fieldset>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../lib/context';
 import {
+  typicalStreak,
   practiceData,
   comparisonKey,
   resultValue,
@@ -164,6 +165,30 @@ export function PracticeProgress({ p }: { p: PracticeData }) {
         : drill.metric === 'streak'
           ? 'consecutive'
           : 'min';
+  const selectedEntries = entries.filter(({ e }) => comparisonKey(e.drill) === selected);
+  const latestSession = selectedEntries.at(-1)?.sessionId;
+  const streak = typicalStreak(
+    selectedEntries.filter((e) => e.sessionId === latestSession).map(({ e }) => e),
+  );
+  const sameCourse = (d: typeof drill) =>
+    comparisonKey({ ...d, foot: 'both' }) === comparisonKey({ ...drill, foot: 'both' });
+  const footRows = (['left', 'right'] as const).map((foot) => {
+    const rows = entries
+      .filter(
+        ({ e }) => e.drill.foot === foot && sameCourse(e.drill) && resultValue(e) !== undefined,
+      )
+      .map(({ e }) => e);
+    const values = rows.map((e) => resultValue(e)!);
+    const attempts = rows.reduce((n, e) => n + (e.result?.attempts ?? 0), 0);
+    const value = !rows.length
+      ? undefined
+      : drill.metric === 'accuracy'
+        ? (rows.reduce((n, e) => n + (e.result?.hits ?? 0), 0) / attempts) * 100
+        : drill.metric === 'course'
+          ? Math.min(...values)
+          : Math.max(...values);
+    return { foot, value, sets: rows.length };
+  });
   // A course PB must use the same course and foot; no averaging or comparing different setups.
   return (
     <>
@@ -178,11 +203,32 @@ export function PracticeProgress({ p }: { p: PracticeData }) {
         </select>
       </Field>
       <p>
-        Personal best:{' '}
+        {drill.metric === 'time' ? 'Longest recorded set:' : 'Personal best:'}{' '}
         <strong>
           {best.toFixed(drill.metric === 'course' ? 2 : 1)} {unit}
         </strong>
       </p>
+      {streak && (
+        <p>
+          Latest session: best {streak.best} · typical streak {streak.median} (median of{' '}
+          {streak.attempts} recorded tries).
+        </p>
+      )}
+      {p.id === 'football' && footRows.some((r) => r.sets) && (
+        <div className="practice-metrics">
+          {footRows.map((r) => (
+            <p key={r.foot}>
+              {r.foot}:{' '}
+              <strong>
+                {r.value === undefined ? 'Unrecorded' : r.value.toFixed(1) + ' ' + unit}
+              </strong>
+              <small>
+                {r.sets} sets · {drill.metric === 'accuracy' ? 'combined accuracy' : 'best result'}
+              </small>
+            </p>
+          ))}
+        </div>
+      )}
       <TrendChart data={points} unit={unit} label={drill.name} />
       <p className="small-text muted">
         Each point is a recorded set with the same drill, setup and foot.{' '}

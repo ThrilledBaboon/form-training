@@ -155,6 +155,102 @@ export function rocketLeagueStarters(): Pick<PracticeData, 'drills' | 'routines'
   );
   return { drills, routines };
 }
+export function footballStarters(): Pick<PracticeData, 'drills' | 'routines'> {
+  const drills = [
+    {
+      id: 'fb-keepy',
+      name: 'Keepy-ups',
+      category: 'Ball control',
+      metric: 'streak',
+      cue: 'Record the best consecutive touches from this attempt. Choose your own target.',
+      space: 'small',
+      equipment: 'Ball',
+      foot: 'alternating',
+      setup: 'Alternating feet; restart each time the ball touches the ground.',
+    },
+    {
+      id: 'fb-slalom',
+      name: 'Cone slalom',
+      category: 'Dribbling',
+      metric: 'course',
+      cue: 'Stay close to the ball. Use the same course and starting position for comparable times.',
+      equipment: 'Ball, 5 cones',
+      space: 'pitch',
+      setup: '5 cones, 2 metres apart; out and back from the first cone.',
+      cones: [
+        { x: 20, y: 80 },
+        { x: 35, y: 65 },
+        { x: 50, y: 50 },
+        { x: 65, y: 35 },
+        { x: 80, y: 20 },
+      ],
+    },
+    {
+      id: 'fb-shoot',
+      name: 'Target shooting',
+      category: 'Shooting',
+      metric: 'accuracy',
+      cue: 'Choose a target zone before each shot and record hit or miss.',
+      equipment: 'Ball, goal',
+      space: 'pitch',
+      setup: 'Stationary ball, 10 metres from goal. Aim at a chosen zone.',
+    },
+    {
+      id: 'fb-pass',
+      name: 'Wall passing',
+      category: 'Passing',
+      metric: 'accuracy',
+      cue: 'Aim at the same marked target. Count controlled passes that reach it.',
+      equipment: 'Ball, wall or rebounder',
+      space: 'small',
+      setup: '3 metres from a marked 1-metre target.',
+    },
+    {
+      id: 'fb-partner',
+      name: 'Partner passing',
+      category: 'Passing',
+      metric: 'accuracy',
+      cue: 'Agree your target before the set.',
+      equipment: 'Ball',
+      space: 'pitch',
+      partner: true,
+      setup: '5-metre passing distance; agree what counts as a clean pass.',
+    },
+  ].map((d) => DrillSchema.parse(d));
+  const routines = [
+    {
+      id: 'fb-control',
+      name: 'Ball control warm-up',
+      blocks: [
+        { drillId: 'fb-keepy', sets: 3, target: 20, seconds: 120, restSeconds: 30 },
+        { drillId: 'fb-pass', sets: 2, target: 20, seconds: 120, restSeconds: 30 },
+      ],
+    },
+    {
+      id: 'fb-shooting',
+      name: 'Shooting practice',
+      blocks: [
+        { drillId: 'fb-pass', sets: 1, target: 20, seconds: 180, restSeconds: 30 },
+        { drillId: 'fb-shoot', sets: 3, target: 10, seconds: 0, restSeconds: 60 },
+      ],
+    },
+    {
+      id: 'fb-dribbling',
+      name: 'Dribbling course',
+      blocks: [
+        { drillId: 'fb-keepy', sets: 1, target: 0, seconds: 180, restSeconds: 30 },
+        { drillId: 'fb-slalom', sets: 3, target: 0, seconds: 0, restSeconds: 60 },
+      ],
+    },
+  ].map((r) =>
+    PracticeRoutineSchema.parse({
+      ...r,
+      notes: 'Editable example. Adjust distance, difficulty, foot and targets to suit you.',
+      blocks: r.blocks.map((b, i) => ({ ...b, id: r.id + '-b' + i })),
+    }),
+  );
+  return { drills, routines };
+}
 export const freshDrill = (): PracticeDrill =>
   DrillSchema.parse({
     id: crypto.randomUUID(),

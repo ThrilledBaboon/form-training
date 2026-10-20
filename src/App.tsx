@@ -12,6 +12,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import {
   Gamepad2,
+  Target,
   Mountain,
   LayoutDashboard,
   Dumbbell,
@@ -82,6 +83,15 @@ const navigation = [
       ['workout', 'Active workout', Dumbbell],
       ['routines', 'Routines & plans', Layers],
       ['history', 'Workout history', HistoryIcon],
+    ],
+  },
+  {
+    label: 'FOOTBALL',
+    items: [
+      ['football-home', 'Football', Target],
+      ['football-library', 'Drills & routines', Layers],
+      ['football-session', 'Practice', Target],
+      ['football-history', 'Practice history', HistoryIcon],
     ],
   },
   {
@@ -366,13 +376,16 @@ export default function App() {
         />
       );
       break;
+    case 'football-library':
+    case 'football-session':
+    case 'football-history':
     case 'rocket-league-library':
     case 'rocket-league-session':
     case 'rocket-league-history':
       page = (
         <Suspense fallback={<p role="status">Opening practice…</p>}>
           <Practice
-            system="rocket-league"
+            system={route.startsWith('football-') ? 'football' : 'rocket-league'}
             view={
               route.endsWith('library')
                 ? 'library'
@@ -384,6 +397,7 @@ export default function App() {
         </Suspense>
       );
       break;
+    case 'football-home':
     case 'rocket-league-home':
     case 'climbing-home':
     case 'training-home':

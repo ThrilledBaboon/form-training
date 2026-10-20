@@ -1,3 +1,4 @@
+import { practiceName } from '../lib/practice-model';
 import { useState } from 'react';
 import { useApp } from '../lib/context';
 import { weeklyReview } from '../lib/weekly-review';
@@ -32,7 +33,7 @@ export function WeeklyReviewView({
         <>
           <p className="widget-number">
             {r.activityDays}
-            <small> activity days recorded</small>
+            <small> gym / climbing days recorded</small>
           </p>
           <p>
             {foodNumber(r.knownMinutes, 0)} recorded minutes
@@ -67,6 +68,18 @@ export function WeeklyReviewView({
           <a href="#/climbing-log">Review climbing sessions</a>
         </section>
       )}
+      {r.practice.map((p) => (
+        <section key={p.id}>
+          <Heading>{practiceName(p.id)}</Heading>
+          <p>
+            {p.sessions} completed sessions · {foodNumber(p.minutes, 0)} recorded practice minutes
+          </p>
+          <p className="small-text muted">
+            {p.previous} sessions in the equivalent days of the previous week.
+          </p>
+          <a href={'#/' + p.id + '-history'}>Review {practiceName(p.id)} practice</a>
+        </section>
+      ))}
       {r.systems.food && (
         <section>
           <Heading>Food</Heading>

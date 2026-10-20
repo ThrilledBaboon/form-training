@@ -1,3 +1,5 @@
+import Dexie from 'dexie';
+import { weeklyReview } from '../src/lib/weekly-review';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TrainingDB, readData } from '../src/lib/db';
 import {
@@ -266,4 +268,73 @@ describe('practice portability and meaningful comparisons', () => {
     );
     expect(practiceData({}, 'football').sessions).toEqual([]);
   });
+});
+
+describe('football', () => {
+  it('keeps football history independent, shares its course snapshots, validates shots and records typical streaks', async () => {
+    const { footballStarters } = await import('../src/lib/practice-library');
+    const { typicalStreak, PracticeResultSchema } = await import('../src/lib/practice-model');
+    await sample();
+    await changePractice('football', (p) => Object.assign(p, footballStarters()), db);
+    const id = await startPractice('football', 'fb-control', db);
+    const s = (await db.practice.get('football'))!.sessions[0];
+    await practiceCommand(
+      'football',
+      id,
+      s.entries[0].id,
+      'complete',
+      { tries: [8, 12, 7, 15], best: 15, notes: 'Stable', shots: [] },
+      db,
+    );
+    await practiceCommand('football', id, s.entries[0].id, 'finish', undefined, db);
+    const p = (await db.practice.get('football'))!;
+    expect(typicalStreak(p.sessions[0].entries)).toEqual({ median: 10, attempts: 4, best: 15 });
+    expect((await db.practice.get('rocket-league'))!.sessions[0].status).toBe('active');
+    const file = parsePracticeLibrary(sharePractice(p, ['fb-dribbling']));
+    expect(file.drills.find((d) => d.id === 'fb-slalom')!.cones).toHaveLength(5);
+    expect(() =>
+      PracticeResultSchema.parse({ shots: [{ zone: 1, hit: true }], attempts: 2, hits: 0 }),
+    ).toThrow('Target map counts');
+    expect(() => PracticeResultSchema.parse({ tries: [7, 9], best: 12 })).toThrow('Best streak');
+    expect(
+      resultValue({
+        ...p.sessions[0].entries[0],
+        drill: { ...p.drills[0], metric: 'accuracy' },
+        result: PracticeResultSchema.parse({ attempts: 5 }),
+      }),
+    ).toBeUndefined();
+    await setSystemEnabled('football', true, db);
+    await ensureSystemHomePage('football', db);
+    const data = await readData(db);
+    expect(requiredSystems(systemHomePage('football').widgets[0])).toEqual(['football']);
+    expect(
+      parseLayout(exportLayout(systemHomePage('football'), data)).page.widgets[0].requiredSystems,
+    ).toEqual(['football']);
+    const category = parseBackup(categoryExport(data, ['football']));
+    expect(category.data.practice).toHaveLength(1);
+    expect(category.data.practice[0].id).toBe('football');
+    expect(weeklyReview(data).practice.find((p) => p.id === 'football')?.sessions).toBe(1);
+  });
+});
+
+it('upgrades a version 5 database while preserving existing preferences and climbing goals', async () => {
+  const name = 'practice-v5-' + crypto.randomUUID();
+  const old = new Dexie(name);
+  old.version(5).stores({ climbing: 'id', workspaces: 'id', settings: 'id' });
+  await old.open();
+  const before = await readData(db);
+  await old.table('workspaces').put(before.workspace!);
+  await old.table('settings').put({ ...before.settings, theme: 'dark' });
+  await old.table('climbing').put(before.climbing!);
+  old.close();
+  const upgraded = new TrainingDB(name);
+  try {
+    await upgraded.open();
+    expect(await upgraded.practice.count()).toBe(0);
+    expect((await readData(upgraded)).settings.theme).toBe('dark');
+    expect((await readData(upgraded)).climbing).toEqual(before.climbing);
+    expect((await readData(upgraded)).workspace).toEqual(before.workspace);
+  } finally {
+    await upgraded.delete();
+  }
 });

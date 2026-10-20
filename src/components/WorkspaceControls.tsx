@@ -37,7 +37,7 @@ export function SystemSettings() {
         title="Systems"
         sub="Show the tools you use. Turning a system off preserves all records, drafts and page positions."
       />
-      {(['gym', 'climbing', 'food', 'rocket-league'] as const).map((system) => (
+      {(['gym', 'climbing', 'food', 'rocket-league', 'football'] as const).map((system) => (
         <label className="system-switch" key={system}>
           <span>
             <strong>{systemNames[system]}</strong>
@@ -48,7 +48,9 @@ export function SystemSettings() {
                   ? 'Recipes, diary, kitchen, shopping and spending'
                   : system === 'climbing'
                     ? 'Climb library, mixed sessions, projects and climbing insights'
-                    : 'Drills, timed warm-ups, training packs and practice results'}
+                    : system === 'football'
+                      ? 'Keepy-ups, cone courses, shooting, passing and practice results'
+                      : 'Drills, timed warm-ups, training packs and practice results'}
             </small>
           </span>
           <input

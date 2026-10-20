@@ -1,3 +1,4 @@
+import { practiceSystems, practiceData } from './practice-model';
 import type { Data } from './model';
 import { dateKey, sessionStats } from './calc';
 import { foodDay, weekDays, shiftDay, dailyMacros } from './food-calc';
@@ -56,6 +57,32 @@ export function weeklyReview(data: Data, date = foodDay()) {
     to,
     through,
     systems,
+    practice: practiceSystems
+      .filter((id) => systems[id])
+      .map((id) => {
+        const p = practiceData(data, id);
+        const sessions = p.sessions.filter(
+          (s) => s.status === 'completed' && inside(dateKey(s.startAt)),
+        );
+        return {
+          id,
+          sessions: sessions.length,
+          minutes: sessions.reduce(
+            (n, s) =>
+              n +
+              s.entries
+                .filter((e) => e.status === 'completed')
+                .reduce((n, e) => n + e.elapsedSeconds / 60, 0),
+            0,
+          ),
+          previous: p.sessions.filter(
+            (s) =>
+              s.status === 'completed' &&
+              dateKey(s.startAt) >= previousFrom &&
+              dateKey(s.startAt) <= previousTo,
+          ).length,
+        };
+      }),
     gym,
     climbing,
     foodDates,

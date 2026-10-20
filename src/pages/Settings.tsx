@@ -90,7 +90,7 @@ export function Settings() {
       <div className="privacy-panel">
         <ShieldCheck size={26} />
         <div>
-          <h2>Your training and food records stay with you.</h2>
+          <h2>Your records stay with you.</h2>
           <p>
             No account, no tracking, no cloud uploads. Your records live in this browser on this
             device. Other devices and browsers have separate data. Export a backup to keep an
@@ -224,9 +224,9 @@ export function Settings() {
             </span>
             <h3>Everything, in one backup</h3>
             <p>
-              Export all gym and food records, recipes, ingredients, diary, stock, shopping,
-              purchases, uploaded images, drafts and preferences as a versioned JSON file with a
-              manifest.
+              Export all gym, climbing, Rocket League, football and food records, recipes,
+              ingredients, diary, stock, shopping, purchases, uploaded images, drafts and
+              preferences as a versioned JSON file with a manifest.
             </p>
             <AsyncButton
               onAction={() =>
@@ -382,10 +382,10 @@ export function Settings() {
       <Card className="reset-data-card">
         <SectionTitle title="Start fresh" sub="Reset FORM’s data in this browser." />
         <p>
-          Remove your food and kitchen records, purchases, images, training history, measurements,
-          custom exercises, routines, plans, preferences and local recovery snapshots. The starter
-          exercise library and routines will be restored. Export a backup first if you want to keep
-          a copy.
+          Remove your climbing and practice records, food and kitchen records, purchases, images,
+          training history, measurements, custom exercises, routines, plans, preferences and local
+          recovery snapshots. The starter exercise library and routines will be restored. Export a
+          backup first if you want to keep a copy.
         </p>
         <Button
           variant="danger"
@@ -407,7 +407,7 @@ export function Settings() {
           <br />
           Original code and illustrations. No affiliation with Setgraph.
         </p>
-        <span>Version 1.1 · Database schema 3</span>
+        <span>Private workspace · Stored on this device</span>
       </div>
       {resetOpen && (
         <Modal title="Reset all FORM data?" onClose={() => setResetOpen(false)}>

@@ -15,6 +15,35 @@ import {
 
 export const WIDGETS = [
   [
+    'football-start',
+    'Start football practice',
+    'Choose a routine or resume practice.',
+    'football',
+    'live',
+  ],
+  [
+    'football-week',
+    'Football this week',
+    'Completed practice against your weekly goal.',
+    'football',
+    'today',
+  ],
+  [
+    'football-skills',
+    'Football practice balance',
+    'Recorded practice minutes by category.',
+    'football',
+    'range',
+  ],
+  [
+    'football-progress',
+    'Football progress',
+    'Compare the same drill, course and foot over time.',
+    'football',
+    'range',
+  ],
+
+  [
     'rocket-league-start',
     'Start a warm-up',
     'Choose a routine or resume practice.',

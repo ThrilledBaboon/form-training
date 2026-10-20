@@ -13,3 +13,9 @@ Home widgets can be moved, removed, styled, used on custom pages and included in
 ## Validation
 
 Unit/storage tests cover snapshots, timer reopen/pause/resume, repeated commands, skip/repeat/finish, invalid result rollback, stale edits, sharing, migration, category isolation, merge conflict rollback, goals and disabled systems. Browser checks exercise the actual mobile and desktop flow, accessibility and narrow-screen layout.
+
+## Football
+
+Football has its own independent switch, home, drill library, routines, goals, runner and history. Add starter football drills for keepy-ups, passing, shooting and a cone course. Every template and target is editable. Search equipment and filter small-space/open-space or solo drills. Each drill stores the foot, equipment, partner requirement and course setup. Cone diagrams support tap-to-add, keyboard Add cone, numbered paths and editable coordinates; enter actual distances in setup because the diagram is a sketch.
+
+Keepy-ups accept individual attempt streaks or a single best. The latest-session summary shows median recorded attempt length and best; missing attempts never become zeros. Shooting and passing accept totals or an optional target map: select the intended zone, then record hit or miss, with Undo. The map represents intended target zones, not tracked ball positions. Left/right summaries only combine the same saved drill and setup; accuracy is weighted by attempts. Course time personal bests use the exact same cone layout, setup and foot.
