@@ -5,6 +5,7 @@ import {
   exerciseHistory as calculateExercise,
 } from './calc';
 import type { Data } from './model';
+import { weightFilterValue, type WeightFilter } from './weight-tags';
 import {
   routeSystems,
   type System,
@@ -443,6 +444,7 @@ export function widgetDestination(w: Widget) {
     return w.type === 'climbing-projects' ? 'climbing-projects' : 'climbing-log';
   const range = w.config.range;
   const query = new URLSearchParams();
+  if (w.config.weightFilter) query.set('weighIns', weightFilterValue(w.config.weightFilter));
   if (w.config.exerciseId) query.set('exercise', w.config.exerciseId);
   if (w.config.ingredientId) query.set('ingredient', w.config.ingredientId);
   if (w.config.date) query.set('date', w.config.date);
@@ -514,8 +516,10 @@ function cached<T>(data: Data, key: string, calculate: () => T): T {
   values.set(key, result);
   return result;
 }
-export const widgetWeightTrend = (data: Data) =>
-  cached(data, 'weight', () => calculateWeight(data));
+export const widgetWeightTrend = (
+  data: Data,
+  filter: WeightFilter | undefined = data.settings.weightFilter,
+) => cached(data, 'weight:' + JSON.stringify(filter), () => calculateWeight(data, filter));
 export const widgetMuscles = (data: Data, days: number, at: number) =>
   cached(data, 'muscles:' + Math.round(days * 1440) + ':' + Math.floor(at / 60000), () =>
     calculateMuscles(data, days, at),

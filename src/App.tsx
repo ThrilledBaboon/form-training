@@ -471,7 +471,7 @@ export default function App() {
       page = <Calendar key={hash} />;
       break;
     case 'weight':
-      page = <Weight />;
+      page = <Weight key={hash} />;
       break;
     case 'records':
       page = <Records />;

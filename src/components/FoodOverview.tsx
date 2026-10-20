@@ -4,6 +4,9 @@ import { useFood, MacroSummary } from './FoodUI';
 import { MacroProgress } from '../pages/FoodDiary';
 import { Card, SectionTitle, Button, LinkButton } from './ui';
 import { fromKg } from '../lib/calc';
+import { filterWeights, allWeights } from '../lib/weight-tags';
+import { saveSettings } from '../lib/actions';
+import { WeightTagFilter } from './WeightTagFilter';
 export function FoodOverview() {
   const food = useFood(),
     today = foodDay();
@@ -61,7 +64,7 @@ export function FoodOverview() {
 }
 export function FoodTrainingContext() {
   const food = useFood();
-  const { data } = useApp();
+  const { data, run, pending } = useApp();
   const days = weekDays(foodDay());
   if (data.workspace && (!data.workspace.systems.gym || !data.workspace.systems.food)) return null;
   return (
@@ -70,6 +73,14 @@ export function FoodTrainingContext() {
         title="Training & food context"
         sub="The same workout and bodyweight records, alongside your food diary. These observations do not establish cause and effect."
         action={<LinkButton to="food-diary">Weekly macros</LinkButton>}
+      />
+      <WeightTagFilter
+        disabled={pending}
+        entries={data.bodyweights}
+        value={data.settings.weightFilter ?? allWeights}
+        onChange={(filter) => {
+          void run(() => saveSettings({ weightFilter: filter }));
+        }}
       />
       <div
         className="table-scroll"
@@ -88,7 +99,7 @@ export function FoodTrainingContext() {
           </thead>
           <tbody>
             {days.map((day) => {
-              const weighIns = data.bodyweights
+              const weighIns = filterWeights(data.bodyweights, data.settings.weightFilter)
                 .filter((w) => foodDay(new Date(w.at)) === day)
                 .sort((a, b) => b.at.localeCompare(a.at));
               return (

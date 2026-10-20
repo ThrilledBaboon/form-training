@@ -478,8 +478,8 @@ export function csv(rows: unknown[][]) {
 export function csvExport(data: Data, kind: 'sessions' | 'sets' | 'bodyweight' | 'exercises') {
   if (kind === 'bodyweight')
     return csv([
-      ['id', 'date_time', 'bodyweight_kg', 'notes'],
-      ...data.bodyweights.map((b) => [b.id, b.at, b.kg, b.notes]),
+      ['id', 'date_time', 'bodyweight_kg', 'notes', 'tags'],
+      ...data.bodyweights.map((b) => [b.id, b.at, b.kg, b.notes, (b.tags ?? []).join('; ')]),
     ]);
   if (kind === 'sessions')
     return csv([

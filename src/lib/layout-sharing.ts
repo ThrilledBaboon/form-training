@@ -123,6 +123,7 @@ export function exportLayout(
       climbingType: c.climbingType,
       climbingVenue: c.climbingVenue,
       climbingTag: c.climbingTag,
+      weightFilter: c.weightFilter,
       goalTarget: c.goalTarget,
       goalCurrent: w.type === 'personal-goal' ? 0 : undefined,
       goalUnit: c.goalUnit,

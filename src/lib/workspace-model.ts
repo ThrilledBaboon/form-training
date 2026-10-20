@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ProfileSchema } from './profile-model';
+import { WeightFilterSchema } from './weight-tags';
 import { MUSCLES, trackingTypes } from './constants';
 import {
   DensitySchema,
@@ -46,6 +47,7 @@ export const SetupSchema = SetupSnapshotSchema.extend({
 export type SetupSnapshot = z.infer<typeof SetupSnapshotSchema>;
 export type EquipmentSetup = z.infer<typeof SetupSchema>;
 export const WidgetConfigSchema = z.object({
+  weightFilter: WeightFilterSchema.optional(),
   climbingType: z.enum(['bouldering', 'top_rope', 'auto_belay', 'lead']).optional(),
   climbingVenue: z.string().max(200).optional(),
   climbingTag: z.string().max(40).optional(),

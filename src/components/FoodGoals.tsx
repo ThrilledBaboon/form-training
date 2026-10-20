@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../lib/context';
 import { ageOn } from '../lib/profile-model';
+import { filterWeights } from '../lib/weight-tags';
 import { fromKg, toKg } from '../lib/calc';
 import {
   activityNames,
@@ -65,7 +66,9 @@ export function FoodGoalBuilder() {
     data.workspace?.profile?.birthday ? String(ageOn(data.workspace.profile.birthday)) : '',
   );
   const [height, setHeight] = useState(String(data.workspace?.profile?.heightCm ?? ''));
-  const latest = [...data.bodyweights].sort((a, b) => b.at.localeCompare(a.at))[0];
+  const latest = filterWeights(data.bodyweights, data.settings.weightFilter).sort((a, b) =>
+    b.at.localeCompare(a.at),
+  )[0];
   const [weight, setWeight] = useState(
     latest ? String(Number(fromKg(latest.kg, data.settings.unit).toFixed(2))) : '',
   );

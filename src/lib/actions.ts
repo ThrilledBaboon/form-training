@@ -25,6 +25,7 @@ import {
 import { exerciseHistory, recommendation, toKg } from './calc';
 import { readData } from './db';
 import { catalogue } from './catalogue';
+import { weightTags } from './weight-tags';
 import type { SessionSuggestion } from './suggestions';
 export async function resetAllData(database = db) {
   const starter = catalogue();
@@ -445,11 +446,12 @@ export async function savePlan(plan: Plan, database = db) {
   await database.plans.put(plan);
 }
 export async function saveBodyweight(
-  entry: { id: string; at: string; kg: number; notes: string },
+  entry: { id: string; at: string; kg: number; notes: string; tags?: string[] },
   database = db,
 ) {
-  BodyweightSchema.parse(entry);
-  await database.bodyweights.put(entry);
+  await database.bodyweights.put(
+    BodyweightSchema.parse({ ...entry, ...(entry.tags ? { tags: weightTags(entry.tags) } : {}) }),
+  );
 }
 export async function changeTimer(action: 'toggle' | 'reset' | 'add' | 'subtract', database = db) {
   await database.transaction('rw', database.timers, async () => {

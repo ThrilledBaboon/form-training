@@ -586,7 +586,23 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                   </div>
                 ) : (
                   <ChartOptionsContext.Provider value={look.charts}>
-                    <WidgetContent widget={widget} range={page.range} />
+                    <WidgetContent
+                      widget={widget}
+                      range={page.range}
+                      onWeightFilterChange={(filter) =>
+                        commit(
+                          {
+                            ...page,
+                            widgets: page.widgets.map((old) =>
+                              old.id === widget.id
+                                ? { ...old, config: { ...old.config, weightFilter: filter } }
+                                : old,
+                            ),
+                          },
+                          'Weigh-in filter saved',
+                        )
+                      }
+                    />
                   </ChartOptionsContext.Provider>
                 )}
               </section>

@@ -19,11 +19,26 @@ import {
 } from '../components/ui';
 import { AddToPage } from '../components/WorkspaceControls';
 import { TrendChart } from '../components/Chart';
+import { WeightTagFilter } from '../components/WeightTagFilter';
+import {
+  allWeights,
+  weightTags,
+  weightFilterFromValue,
+  type WeightFilter,
+} from '../lib/weight-tags';
 export const localInput = (iso: string) => {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
-export function BodyweightForm({ entry, onClose }: { entry?: Bodyweight; onClose: () => void }) {
+export function BodyweightForm({
+  entry,
+  initialTags = [],
+  onClose,
+}: {
+  entry?: Bodyweight;
+  initialTags?: string[];
+  onClose: () => void;
+}) {
   const { data, run } = useApp();
   const [entryId] = useState(entry?.id || uid());
   const [weight, setWeight] = useState(
@@ -31,6 +46,12 @@ export function BodyweightForm({ entry, onClose }: { entry?: Bodyweight; onClose
   );
   const [at, setAt] = useState(localInput(entry?.at || now()));
   const [notes, setNotes] = useState(entry?.notes || '');
+  const [tags, setTags] = useState((entry?.tags ?? initialTags).join(', '));
+  const suggestedTags = weightTags([
+    'Fresh',
+    'Gym',
+    ...data.bodyweights.flatMap((e) => e.tags ?? []),
+  ]);
   return (
     <Modal title={entry ? 'Edit bodyweight' : 'Log bodyweight'} onClose={onClose}>
       <form
@@ -42,6 +63,7 @@ export function BodyweightForm({ entry, onClose }: { entry?: Bodyweight; onClose
               at: new Date(at).toISOString(),
               kg: toKg(+weight, data.settings.unit),
               notes,
+              tags: weightTags(tags.split(',')),
             });
             onClose();
           }, 'Bodyweight saved');
@@ -68,6 +90,44 @@ export function BodyweightForm({ entry, onClose }: { entry?: Bodyweight; onClose
             onChange={(e) => setAt(e.target.value)}
           />
         </Field>
+        <Field
+          label="Tags (comma separated)"
+          hint="For example: Fresh, Gym, Morning. Add up to 20 tags; 40 characters each."
+        >
+          <input value={tags} maxLength={1000} onChange={(e) => setTags(e.target.value)} />
+        </Field>
+        <div className="inline-actions" aria-label="Suggested weigh-in tags">
+          {suggestedTags.map((tag) => {
+            const selected = tags
+              .split(',')
+              .some((t) => t.trim().toLocaleLowerCase() === tag.toLocaleLowerCase());
+            return (
+              <Button
+                key={tag}
+                type="button"
+                variant="secondary"
+                aria-pressed={selected}
+                onClick={() =>
+                  setTags(
+                    selected
+                      ? tags
+                          .split(',')
+                          .filter((t) => t.trim().toLocaleLowerCase() !== tag.toLocaleLowerCase())
+                          .join(', ')
+                      : [...tags.split(',').filter((t) => t.trim()), tag].join(', '),
+                  )
+                }
+              >
+                {tag}
+              </Button>
+            );
+          })}
+        </div>
+        <p className="small-text muted">
+          Fresh can describe your usual before-food, after-toilet reading. Gym can describe a later
+          reading after food, drink or training. Choose your own labels; older measurements stay
+          untagged.
+        </p>
         <Field label="Notes">
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>
@@ -82,12 +142,21 @@ export function BodyweightForm({ entry, onClose }: { entry?: Bodyweight; onClose
   );
 }
 export function Weight() {
-  const { data, run, toast } = useApp();
+  const { data, run, toast, pending } = useApp();
   const [editing, setEditing] = useState<Bodyweight | 'new' | null>(null);
   const [days, setDays] = useState(
     Number(new URLSearchParams(location.hash.split('?')[1]).get('days') ?? 90),
   );
-  const trend = useMemo(() => bodyweightTrend(data), [data.bodyweights]);
+  const [override, setOverride] = useState<WeightFilter | undefined>(() => {
+    const value = new URLSearchParams(location.hash.split('?')[1]).get('weighIns');
+    try {
+      return value ? weightFilterFromValue(value) : undefined;
+    } catch {
+      return undefined;
+    }
+  });
+  const filter = override ?? data.settings.weightFilter ?? allWeights;
+  const trend = useMemo(() => bodyweightTrend(data, filter), [data.bodyweights, filter]);
   const latest = trend[trend.length - 1];
   const filtered = trend.filter((e) => !days || Date.parse(e.at) >= Date.now() - days * 86400000);
   const goal = data.settings.goalKg;
@@ -112,6 +181,19 @@ export function Weight() {
           </Button>
         }
       />
+      <WeightTagFilter
+        disabled={pending}
+        entries={data.bodyweights}
+        value={filter}
+        onChange={(next) => {
+          setOverride(next);
+          void run(() => saveSettings({ weightFilter: next }));
+        }}
+      />
+      <p className="small-text muted">
+        The filter applies to the chart, averages and history below. Changing it also sets the
+        default for weight widgets; each widget can choose its own filter.
+      </p>
       <div className="metric-grid">
         <Metric
           label="Latest measurement"
@@ -163,7 +245,7 @@ export function Weight() {
             </select>
           }
         />
-        <AddToPage type="bodyweight" config={{ range: { days } }} />
+        <AddToPage type="bodyweight" config={{ range: { days }, weightFilter: filter }} />
         <TrendChart
           label="Bodyweight"
           zeroBaseline={false}
@@ -185,7 +267,11 @@ export function Weight() {
               <Button
                 variant="ghost"
                 onClick={() => {
-                  download(csvExport(data, 'bodyweight'), 'form-bodyweight.csv', 'text/csv');
+                  download(
+                    csvExport({ ...data, bodyweights: filtered }, 'bodyweight'),
+                    'form-bodyweight.csv',
+                    'text/csv',
+                  );
                   toast('CSV download started');
                 }}
               >
@@ -194,9 +280,17 @@ export function Weight() {
               </Button>
             }
           />
-          {!trend.length ? (
-            <Empty title="Make your first measurement" compact>
-              Measurements are optional. Log them at a time that works for you.
+          {!filtered.length ? (
+            <Empty
+              title={
+                data.bodyweights.length
+                  ? 'No measurements match this view'
+                  : 'Make your first measurement'
+              }
+              compact
+            >
+              Choose another tag or date range, or log a measurement. Your other readings are
+              retained.
             </Empty>
           ) : (
             <div className="weight-history">
@@ -215,6 +309,7 @@ export function Weight() {
                         minute: '2-digit',
                       })}
                       {e.notes && ` · ${e.notes}`}
+                      {!!e.tags?.length && ` · Tags: ${e.tags.join(', ')}`}
                     </small>
                   </span>
                   <Button
@@ -284,6 +379,7 @@ export function Weight() {
       {editing && (
         <BodyweightForm
           entry={editing === 'new' ? undefined : editing}
+          initialTags={filter.kind === 'tag' ? [filter.tag] : []}
           onClose={() => setEditing(null)}
         />
       )}

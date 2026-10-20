@@ -23,6 +23,7 @@ export async function saveProfile(input: UserProfile, goalKg?: number, database 
           at: existing?.at ?? now(),
           kg: profile.initialWeightKg,
           notes: existing?.notes ?? 'Starting weight from your profile',
+          tags: existing?.tags,
         });
         await database.bodyweights.put(entry);
         profile.initialWeightEntryId = entry.id;

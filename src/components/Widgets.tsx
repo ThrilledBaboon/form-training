@@ -63,6 +63,9 @@ import { MacroProgress } from '../pages/FoodDiary';
 import { MacroSummary } from './FoodUI';
 import { FoodTrainingContext } from './FoodOverview';
 import { BodyweightForm } from '../pages/Weight';
+import { WeightTagFilter } from './WeightTagFilter';
+import { allWeights, type WeightFilter } from '../lib/weight-tags';
+import { saveSettings } from '../lib/actions';
 const ClimbingWidget = lazy(() =>
   import('./ClimbingWidgets').then((m) => ({ default: m.ClimbingWidget })),
 );
@@ -89,8 +92,16 @@ const Row = ({ name, value, href }: { name: string; value: string; href?: string
   </div>
 );
 
-export function WidgetContent({ widget: w, range }: { widget: Widget; range: ViewRange }) {
-  const { data, run, streak } = useApp();
+export function WidgetContent({
+  widget: w,
+  range,
+  onWeightFilterChange,
+}: {
+  widget: Widget;
+  range: ViewRange;
+  onWeightFilterChange?: (filter: WeightFilter) => Promise<unknown>;
+}) {
+  const { data, run, streak, pending } = useApp();
   const c = w.config,
     r = c.range ?? range;
   const filtered = useMemo(() => rangeData(data, r), [data, r, streak.today]);
@@ -475,7 +486,8 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
     );
   }
   if (w.type === 'bodyweight' || w.type === 'weight-summary') {
-    const trend = bodyweightTrend(data);
+    const weightFilter = c.weightFilter ?? data.settings.weightFilter ?? allWeights;
+    const trend = bodyweightTrend(data, weightFilter);
     const latest = trend.at(-1);
     const rows = trend.filter((w) => Date.parse(w.at) >= start && Date.parse(w.at) <= end);
     const avg = (days: number) => {
@@ -488,6 +500,18 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
     };
     return (
       <>
+        <WeightTagFilter
+          disabled={pending}
+          entries={data.bodyweights}
+          value={weightFilter}
+          onChange={(filter) => {
+            void run(() =>
+              onWeightFilterChange
+                ? onWeightFilterChange(filter)
+                : saveSettings({ weightFilter: filter }),
+            );
+          }}
+        />
         {w.type === 'bodyweight' ? (
           rows.length ? (
             <TrendChart
@@ -533,7 +557,12 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
           <Plus size={15} />
           Log bodyweight
         </Button>
-        {weightOpen && <BodyweightForm onClose={() => setWeightOpen(false)} />}
+        {weightOpen && (
+          <BodyweightForm
+            initialTags={weightFilter.kind === 'tag' ? [weightFilter.tag] : []}
+            onClose={() => setWeightOpen(false)}
+          />
+        )}
       </>
     );
   }

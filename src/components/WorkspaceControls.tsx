@@ -16,6 +16,8 @@ import { WIDGETS, widgetDefinition } from './Widgets';
 import { ChartPreferences } from './ChartPreferences';
 import { personalisation, destinations, type Destination } from '../lib/personalisation';
 import { widgetPresentation } from '../lib/page-design';
+import { WeightTagFilter } from './WeightTagFilter';
+import { allWeights } from '../lib/weight-tags';
 
 export function SystemSettings() {
   const { data, run, pending } = useApp();
@@ -341,6 +343,26 @@ export function WidgetEditor({
               </Field>
             </details>
           )}
+        {['bodyweight', 'weight-summary'].includes(draft.type) && (
+          <>
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={!c.weightFilter}
+                onChange={(e) => patch({ weightFilter: e.target.checked ? undefined : allWeights })}
+              />
+              Use default bodyweight filter
+            </label>
+            {c.weightFilter && (
+              <WeightTagFilter
+                entries={data.bodyweights}
+                value={c.weightFilter}
+                onChange={(filter) => patch({ weightFilter: filter })}
+                label="Widget weigh-in tag filter"
+              />
+            )}
+          </>
+        )}
         {draft.type === 'personal-goal' && (
           <>
             <p>

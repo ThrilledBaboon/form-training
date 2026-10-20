@@ -8,6 +8,7 @@ import {
   type Item,
   type Muscle,
 } from './model';
+import { filterWeights, type WeightFilter } from './weight-tags';
 export const LB_PER_KG = 2.2046226218487757;
 export const fromKg = (kg: number, unit: 'kg' | 'lb') => (unit === 'lb' ? kg * LB_PER_KG : kg);
 export const toKg = (value: number, unit: 'kg' | 'lb') =>
@@ -432,8 +433,11 @@ export function dayStats(data: Data, key: string) {
     { count: 0, sets: 0, volume: 0, duration: 0 },
   );
 }
-export function bodyweightTrend(data: Data) {
-  const entries = [...data.bodyweights].sort((a, b) => a.at.localeCompare(b.at));
+export function bodyweightTrend(
+  data: Data,
+  filter: WeightFilter | undefined = data.settings.weightFilter,
+) {
+  const entries = filterWeights(data.bodyweights, filter).sort((a, b) => a.at.localeCompare(b.at));
   return entries.map((e) => {
     const t = Date.parse(e.at);
     const start = new Date(e.at);

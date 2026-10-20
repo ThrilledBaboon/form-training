@@ -1,4 +1,5 @@
 import type { PracticeData } from './practice-model';
+import { WeightTagSchema, WeightFilterSchema } from './weight-tags';
 import type { ClimbingData } from './climbing-model';
 import { z } from 'zod';
 import { PersonalisationSchema } from './personalisation';
@@ -163,8 +164,15 @@ export const SetSchema = z.object({
   completedAt: date.optional(),
   notes: text,
 });
-export const BodyweightSchema = z.object({ id, at: date, kg: positive.max(1000), notes: text });
+export const BodyweightSchema = z.object({
+  id,
+  at: date,
+  kg: positive.max(1000),
+  notes: text,
+  tags: z.array(WeightTagSchema).max(20).optional(),
+});
 export const SettingsSchema = z.object({
+  weightFilter: WeightFilterSchema.optional(),
   personalisation: PersonalisationSchema.optional(),
   id: z.literal('preferences'),
   unit: z.enum(['kg', 'lb']),
