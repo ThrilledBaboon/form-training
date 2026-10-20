@@ -69,6 +69,10 @@ The success notice offers **Undo** for that newly created batch. It refuses undo
 
 ## Backups, limits and local testing
 
+**Bodyweight → Import bodyweight** accepts a focused JSON file: `app: "FORM"`, `type: "bodyweight"`, `schemaVersion: 1`, and a `measurements` array containing `at` (ISO timestamp with timezone), `kg`, optional `notes` and optional `tags`. **Get prompt** provides the current JSON Schema and conversion instructions, with copy/download options. It contains no personal records. Convert spreadsheet or scale exports to this JSON before choosing a file.
+
+Review every date, weight and tag before confirming. Optional additional tags apply to new readings only. Exact instant/weight duplicates are skipped even when offsets differ; contradictory weights at the same instant are skipped and shown as conflicts. Imports add new readings without replacing existing records or preferences, and recheck duplicates in the save transaction. Reimporting the same file preserves local edits. Files support up to 10,000 readings and 10 MB; the stored history limit remains 100,000. Bodyweight imports work offline after the app has loaded.
+
 Use **Export everything** for a private complete backup of records, files, pages, hidden widgets, preferences, setups, reviewed import drafts and provenance. The category export **Pages, systems, equipment & import drafts** includes setup exercise dependencies. This is personal backup content, not a privacy-limited shared layout.
 
 IndexedDB v5 adds a Climbing store alongside the v4 workspace and existing Gym/Food stores. Complete/category JSON version 5 accepts existing version 2, 3 and 4 backups. An old-backup merge retains local pages/preferences; replacement supplies default pages and all systems on when the old file has none. Merge keeps existing page/profile identities; the existing explicit preference-restoration choice controls system/home/draft preferences. Page revisions reject stale editors rather than overwriting a newer page.

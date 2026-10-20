@@ -304,6 +304,28 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.bodyweight-import-preview {
+  max-height: 340px;
+  overflow: auto;
+  margin: 16px 0;
+}
+.bodyweight-import-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.bodyweight-import-preview th,
+.bodyweight-import-preview td {
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  min-width: 95px;
+}
+.bodyweight-import-preview td p {
+  margin: 4px 0 0;
+}
 .widget-calendar {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));

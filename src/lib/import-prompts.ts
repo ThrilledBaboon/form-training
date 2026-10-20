@@ -7,12 +7,28 @@ export const importPromptKinds = {
   football: 'Football drills & routines',
   layout: 'Page layouts',
   categories: 'Food, climbing, bodyweight & other categories',
+  bodyweight: 'Bodyweight measurements',
 } as const;
 export type ImportPromptKind = keyof typeof importPromptKinds;
 
 export async function getImportPrompt(kind: ImportPromptKind) {
   let schema: z.ZodType, instructions: string, example: unknown;
   switch (kind) {
+    case 'bodyweight': {
+      const { BodyweightFileSchema } = await import('./bodyweight-file');
+      schema = BodyweightFileSchema;
+      instructions =
+        'Convert my scale export, spreadsheet or notes into bodyweight measurements only. Use app:"FORM", type:"bodyweight", schemaVersion:1 and a measurements array (1–10,000 entries). Each entry needs at (an ISO timestamp with Z or an explicit timezone offset) and kg (a positive numeric weight in kilograms, at most 1000). Convert lb to kg when explicitly stated; never confuse stone or lb with kg. Ask about ambiguous dates, missing times and the source timezone before generating timestamps. Respect daylight saving time on each date. Do not guess clock times or weigh-in conditions. notes is optional text; tags is an optional list of up to 20 labels of 40 characters each, without commas, semicolons or line breaks within a label. Keep original notes and precision. Add source tags only when known; use Fresh or Gym only when I confirm those conditions. Do not include IDs, workouts, profiles, goal weights, BMI, fat percentage, other health metrics or settings. Do not invent a weight or use zero for missing data. Explain any source rows that cannot be converted rather than silently losing them. Import on the Bodyweight page with Import bodyweight, review dates, weights and tags, then confirm. FORM adds new readings, skips exact timestamp-and-weight duplicates, and skips differing weights at the same timestamp without changing existing readings. It rechecks these rules when saving.';
+      example = {
+        app: 'FORM',
+        type: 'bodyweight',
+        schemaVersion: 1,
+        measurements: [
+          { at: '2026-10-20T08:00:00+01:00', kg: 80.5, notes: 'Source note', tags: ['Scale'] },
+        ],
+      };
+      break;
+    }
     case 'note-rules': {
       const { NoteRulesSchema, defaultNoteRules } = await import('./note-rules');
       schema = NoteRulesSchema;

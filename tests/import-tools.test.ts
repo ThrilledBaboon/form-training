@@ -12,6 +12,7 @@ import { defaultWorkspace } from '../src/lib/workspace-model';
 import { serialise, importBackup } from '../src/lib/backup';
 import { TrainingDB, readData } from '../src/lib/db';
 import { uid } from '../src/lib/model';
+import { parseBodyweightFile } from '../src/lib/bodyweight-file';
 
 const rules = () =>
   parseNoteRules(
@@ -119,6 +120,7 @@ describe('AI import contracts', () => {
       if (kind === 'workouts')
         expect(parseWorkoutFile(example, fixture()).sessions[0].accepted).toBe(false);
       if (kind === 'categories') expect(parseBackup(example).scope).toBe('categories');
+      if (kind === 'bodyweight') expect(parseBodyweightFile(example).measurements).toHaveLength(1);
       if (kind === 'layout') expect(parseLayout(example).page.name).toBe('My overview');
       // Fill the intentionally empty library skeletons with minimal records and exercise the actual import parsers.
       if (kind === 'library') {

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Plus, Scale, Pencil, Trash2, Download, TrendingUp } from 'lucide-react';
+import { Plus, Scale, Pencil, Trash2, Download, TrendingUp, Upload } from 'lucide-react';
+import { BodyweightImport } from '../components/BodyweightImport';
+import { ImportPrompt } from '../components/ImportPrompt';
 import { useApp } from '../lib/context';
 import { db } from '../lib/db';
 import { saveBodyweight, saveSettings } from '../lib/actions';
@@ -144,6 +146,7 @@ export function BodyweightForm({
 export function Weight() {
   const { data, run, toast, pending } = useApp();
   const [editing, setEditing] = useState<Bodyweight | 'new' | null>(null);
+  const [importing, setImporting] = useState(false);
   const [days, setDays] = useState(
     Number(new URLSearchParams(location.hash.split('?')[1]).get('days') ?? 90),
   );
@@ -175,10 +178,17 @@ export function Weight() {
         title="Bodyweight"
         description="A measurement is a moment. Your trend tells the story."
         action={
-          <Button onClick={() => setEditing('new')}>
-            <Plus size={17} />
-            Log bodyweight
-          </Button>
+          <div className="inline-actions">
+            <ImportPrompt kind="bodyweight" />
+            <Button variant="secondary" onClick={() => setImporting(true)}>
+              <Upload size={17} />
+              Import bodyweight
+            </Button>
+            <Button onClick={() => setEditing('new')}>
+              <Plus size={17} />
+              Log bodyweight
+            </Button>
+          </div>
         }
       />
       <WeightTagFilter
@@ -383,6 +393,7 @@ export function Weight() {
           onClose={() => setEditing(null)}
         />
       )}
+      {importing && <BodyweightImport onClose={() => setImporting(false)} />}
     </>
   );
 }
