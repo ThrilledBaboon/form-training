@@ -1,3 +1,4 @@
+import { ImportPrompt } from './ImportPrompt';
 import { useState } from 'react';
 import { Download, Upload } from 'lucide-react';
 import { useApp } from '../lib/context';
@@ -88,6 +89,7 @@ export function CategoryPortability({ onImport }: { onImport: (backup: Backup) =
             }}
           />
         </label>
+        <ImportPrompt kind="categories" />
       </div>
       <details className="food-section">
         <summary>Food CSV exports for spreadsheets</summary>

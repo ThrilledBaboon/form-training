@@ -10,7 +10,7 @@ import {
 } from './practice-model';
 import { changePractice } from './practice-actions';
 import { type TrainingDB, db } from './db';
-const LibrarySchema = z
+export const LibrarySchema = z
   .object({
     app: z.literal('FORM'),
     type: z.literal('practice-library'),

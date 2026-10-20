@@ -1,3 +1,4 @@
+import { ImportPrompt } from '../components/ImportPrompt';
 import { useEffect, useState } from 'react';
 import { useApp, go } from '../lib/context';
 import { uid } from '../lib/model';
@@ -235,6 +236,7 @@ function Library({ p }: { p: PracticeData }) {
           >
             Practice goals
           </Button>
+          <ImportPrompt kind={p.id} />
           <Field label="Import practice library">
             <input
               type="file"

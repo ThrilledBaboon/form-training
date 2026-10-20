@@ -26,7 +26,7 @@ import {
   now,
   type Data,
 } from './model';
-const BackupSchema = z.object({
+export const BackupSchema = z.object({
   app: z.literal('FORM'),
   schemaVersion: z.literal(6),
   exportedAt: z.string().datetime({ offset: true }),
@@ -431,6 +431,7 @@ export async function importBackup(
           workspace.systems = data.workspace.systems;
           workspace.homePageId = data.workspace.homePageId;
           workspace.pasteDraft = data.workspace.pasteDraft;
+          workspace.noteRules = data.workspace.noteRules;
           workspace.profile = data.workspace.profile;
         }
         workspace.revision++;

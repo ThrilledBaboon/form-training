@@ -18,6 +18,10 @@ import { uid, trackingTypes } from '../lib/model';
 import { fromKg, toKg } from '../lib/calc';
 import { PageTitle, Card, SectionTitle, Button, AsyncButton, Field, Empty } from '../components/ui';
 import { localInput } from './Weight';
+import { NoteRulesControls } from '../components/NoteRulesControls';
+import { ImportPrompt } from '../components/ImportPrompt';
+import { exportWorkoutFile, parseWorkoutFile } from '../lib/workout-file';
+import { download } from '../lib/backup';
 
 export function PasteWorkouts() {
   const { data, run, toast, pending } = useApp();
@@ -92,6 +96,7 @@ export function PasteWorkouts() {
         description="Turn your existing notes into reviewed history or unscheduled routines. Parsing runs on this device."
       />
       <Card>
+        <NoteRulesControls />
         <Field label="Workout notes">
           <textarea
             rows={10}
@@ -106,9 +111,9 @@ export function PasteWorkouts() {
           />
         </Field>
         <p className="small-text muted">
-          Day-first dates (DD.MM.YY / DD.MM.YYYY) or ISO dates. Supports loads, reps, numbered sets,
-          explicit overrides, rest and notes. This is a rules-based parser; review every result.
-          Missing measurements stay blank.
+          Standard rules use day-first dates (DD.MM.YY / DD.MM.YYYY) or ISO dates. Custom rules can
+          change the format. Supports loads, reps, numbered sets, explicit overrides, rest and
+          notes. This is a rules-based parser; review every result. Missing measurements stay blank.
         </p>
         <div className="food-actions">
           <Button
@@ -121,7 +126,7 @@ export function PasteWorkouts() {
               )
                 return;
               void run(async () => {
-                setDraft(parseWorkoutNotes(draft.source, data));
+                setDraft(parseWorkoutNotes(draft.source, data, data.workspace?.noteRules));
               });
             }}
           >
@@ -138,6 +143,52 @@ export function PasteWorkouts() {
           </Button>
           <span role="status">{saveStatus}</span>
         </div>
+        <details className="food-section">
+          <summary>Import or export workout JSON</summary>
+          <p>
+            Use a structured workout file for formats the note rules cannot express. Import opens an
+            unconfirmed draft for review. Export includes the current draft’s workout notes and
+            sets.
+          </p>
+          <div className="food-actions">
+            <ImportPrompt kind="workouts" />
+            <Button
+              variant="secondary"
+              disabled={!draft.sessions.length || draft.sourceEdited}
+              onClick={() =>
+                void run(async () => {
+                  download(exportWorkoutFile(draft), 'form-workout-draft.json');
+                })
+              }
+            >
+              Export workout draft
+            </Button>
+            <label className="button secondary file-button">
+              Import workout JSON
+              <input
+                type="file"
+                accept=".json,application/json"
+                aria-label="Import workout JSON"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file)
+                    void run(async () => {
+                      if (file.size > 1000000)
+                        throw Error('Workout JSON must be smaller than 1 MB.');
+                      const incoming = parseWorkoutFile(await file.text(), data);
+                      if (
+                        (draft.sessions.length || draft.source.trim()) &&
+                        !confirm('Replace this import draft? Saved workouts are retained.')
+                      )
+                        return;
+                      setDraft(incoming);
+                    });
+                }}
+              />
+            </label>
+          </div>
+        </details>
       </Card>
       {draft.sourceEdited && (
         <p className="callout">The source text changed. Parse it again before saving the review.</p>

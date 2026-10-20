@@ -13,7 +13,7 @@ import {
 } from './model';
 
 export const LIBRARY_LIMIT = 10 * 1024 * 1024;
-const LibrarySchema = z
+export const LibrarySchema = z
   .object({
     app: z.literal('FORM'),
     type: z.literal('library'),

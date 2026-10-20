@@ -21,7 +21,9 @@ test('weigh-in tags filter history, averages and independent widgets after reloa
   await page.getByLabel('Weigh-in tag filter', { exact: true }).selectOption('tag:Fresh');
   await expect(page.locator('.weight-history > div')).toHaveCount(1);
   await expect(page.locator('.weight-history')).toContainText('80');
-  await expect(page.locator('.metric-grid .metric-value').filter({ hasText: /^80\s*kg$/ })).toHaveCount(3);
+  await expect(
+    page.locator('.metric-grid .metric-value').filter({ hasText: /^80\s*kg$/ }),
+  ).toHaveCount(3);
   await page.reload();
   await expect(page.getByLabel('Weigh-in tag filter', { exact: true })).toHaveValue('tag:Fresh');
   await page.getByLabel('Weigh-in tag filter', { exact: true }).selectOption('untagged');

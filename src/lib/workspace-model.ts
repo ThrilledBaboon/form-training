@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ProfileSchema } from './profile-model';
 import { WeightFilterSchema } from './weight-tags';
+import { NoteRulesSchema } from './note-rules';
 import { MUSCLES, trackingTypes } from './constants';
 import {
   DensitySchema,
@@ -162,6 +163,7 @@ export const WorkspaceSchema = z
     planBuilds: z.array(id).max(1000).default([]),
     profile: ProfileSchema.optional(),
     pasteDraft: z.string().max(1000000).optional(),
+    noteRules: NoteRulesSchema.optional(),
     imports: z
       .array(
         z.object({

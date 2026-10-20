@@ -1,3 +1,4 @@
+import { ImportPrompt } from '../components/ImportPrompt';
 import { SuggestMealButton } from '../components/MealSuggestions';
 import { useEffect, useState, lazy, Suspense, Fragment } from 'react';
 import { personalisation } from '../lib/personalisation';
@@ -270,6 +271,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
               <Download size={15} />
               Share layout
             </Button>
+            <ImportPrompt kind="layout" />
             <label className="button secondary file-button">
               <Upload size={15} />
               Import layout

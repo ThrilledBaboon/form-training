@@ -22,6 +22,7 @@ import {
 import { validateCompletion } from './actions';
 import { contentKey } from './layout-sharing';
 import { toKg } from './calc';
+import { prepareWorkoutNotes, type NoteRules } from './note-rules';
 
 const optionalNumber = z.number().finite().nonnegative().max(1e6).optional();
 export const ImportSetSchema = z.object({
@@ -93,7 +94,7 @@ function measurements(line: string): Partial<ImportSet> {
       : {}),
   };
 }
-export function parseWorkoutNotes(source: string, data: Data): WorkoutDraft {
+export function parseWorkoutNotes(source: string, data: Data, rules?: NoteRules): WorkoutDraft {
   if (source.length > 100000) throw Error('Paste up to 100,000 characters at a time.');
   if (!source.trim()) throw Error('Paste workout notes first.');
   const sessions: WorkoutDraft['sessions'] = [];
@@ -107,7 +108,7 @@ export function parseWorkoutNotes(source: string, data: Data): WorkoutDraft {
         name: 'Imported workout',
         date: '',
         items: [],
-        warnings: ['Dates are day-first. Review the date, all measurements and unknown fields.'],
+        warnings: ['Review the date, all measurements and unknown fields.'],
       });
       sessions.push(current);
     }
@@ -121,7 +122,7 @@ export function parseWorkoutNotes(source: string, data: Data): WorkoutDraft {
       );
     }
   };
-  const lines = source
+  const lines = prepareWorkoutNotes(source, rules)
     .replace(/&#x20;|&nbsp;/g, ' ')
     .replace(/\r/g, '\n')
     .replace(/\*\*/g, '')
@@ -142,9 +143,7 @@ export function parseWorkoutNotes(source: string, data: Data): WorkoutDraft {
         name: 'Workout · ' + dateText,
         date: dateText,
         items: [],
-        warnings: [
-          'Dates are day-first. Review all measurements, unknown fields and load conventions.',
-        ],
+        warnings: ['Review the date, all measurements, unknown fields and load conventions.'],
       });
       sessions.push(current);
       item = undefined;

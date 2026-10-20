@@ -50,7 +50,7 @@ const SharedWidget = z
   })
   .strict()
   .refine((w) => validFilterBounds(w.config), 'Minimum filters must not exceed maximum filters.');
-const LayoutSchema = z
+export const LayoutSchema = z
   .object({
     app: z.literal('FORM'),
     type: z.literal('page-layout'),

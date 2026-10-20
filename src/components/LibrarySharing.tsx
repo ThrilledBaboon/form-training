@@ -1,3 +1,4 @@
+import { ImportPrompt } from './ImportPrompt';
 import { useRef, useState } from 'react';
 import { Download, Share2, Upload } from 'lucide-react';
 import { useApp } from '../lib/context';
@@ -219,6 +220,7 @@ function ImportLibraryDialog({ onClose }: { onClose: () => void }) {
         Choose a FORM library file someone shared with you. Preview everything before adding it to
         your library.
       </p>
+      <ImportPrompt kind="library" />
       <Field
         label="Choose a library file"
         hint="FORM library JSON · up to 10 MB. Other apps’ exports need conversion first."

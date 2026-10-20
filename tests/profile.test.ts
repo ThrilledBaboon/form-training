@@ -67,15 +67,18 @@ it('keeps a correction made in Bodyweight when another profile field is edited',
   await database.bodyweights.update(profile.initialWeightEntryId!, {
     kg: 71,
     notes: 'Corrected measurement',
+    tags: ['Fresh'],
   });
   await saveProfile({ ...profile, heightCm: 176 }, 75, database);
   expect(await database.bodyweights.get(profile.initialWeightEntryId!)).toMatchObject({
     kg: 71,
     notes: 'Corrected measurement',
+    tags: ['Fresh'],
   });
   await saveProfile({ ...profile, initialWeightKg: 72 }, 75, database);
   expect(await database.bodyweights.get(profile.initialWeightEntryId!)).toMatchObject({
     kg: 72,
     notes: 'Corrected measurement',
+    tags: ['Fresh'],
   });
 });
