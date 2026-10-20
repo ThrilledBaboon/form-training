@@ -1,5 +1,15 @@
 # Implementation and verification record
 
+## Personal customisation — 20 October 2026, local
+
+Settings now includes **Make FORM yours** for spacing, text, contrast, navigation names/order/visibility, phone shortcuts, chart defaults, macro display, logging defaults and personal climbing circuits/tags. Pages support sections or filtering tabs, density overrides, independent phone order/widths, configurable widget presentation, saved copies, quick actions and manual milestones. Layout format 2 carries those choices with an optional appearance preset; format 1 remains accepted. See the [customisation guide](CUSTOMISATION.md).
+
+- All **200 unit/storage tests** pass. Seven new tests cover separate browser preferences, old backups, stale saves, transactional failure, independent phone ordering, duplicate identities, section/phone reference validation, layout privacy, appearance opt-in and rollback, historical climbing tags and recorded-point weekly averaging.
+- Across the complete **183-scenario production browser suite** and focused reruns after corrections, **182 checks pass**, with the existing WebKit touch-drag scenario skipped. The six new scenarios pass in desktop Chromium, phone-sized Chromium and phone-sized WebKit. They cover real settings forms, accessible 320 px macro summaries, navigation safety, logging defaults, page sections/tabs/removal, phone ordering/widths, chart patterns and targets, layout export/import, private-progress exclusion, reload and offline charts. Eight WebKit regression scenarios that timed out in the initial long run pass on a focused single-worker rerun.
+- Formatting, diff whitespace checks and the TypeScript/production PWA build pass. Settings and climbing modules are loaded on demand and precached. Weekly averages and target lines affect display only; no recorded history is recalculated or replaced.
+- The existing local preview at **http://127.0.0.1:4174/** was updated through its PWA update control and the new Settings panel was inspected in the user's browser. Their saved data and preference values were preserved. Browser automation uses synthetic data in isolated contexts; physical installed-PWA and full screen-reader checks remain outstanding.
+- This update is a separate local feature commit. No GitHub push or deployment was performed. Rocket League and football systems remain design ideas and are not part of this implementation.
+
 ## Custom workspace — 18 October 2026, local
 
 The custom workspace builds on the unpublished Food extension on `codex/custom-workspace`. It adds 40 reusable widgets, an editable mixed Overview and custom pages, first-release layout sharing, independent Gym/Food switches, equipment snapshots and reviewed offline workout-note imports. Its widget inventory, migration/privacy boundaries, exact commands/results and outstanding physical-device checks are in the [workspace implementation report](WORKSPACE-IMPLEMENTATION.md). The [workspace guide](WORKSPACE.md) explains how to use it. This update is local only; the public GitHub Pages site has not changed.

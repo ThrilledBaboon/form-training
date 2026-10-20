@@ -5,12 +5,31 @@ import { go } from '../lib/context';
 import { TrendChart } from './Chart';
 import { ClimbingWallMap } from './ClimbingWallMap';
 import { ClimbingWeeklyGoal } from './ClimbingSetup';
+import type { WidgetConfig } from '../lib/workspace-model';
+import type { Climb } from '../lib/climbing-model';
+import { CircuitGrade } from './ClimbingLabels';
 export { ClimbingSetupButton } from './ClimbingSetup';
-export function ClimbingWidget({ type, from, to }: { type: string; from: string; to: string }) {
+export function ClimbingWidget({
+  type,
+  from,
+  to,
+  config,
+}: {
+  type: string;
+  from: string;
+  to: string;
+  config: WidgetConfig;
+}) {
   const { data } = useApp();
   const c = data.climbing ?? emptyClimbing;
+  const matches = (climb: Pick<Climb, 'type' | 'venue' | 'tags'>) =>
+    (!config.climbingType || climb.type === config.climbingType) &&
+    (!config.climbingVenue || climb.venue === config.climbingVenue) &&
+    (!config.climbingTag || climb.tags?.includes(config.climbingTag));
   const sessions = c.sessions
     .filter((s) => s.status === 'completed' && s.date >= from && s.date <= to)
+    .map((s) => ({ ...s, entries: s.entries.filter((e) => matches(e.snapshot)) }))
+    .filter((s) => s.entries.length > 0)
     .sort((a, b) => b.date.localeCompare(a.date));
   const drafts = c.sessions.filter((s) => s.status === 'draft');
   if (type === 'climbing-week') return <ClimbingWeeklyGoal />;
@@ -41,7 +60,7 @@ export function ClimbingWidget({ type, from, to }: { type: string; from: string;
       </div>
     );
   if (type === 'climbing-projects') {
-    const projects = c.climbs.filter((c) => !c.archived && c.project === 'active');
+    const projects = c.climbs.filter((c) => !c.archived && c.project === 'active' && matches(c));
     return (
       <>
         {projects.slice(0, 5).map((p) => (
@@ -50,7 +69,7 @@ export function ClimbingWidget({ type, from, to }: { type: string; from: string;
               <strong>{p.name}</strong>
               <small>{p.nextTry || p.venue || 'Add beta for your next try'}</small>
             </span>
-            <span>{p.grade || 'Ungraded'}</span>
+            <CircuitGrade climb={p} />
           </a>
         ))}
         {!projects.length && <p>No active projects. Add one in your climb library.</p>}
@@ -76,6 +95,8 @@ export function ClimbingWidget({ type, from, to }: { type: string; from: string;
             .reduce((n, s) => n + s.durationMinutes!, 0)}{' '}
           recorded minutes across {sessions.filter((s) => s.durationMinutes !== undefined).length}{' '}
           sessions. Missing durations stay unrecorded.
+          {(config.climbingType || config.climbingVenue || config.climbingTag) &&
+            ' Durations cover whole matching sessions, not just the filtered climbs.'}
         </p>
       </>
     );

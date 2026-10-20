@@ -4,7 +4,7 @@ import { useApp } from '../lib/context';
 import { db } from '../lib/db';
 import { saveBodyweight, saveSettings } from '../lib/actions';
 import { uid, now, type Bodyweight } from '../lib/model';
-import { fromKg, toKg, fmt, bodyweightTrend, dateLabel } from '../lib/calc';
+import { fromKg, toKg, fmt, bodyweightTrend, dateLabel, dateKey } from '../lib/calc';
 import { csvExport, download } from '../lib/backup';
 import {
   Button,
@@ -171,6 +171,7 @@ export function Weight() {
           secondary="average"
           data={filtered.map((e) => ({
             date: dateLabel(e.at),
+            day: dateKey(e.at),
             value: fromKg(e.kg, data.settings.unit),
             average: fromKg(e.average, data.settings.unit),
           }))}

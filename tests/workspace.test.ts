@@ -211,7 +211,7 @@ describe('workspace persistence and portability', () => {
     expect(() => parseLayout(' '.repeat(500001))).toThrow('500 KB');
     expect(() => parseLayout('{')).toThrow('valid JSON');
     for (const value of [
-      { ...file, formatVersion: 2 },
+      { ...file, formatVersion: 3 },
       { ...file, type: 'library' },
       {
         ...file,

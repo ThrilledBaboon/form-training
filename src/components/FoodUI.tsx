@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/db';
 import { useApp } from '../lib/context';
+import { personalisation } from '../lib/personalisation';
 import {
   emptyFood,
   macroKeys,
@@ -42,20 +43,48 @@ export function FoodNav() {
     </nav>
   );
 }
-export function MacroSummary({ macros, compact = false }: { macros: Macros; compact?: boolean }) {
+export function MacroSummary({
+  macros,
+  compact = false,
+  targets,
+}: {
+  macros: Macros;
+  compact?: boolean;
+  targets?: Macros;
+}) {
   const food = useFood();
+  const { data } = useApp();
+  const prefs = personalisation(data.settings);
   const energy = macroEnergy(macros);
   return (
     <dl className={`macro-summary ${compact ? 'compact' : ''}`}>
-      {macroKeys.map((key) => (
-        <div key={key}>
-          <dt>{key === 'carbs' ? 'Carbs' : macroNames[key]}</dt>
-          <dd>
-            <span>{foodNumber(macros[key])}</span>
-            <small>{macros[key] === undefined ? ' unknown' : ' g'}</small>
-          </dd>
-        </div>
-      ))}
+      {prefs.macros.map((key) => {
+        const remaining =
+          targets?.[key] === undefined || macros[key] === undefined
+            ? undefined
+            : Math.max(0, targets[key]! - macros[key]!);
+        const showRemaining = !!targets && prefs.macroDisplay === 'remaining';
+        const value = showRemaining ? remaining : macros[key];
+        return (
+          <div key={key}>
+            <dt>
+              {key === 'carbs' ? 'Carbs' : macroNames[key]}
+              {showRemaining ? ' left' : ''}
+            </dt>
+            <dd>
+              <span>{foodNumber(value)}</span>
+              <small>{value === undefined ? ' unknown' : ' g'}</small>
+            </dd>
+            {targets && prefs.macroDisplay === 'both' && (
+              <dd className="macro-remaining">
+                {remaining === undefined
+                  ? 'Remaining unknown'
+                  : `${foodNumber(remaining)} g remaining`}
+              </dd>
+            )}
+          </div>
+        );
+      })}
       {food.foodSettings.showCalories && (
         <div>
           <dt>Estimated calories</dt>

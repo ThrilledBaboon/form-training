@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { ProfileSchema } from './profile-model';
 import { MUSCLES, trackingTypes } from './constants';
+import {
+  DensitySchema,
+  AccentSchema,
+  ChartOptionsSchema,
+  DestinationSchema,
+} from './personalisation';
 
 const id = z.string().min(1).max(200);
 const text = z.string().max(10000);
@@ -40,6 +46,13 @@ export const SetupSchema = SetupSnapshotSchema.extend({
 export type SetupSnapshot = z.infer<typeof SetupSnapshotSchema>;
 export type EquipmentSetup = z.infer<typeof SetupSchema>;
 export const WidgetConfigSchema = z.object({
+  climbingType: z.enum(['bouldering', 'top_rope', 'auto_belay', 'lead']).optional(),
+  climbingVenue: z.string().max(200).optional(),
+  climbingTag: z.string().max(40).optional(),
+  goalTarget: z.number().finite().positive().max(1e12).optional(),
+  goalCurrent: z.number().finite().nonnegative().max(1e12).optional(),
+  goalUnit: z.string().max(40).optional(),
+  quickLinks: z.array(DestinationSchema).min(1).max(6).optional(),
   exerciseId: id.optional(),
   ingredientId: id.optional(),
   setupId: id.optional(),
@@ -75,19 +88,14 @@ export const WidgetConfigSchema = z.object({
   range: RangeSchema.optional(),
   date: day.optional(),
   note: text.default(''),
-  link: z
-    .enum([
-      'workout',
-      'routines',
-      'history',
-      'weight',
-      'food-diary',
-      'food-menu',
-      'food-planner',
-      'food-shopping',
-      'paste-workouts',
-    ])
-    .default('workout'),
+  link: DestinationSchema.default('workout'),
+});
+export const WidgetPresentationSchema = z.object({
+  accent: AccentSchema.default('theme'),
+  showTitle: z.boolean().default(true),
+  showDescription: z.boolean().default(true),
+  showExplore: z.boolean().default(true),
+  charts: ChartOptionsSchema.optional(),
 });
 export const WidgetSchema = z
   .object({
@@ -96,6 +104,9 @@ export const WidgetSchema = z
     version: z.literal(1).default(1),
     title: z.string().max(150).default(''),
     size: z.enum(['compact', 'half', 'wide']).default('half'),
+    phoneSize: z.enum(['full', 'half']).optional(),
+    sectionId: id.optional(),
+    presentation: WidgetPresentationSchema.optional(),
     config: WidgetConfigSchema,
     dependencies: z
       .array(z.enum(['gym', 'food', 'climbing']))
@@ -113,9 +124,21 @@ export const PageSchema = z
     widgets: z.array(WidgetSchema).max(40),
     revision: z.number().int().nonnegative().default(0),
     importedKey: z.string().max(100).optional(),
+    density: DensitySchema.optional(),
+    sectionMode: z.enum(['sections', 'tabs']).optional(),
+    sections: z
+      .array(z.object({ id, title: z.string().trim().min(1).max(100), collapsed: z.boolean() }))
+      .max(12)
+      .optional(),
+    phoneOrder: z.array(id).max(40).optional(),
   })
   .refine(
-    (p) => new Set(p.widgets.map((w) => w.id)).size === p.widgets.length,
+    (p) =>
+      new Set(p.widgets.map((w) => w.id)).size === p.widgets.length &&
+      new Set(p.sections?.map((s) => s.id)).size === (p.sections?.length ?? 0) &&
+      new Set(p.phoneOrder).size === (p.phoneOrder?.length ?? 0) &&
+      (p.phoneOrder ?? []).every((id) => p.widgets.some((w) => w.id === id)) &&
+      p.widgets.every((w) => !w.sectionId || p.sections?.some((s) => s.id === w.sectionId)),
     'Duplicate widget identities',
   );
 export type WorkspacePage = z.infer<typeof PageSchema>;

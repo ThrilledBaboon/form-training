@@ -35,6 +35,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 ## What you can use
 
 - Editable mixed Overview, reusable widgets, multiple custom pages/home choice, independent filters and responsive arrangement with keyboard/tap controls. Share private-data-free layouts with reference mapping and import previews.
+- [Personal customisation](docs/CUSTOMISATION.md): navigation names/order, phone shortcuts, spacing/text/contrast, chart display, macro summaries, logging defaults, page sections, separate phone arrangements and optional shared appearance presets.
 - Independent Gym/Climbing/Food system switches, saved equipment setups with historical snapshots, and an offline pasted-workout review/import tool. See the [workspace guide](docs/WORKSPACE.md).
 
 - [Climbing](docs/CLIMBING.md): indoor/outdoor bouldering, top rope, auto belay and lead; a personal climb/photo library, project beta, mixed session logs, saved drafts and separate grade-aware widgets.
@@ -103,6 +104,7 @@ Formatting: `pnpm format`, `pnpm format:check`. See [verification notes](docs/VE
 ## Documentation
 
 - [Custom pages, layout sharing, systems, equipment and pasted workouts](docs/WORKSPACE.md)
+- [Personal settings, page design and shared appearance presets](docs/CUSTOMISATION.md)
 - [Workspace implementation and verification](docs/WORKSPACE-IMPLEMENTATION.md)
 
 - [Food guide and practical limits](docs/FOOD.md)

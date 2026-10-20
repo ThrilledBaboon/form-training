@@ -4,6 +4,7 @@ import App, { ErrorBoundary } from './App';
 import { loadJackDemo, localDemoAvailable } from './lib/demo';
 import './styles.css';
 import './themes.css';
+import './personalisation.css';
 const root = createRoot(document.getElementById('root')!);
 async function start() {
   const url = new URL(location.href);

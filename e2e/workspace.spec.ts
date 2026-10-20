@@ -112,6 +112,7 @@ test('custom pages edit, duplicate, move, resize, undo and persist with a chosen
   await page.getByRole('button', { name: 'Edit page', exact: true }).click();
   await addWidget(page, 'Personal notes', 'Training notes', 'Steady reps');
   await addWidget(page, 'Personal notes', 'Food notes', 'Remember lunch');
+  await page.getByLabel('Edit layout for').selectOption('desktop');
   const first = page.locator('.workspace-widget').first();
   await first.getByLabel('Duplicate widget', { exact: true }).click();
   await expect(page.locator('.workspace-widget')).toHaveCount(3);

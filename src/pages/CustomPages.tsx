@@ -1,5 +1,9 @@
 import { SuggestMealButton } from '../components/MealSuggestions';
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense, Fragment } from 'react';
+import { personalisation } from '../lib/personalisation';
+import { pageWidgets, movePageWidget, copyPage, widgetPresentation } from '../lib/page-design';
+import { PageDesign } from '../components/PageDesign';
+import { ChartOptionsContext } from '../components/ChartPreferences';
 import {
   Plus,
   Pencil,
@@ -92,6 +96,18 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
   const [configuring, setConfiguring] = useState<Widget | null>(null),
     [manage, setManage] = useState(false),
     [sharing, setSharing] = useState(false);
+  const [design, setDesign] = useState(false);
+  const [phone, setPhone] = useState(() => matchMedia('(max-width:650px)').matches);
+  const [editLayout, setEditLayout] = useState('auto');
+  const [sectionTab, setSectionTab] = useState('all');
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const phoneMode = editing ? (editLayout === 'auto' ? phone : editLayout === 'phone') : phone;
+  useEffect(() => {
+    const media = matchMedia('(max-width:650px)');
+    const update = () => setPhone(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const [layout, setLayout] = useState<SharedLayout | null>(null);
   const [naming, setNaming] = useState<'new' | 'rename' | null>(null),
     [name, setName] = useState(''),
@@ -112,11 +128,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       commit(
         {
           ...page,
-          widgets: moveEntry(
-            page.widgets,
-            page.widgets.findIndex((w) => w.id === source),
-            page.widgets.findIndex((w) => w.id === target),
-          ),
+          ...movePageWidget(page, source, target, phoneMode),
         },
         'Widget moved',
       ),
@@ -147,8 +159,13 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       </Empty>
     );
   const visible = page.widgets.filter((w) => requiredSystems(w).every((s) => workspace.systems[s]));
+  const ordered = pageWidgets(page, phoneMode).filter(
+    (w) => editing || visible.some((v) => v.id === w.id),
+  );
+  const activeSectionTab = page.sections?.some((s) => s.id === sectionTab) ? sectionTab : 'all';
+  const personal = personalisation(data.settings);
   return (
-    <>
+    <div className="personal-page" data-density={page.density ?? personal.density}>
       <PageTitle
         eyebrow={
           system === 'gym'
@@ -234,6 +251,21 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
             onChange={(range) => void run(() => commit({ ...page, range }))}
           />
           <div className="inline-actions">
+            <Button variant="secondary" onClick={() => setDesign(true)}>
+              Customise page
+            </Button>
+            <AsyncButton
+              variant="secondary"
+              onAction={() =>
+                run(async () => {
+                  const copy = copyPage(page, page.name + ' copy');
+                  await savePage(copy, -1);
+                  go(pageRoute(copy.id));
+                }, 'View saved as a new page')
+              }
+            >
+              Save as new page
+            </AsyncButton>
             <Button variant="secondary" onClick={() => setSharing(true)}>
               <Download size={15} />
               Share layout
@@ -291,194 +323,281 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           records are retained.
         </Empty>
       )}
-      <div className="widget-grid">
-        {(editing ? page.widgets : visible).map((widget, index) => {
+      {editing && (
+        <div className="page-edit-layout">
+          <Field label="Edit layout for">
+            <select value={editLayout} onChange={(e) => setEditLayout(e.target.value)}>
+              <option value="auto">Current screen</option>
+              <option value="desktop">Computer</option>
+              <option value="phone">Phone</option>
+            </select>
+          </Field>
+          <p className="small-text muted">
+            {phoneMode ? 'Phone' : 'Computer'} order and sizes save separately. Sections are shared
+            across layouts; moving between sections changes both.
+          </p>
+          <AsyncButton
+            variant="ghost"
+            onAction={() =>
+              run(() =>
+                commit(
+                  {
+                    ...page,
+                    phoneOrder: undefined,
+                    widgets: page.widgets.map((w) => ({ ...w, phoneSize: undefined })),
+                  },
+                  'Phone layout now follows computer order',
+                ),
+              )
+            }
+          >
+            Reset phone layout
+          </AsyncButton>
+        </div>
+      )}
+      {!!page.sections?.length && page.sectionMode === 'tabs' && !editing && (
+        <div className="page-section-tabs" role="group" aria-label="Page sections">
+          {[{ id: 'all', title: 'All' }, ...page.sections].map((s) => (
+            <Button
+              key={s.id}
+              variant={activeSectionTab === s.id ? 'primary' : 'secondary'}
+              aria-pressed={activeSectionTab === s.id}
+              onClick={() => setSectionTab(s.id)}
+            >
+              {s.title}
+            </Button>
+          ))}
+        </div>
+      )}
+      <div className={`widget-grid${editing && editLayout === 'phone' ? ' preview-phone' : ''}`}>
+        {ordered.map((widget, index) => {
           const missing = requiredSystems(widget).filter((s) => !workspace.systems[s]);
           const meta = widgetDefinition(widget.type);
+          const look = widgetPresentation(widget);
+          const section = page.sections?.find((s) => s.id === widget.sectionId);
+          const first = !!section && ordered[index - 1]?.sectionId !== section.id;
+          const closed =
+            !editing &&
+            page.sectionMode !== 'tabs' &&
+            section &&
+            (collapsed[section.id] ?? section.collapsed);
+          const tabHidden =
+            !editing &&
+            page.sectionMode === 'tabs' &&
+            activeSectionTab !== 'all' &&
+            widget.sectionId !== activeSectionTab;
           const move = (to: number) =>
             run(() =>
-              commit({ ...page, widgets: moveEntry(page.widgets, index, to) }, 'Widget moved'),
+              commit(movePageWidget(page, widget.id, ordered[to].id, phoneMode), 'Widget moved'),
             );
           return (
-            <section
-              key={widget.id}
-              data-widget-id={widget.id}
-              tabIndex={-1}
-              className={`card workspace-widget widget-size-${widget.size}${missing.length ? ' widget-disabled' : ''}${drag?.id === widget.id ? ' widget-dragging' : ''}${drag?.target === widget.id && drag.id !== widget.id ? ' widget-drop-target' : ''}`}
-              aria-label={widget.title || meta?.[1] || 'Unavailable widget'}
-            >
-              <div className="widget-heading">
-                <div>
-                  <h2>{widget.title || meta?.[1] || 'Unavailable widget'}</h2>
-                  <p>
-                    {meta?.[4] === 'range'
-                      ? rangeLabel(widget.config.range ?? page.range)
-                      : meta?.[4] === 'today'
-                        ? (widget.config.date ??
-                          (widget.type === 'spending' && widget.config.spendingPeriod === 'month'
-                            ? 'Current month'
-                            : widget.type === 'week' ||
-                                widget.type === 'spending' ||
-                                widget.type === 'context'
-                              ? 'Current week'
-                              : 'Today'))
-                        : meta?.[4] === 'month'
-                          ? 'Selected calendar month'
-                          : 'Current saved records'}
-                  </p>
+            <Fragment key={widget.id}>
+              {first && section && page.sectionMode !== 'tabs' && (
+                <div className="widget-section">
+                  <Button
+                    variant="ghost"
+                    aria-expanded={!closed}
+                    onClick={() => setCollapsed((c) => ({ ...c, [section.id]: !closed }))}
+                    disabled={editing}
+                  >
+                    {section.title}
+                    <ChevronDown size={16} />
+                  </Button>
                 </div>
-                {!editing &&
-                  meta &&
-                  !['start', 'suggestion', 'streak', 'notes', 'shortcut'].includes(widget.type) && (
-                    <a
-                      className="text-link"
-                      aria-label={'Explore ' + (widget.title || meta[1])}
-                      href={
-                        '#/' +
-                        widgetDestination({
-                          ...widget,
-                          config: { ...widget.config, range: widget.config.range ?? page.range },
+              )}
+              <section
+                hidden={!!closed || tabHidden}
+                data-widget-id={widget.id}
+                tabIndex={-1}
+                className={`card workspace-widget widget-size-${widget.size} phone-size-${widget.phoneSize ?? 'full'} widget-accent-${look.accent}${missing.length ? ' widget-disabled' : ''}${drag?.id === widget.id ? ' widget-dragging' : ''}${drag?.target === widget.id && drag.id !== widget.id ? ' widget-drop-target' : ''}`}
+                aria-label={widget.title || meta?.[1] || 'Unavailable widget'}
+              >
+                <div className="widget-heading">
+                  <div>
+                    <h2 className={!editing && !look.showTitle ? 'widget-title-hidden' : undefined}>
+                      {widget.title || meta?.[1] || 'Unavailable widget'}
+                    </h2>
+                    {(editing || look.showDescription) && (
+                      <p>
+                        {meta?.[4] === 'range'
+                          ? rangeLabel(widget.config.range ?? page.range)
+                          : meta?.[4] === 'today'
+                            ? (widget.config.date ??
+                              (widget.type === 'spending' &&
+                              widget.config.spendingPeriod === 'month'
+                                ? 'Current month'
+                                : widget.type === 'week' ||
+                                    widget.type === 'spending' ||
+                                    widget.type === 'context'
+                                  ? 'Current week'
+                                  : 'Today'))
+                            : meta?.[4] === 'month'
+                              ? 'Selected calendar month'
+                              : 'Current saved records'}
+                      </p>
+                    )}
+                  </div>
+                  {!editing &&
+                    look.showExplore &&
+                    meta &&
+                    !['start', 'suggestion', 'streak', 'notes', 'shortcut'].includes(
+                      widget.type,
+                    ) && (
+                      <a
+                        className="text-link"
+                        aria-label={'Explore ' + (widget.title || meta[1])}
+                        href={
+                          '#/' +
+                          widgetDestination({
+                            ...widget,
+                            config: { ...widget.config, range: widget.config.range ?? page.range },
+                          })
+                        }
+                      >
+                        Explore
+                      </a>
+                    )}
+                </div>
+                {editing && (
+                  <div className="widget-editor-controls">
+                    <Button
+                      variant="ghost"
+                      className="widget-drag-handle"
+                      aria-label={'Drag ' + (widget.title || meta?.[1] || 'widget')}
+                      title="Drag to reorder, or use the Move up and Move down buttons"
+                      disabled={pending}
+                      {...handleProps(widget.id)}
+                    >
+                      <GripVertical size={16} />
+                      Drag to move
+                    </Button>
+                    <AsyncButton
+                      variant="ghost"
+                      aria-label="Move widget up"
+                      title="Move widget up"
+                      disabled={index === 0 || pending}
+                      onAction={() => move(index - 1)}
+                    >
+                      <ArrowUp size={16} />
+                    </AsyncButton>
+                    <AsyncButton
+                      variant="ghost"
+                      aria-label="Move widget down"
+                      title="Move widget down"
+                      disabled={index === ordered.length - 1 || pending}
+                      onAction={() => move(index + 1)}
+                    >
+                      <ArrowDown size={16} />
+                    </AsyncButton>
+                    <Button
+                      variant="ghost"
+                      aria-label="Configure widget"
+                      title="Configure widget"
+                      onClick={() => setConfiguring(widget)}
+                    >
+                      <Settings2 size={16} />
+                    </Button>
+                    <AsyncButton
+                      variant="ghost"
+                      aria-label="Duplicate widget"
+                      title="Duplicate widget"
+                      disabled={pending}
+                      onAction={() =>
+                        run(() =>
+                          commit(
+                            {
+                              ...page,
+                              widgets: [
+                                ...page.widgets,
+                                { ...structuredClone(widget), id: crypto.randomUUID() },
+                              ],
+                            },
+                            'Widget duplicated',
+                          ),
+                        )
+                      }
+                    >
+                      <Copy size={16} />
+                    </AsyncButton>
+                    <AsyncButton
+                      variant="ghost"
+                      aria-label="Remove widget"
+                      className="widget-remove-button"
+                      title="Remove this widget from the page; your records are retained"
+                      disabled={pending}
+                      onAction={() =>
+                        run(async () => {
+                          await commit(
+                            { ...page, widgets: page.widgets.filter((w) => w.id !== widget.id) },
+                            'Widget removed; source records retained',
+                          );
+                          requestAnimationFrame(() => {
+                            const next = ordered[index + 1] ?? ordered[index - 1];
+                            if (next)
+                              document
+                                .querySelector<HTMLElement>(
+                                  '[data-widget-id="' + CSS.escape(next.id) + '"]',
+                                )
+                                ?.focus();
+                            else
+                              document
+                                .querySelector<HTMLElement>('.workspace-edit-banner button')
+                                ?.focus();
+                          });
                         })
                       }
                     >
-                      Explore
-                    </a>
-                  )}
-              </div>
-              {editing && (
-                <div className="widget-editor-controls">
-                  <Button
-                    variant="ghost"
-                    className="widget-drag-handle"
-                    aria-label={'Drag ' + (widget.title || meta?.[1] || 'widget')}
-                    title="Drag to reorder, or use the Move up and Move down buttons"
-                    disabled={pending}
-                    {...handleProps(widget.id)}
-                  >
-                    <GripVertical size={16} />
-                    Drag to move
-                  </Button>
-                  <AsyncButton
-                    variant="ghost"
-                    aria-label="Move widget up"
-                    title="Move widget up"
-                    disabled={index === 0 || pending}
-                    onAction={() => move(index - 1)}
-                  >
-                    <ArrowUp size={16} />
-                  </AsyncButton>
-                  <AsyncButton
-                    variant="ghost"
-                    aria-label="Move widget down"
-                    title="Move widget down"
-                    disabled={index === page.widgets.length - 1 || pending}
-                    onAction={() => move(index + 1)}
-                  >
-                    <ArrowDown size={16} />
-                  </AsyncButton>
-                  <Button
-                    variant="ghost"
-                    aria-label="Configure widget"
-                    title="Configure widget"
-                    onClick={() => setConfiguring(widget)}
-                  >
-                    <Settings2 size={16} />
-                  </Button>
-                  <AsyncButton
-                    variant="ghost"
-                    aria-label="Duplicate widget"
-                    title="Duplicate widget"
-                    disabled={pending}
-                    onAction={() =>
-                      run(() =>
-                        commit(
-                          {
+                      <Trash2 size={16} />
+                      Remove
+                    </AsyncButton>
+                    <select
+                      aria-label="Resize widget"
+                      value={phoneMode ? (widget.phoneSize ?? 'full') : widget.size}
+                      disabled={pending}
+                      onChange={(e) =>
+                        void run(() =>
+                          commit({
                             ...page,
-                            widgets: [
-                              ...page.widgets,
-                              { ...structuredClone(widget), id: crypto.randomUUID() },
-                            ],
-                          },
-                          'Widget duplicated',
-                        ),
-                      )
-                    }
-                  >
-                    <Copy size={16} />
-                  </AsyncButton>
-                  <AsyncButton
-                    variant="ghost"
-                    aria-label="Remove widget"
-                    className="widget-remove-button"
-                    title="Remove this widget from the page; your records are retained"
-                    disabled={pending}
-                    onAction={() =>
-                      run(async () => {
-                        await commit(
-                          { ...page, widgets: page.widgets.filter((w) => w.id !== widget.id) },
-                          'Widget removed; source records retained',
-                        );
-                        requestAnimationFrame(() => {
-                          const next = page.widgets[index + 1] ?? page.widgets[index - 1];
-                          if (next)
-                            document
-                              .querySelector<HTMLElement>(
-                                '[data-widget-id="' + CSS.escape(next.id) + '"]',
-                              )
-                              ?.focus();
-                          else
-                            document
-                              .querySelector<HTMLElement>('.workspace-edit-banner button')
-                              ?.focus();
-                        });
-                      })
-                    }
-                  >
-                    <Trash2 size={16} />
-                    Remove
-                  </AsyncButton>
-                  <select
-                    aria-label="Resize widget"
-                    value={widget.size}
-                    disabled={pending}
-                    onChange={(e) =>
-                      void run(() =>
-                        commit({
-                          ...page,
-                          widgets: page.widgets.map((w) =>
-                            w.id === widget.id
-                              ? { ...w, size: e.target.value as Widget['size'] }
-                              : w,
-                          ),
-                        }),
-                      )
-                    }
-                  >
-                    <option value="compact">Compact</option>
-                    <option value="half">Half</option>
-                    <option value="wide">Full width</option>
-                  </select>
-                </div>
-              )}
-              {missing.length ? (
-                <div className="widget-hidden">
-                  <Badge>{missing.join(' + ')} hidden</Badge>
-                  <p>
-                    This widget keeps its configuration and position. Enable its system in Settings
-                    to show it.
-                  </p>
-                  <a href="#/settings">Open system settings</a>
-                </div>
-              ) : (
-                <WidgetContent widget={widget} range={page.range} />
-              )}
-            </section>
+                            widgets: page.widgets.map((w) =>
+                              w.id === widget.id
+                                ? phoneMode
+                                  ? { ...w, phoneSize: e.target.value as Widget['phoneSize'] }
+                                  : { ...w, size: e.target.value as Widget['size'] }
+                                : w,
+                            ),
+                          }),
+                        )
+                      }
+                    >
+                      {!phoneMode && <option value="compact">Compact</option>}
+                      <option value="half">Half</option>
+                      <option value={phoneMode ? 'full' : 'wide'}>Full width</option>
+                    </select>
+                  </div>
+                )}
+                {missing.length ? (
+                  <div className="widget-hidden">
+                    <Badge>{missing.join(' + ')} hidden</Badge>
+                    <p>
+                      This widget keeps its configuration and position. Enable its system in
+                      Settings to show it.
+                    </p>
+                    <a href="#/settings">Open system settings</a>
+                  </div>
+                ) : (
+                  <ChartOptionsContext.Provider value={look.charts}>
+                    <WidgetContent widget={widget} range={page.range} />
+                  </ChartOptionsContext.Provider>
+                )}
+              </section>
+            </Fragment>
           );
         })}
       </div>
       {configuring && (
         <WidgetEditor
           widget={configuring}
+          sections={page.sections}
           onClose={() => setConfiguring(null)}
           onSave={(w) =>
             commit({ ...page, widgets: page.widgets.map((old) => (old.id === w.id ? w : old)) })
@@ -592,13 +711,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
                   aria-label={'Duplicate ' + p.name}
                   onAction={() =>
                     run(async () => {
-                      const copy = {
-                        ...structuredClone(p),
-                        id: crypto.randomUUID(),
-                        name: (p.name + ' copy').slice(0, 100),
-                        revision: 0,
-                        widgets: p.widgets.map((w) => ({ ...w, id: crypto.randomUUID() })),
-                      };
+                      const copy = copyPage(p, p.name + ' copy');
                       await savePage(copy, -1);
                     })
                   }
@@ -760,13 +873,21 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       )}
       {sharing && <ShareLayout page={page} onClose={() => setSharing(false)} />}
       {layout && <ImportLayout layout={layout} onClose={() => setLayout(null)} />}
-    </>
+      {design && (
+        <PageDesign
+          page={page}
+          onClose={() => setDesign(false)}
+          onSave={(next) => commit(next, 'Page design saved')}
+        />
+      )}
+    </div>
   );
 }
 function ShareLayout({ page, onClose }: { page: WorkspacePage; onClose: () => void }) {
   const { data } = useApp();
   const [notes, setNotes] = useState(false);
-  const text = exportLayout(page, data, notes);
+  const [appearance, setAppearance] = useState(false);
+  const text = exportLayout(page, data, notes, appearance);
   return (
     <Modal title="Share page layout" onClose={onClose} wide>
       <p>
@@ -778,6 +899,18 @@ function ShareLayout({ page, onClose }: { page: WorkspacePage; onClose: () => vo
         <input type="checkbox" checked={notes} onChange={(e) => setNotes(e.target.checked)} />
         Include personal note-widget text (off by default)
       </label>
+      <label className="check-label">
+        <input
+          type="checkbox"
+          checked={appearance}
+          onChange={(e) => setAppearance(e.target.checked)}
+        />
+        Include my theme, spacing and chart appearance
+      </label>
+      <p className="small-text muted">
+        Personal milestone progress resets to zero for the recipient. Navigation, logging defaults
+        and calorie visibility are excluded.
+      </p>
       <Field label="Layout file preview">
         <textarea className="layout-json" readOnly rows={12} value={text} />
       </Field>
@@ -796,6 +929,7 @@ function ImportLayout({ layout, onClose }: { layout: SharedLayout; onClose: () =
   const [mappings, setMappings] = useState(() => referenceMatches(layout, data));
   const [copy, setCopy] = useState(false),
     [replace, setReplace] = useState('');
+  const [applyAppearance, setApplyAppearance] = useState(false);
   return (
     <Modal title="Review shared layout" onClose={onClose} wide>
       <h3>{layout.page.name}</h3>
@@ -864,6 +998,17 @@ function ImportLayout({ layout, onClose }: { layout: SharedLayout; onClose: () =
           ))}
         </select>
       </Field>
+      {layout.appearance && (
+        <label className="check-label">
+          <input
+            type="checkbox"
+            checked={applyAppearance}
+            onChange={(e) => setApplyAppearance(e.target.checked)}
+          />
+          Also use the shared theme and display preferences ({layout.appearance.palette},{' '}
+          {layout.appearance.density})
+        </label>
+      )}
       <label className="check-label">
         <input type="checkbox" checked={copy} onChange={(e) => setCopy(e.target.checked)} />
         Create another copy if this layout was previously imported
@@ -880,6 +1025,7 @@ function ImportLayout({ layout, onClose }: { layout: SharedLayout; onClose: () =
               return;
             const page = await importLayout(layout, mappings, {
               copy,
+              applyAppearance,
               replaceId: replace || undefined,
               expectedRevision: workspace.pages.find((p) => p.id === replace)?.revision,
             });

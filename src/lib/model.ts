@@ -1,5 +1,6 @@
 import type { ClimbingData } from './climbing-model';
 import { z } from 'zod';
+import { PersonalisationSchema } from './personalisation';
 import { SetupSnapshotSchema, type Workspace } from './workspace-model';
 import type { FoodData } from './food-model';
 import { MUSCLES, trackingTypes } from './constants';
@@ -163,6 +164,7 @@ export const SetSchema = z.object({
 });
 export const BodyweightSchema = z.object({ id, at: date, kg: positive.max(1000), notes: text });
 export const SettingsSchema = z.object({
+  personalisation: PersonalisationSchema.optional(),
   id: z.literal('preferences'),
   unit: z.enum(['kg', 'lb']),
   theme: z.enum(['light', 'dark', 'system']),

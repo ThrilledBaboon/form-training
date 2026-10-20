@@ -1,6 +1,7 @@
 import { FoodDisplayPreference } from '../components/FoodGoals';
 import { DemoDataSettings } from '../components/DemoData';
 import { AppearanceSettings } from '../components/AppearanceSettings';
+import { PersonalisationSettings } from '../components/PersonalisationSettings';
 import { ProfileSettings } from '../components/ProfileSetup';
 import { SystemSettings } from '../components/WorkspaceControls';
 import { useState } from 'react';
@@ -83,6 +84,7 @@ export function Settings() {
       />
       <SystemSettings />
       <AppearanceSettings />
+      <PersonalisationSettings key={JSON.stringify(s.personalisation)} />
       <ProfileSettings />
       {data.workspace?.systems.food !== false && <FoodDisplayPreference card />}
       <div className="privacy-panel">

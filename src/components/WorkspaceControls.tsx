@@ -12,6 +12,9 @@ import { MUSCLES, muscleName, trackingTypes } from '../lib/model';
 import { fromKg, toKg, dateKey } from '../lib/calc';
 import { Card, SectionTitle, Button, AsyncButton, Field, Modal } from './ui';
 import { WIDGETS, widgetDefinition } from './Widgets';
+import { ChartPreferences } from './ChartPreferences';
+import { personalisation, destinations, type Destination } from '../lib/personalisation';
+import { widgetPresentation } from '../lib/page-design';
 
 export function SystemSettings() {
   const { data, run, pending } = useApp();
@@ -139,16 +142,24 @@ export function RangeControls({
 }
 export function WidgetEditor({
   widget,
+  sections,
   onSave,
   onClose,
 }: {
   widget: Widget;
+  sections?: { id: string; title: string }[];
   onSave: (w: Widget) => Promise<unknown>;
   onClose: () => void;
 }) {
   const { data, run } = useApp();
   const [draft, setDraft] = useState(() => structuredClone(widget));
   const c = draft.config;
+  const look = widgetPresentation(draft);
+  const present = (value: Partial<NonNullable<Widget['presentation']>>) =>
+    setDraft({
+      ...draft,
+      presentation: { ...look, ...value } as NonNullable<Widget['presentation']>,
+    });
   const meta = widgetDefinition(draft.type);
   const patch = (p: Partial<Widget['config']>) => setDraft({ ...draft, config: { ...c, ...p } });
   const exerciseView = draft.type.startsWith('exercise');
@@ -211,6 +222,171 @@ export function WidgetEditor({
             <option value="wide">Full width</option>
           </select>
         </Field>
+        <details>
+          <summary>Appearance & phone layout</summary>
+          <Field label="Widget accent">
+            <select
+              value={look.accent}
+              onChange={(e) =>
+                present({ accent: e.target.value as NonNullable<Widget['presentation']>['accent'] })
+              }
+            >
+              {['theme', 'green', 'blue', 'purple', 'orange'].map((a) => (
+                <option key={a} value={a}>
+                  {a === 'theme' ? 'Use my theme' : a}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {(
+            [
+              ['showTitle', 'Show widget heading'],
+              ['showDescription', 'Show date and status subtitle'],
+              ['showExplore', 'Show Explore link'],
+            ] as const
+          ).map(([key, label]) => (
+            <label className="check-label" key={key}>
+              <input
+                type="checkbox"
+                checked={look[key]}
+                onChange={(e) => present({ [key]: e.target.checked })}
+              />
+              {label}
+            </label>
+          ))}
+          <Field label="Phone widget width">
+            <select
+              value={draft.phoneSize ?? 'full'}
+              onChange={(e) =>
+                setDraft({ ...draft, phoneSize: e.target.value as Widget['phoneSize'] })
+              }
+            >
+              <option value="full">Full width</option>
+              <option value="half">Half width</option>
+            </select>
+          </Field>
+          <label className="check-label">
+            <input
+              type="checkbox"
+              checked={!!look.charts}
+              onChange={(e) =>
+                present({
+                  charts: e.target.checked
+                    ? structuredClone(personalisation(data.settings).charts)
+                    : undefined,
+                })
+              }
+            />
+            Use custom chart display for this widget
+          </label>
+          {look.charts && (
+            <ChartPreferences value={look.charts} onChange={(charts) => present({ charts })} />
+          )}
+        </details>
+        {!!sections?.length && (
+          <Field label="Page section">
+            <select
+              value={draft.sectionId ?? ''}
+              onChange={(e) => setDraft({ ...draft, sectionId: e.target.value || undefined })}
+            >
+              <option value="">No section</option>
+              {sections.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        {draft.type.startsWith('climbing-') &&
+          !['climbing-start', 'climbing-week'].includes(draft.type) && (
+            <details>
+              <summary>Saved climbing filters</summary>
+              <Field label="Climbing discipline">
+                <select
+                  value={c.climbingType ?? ''}
+                  onChange={(e) =>
+                    patch({ climbingType: (e.target.value || undefined) as typeof c.climbingType })
+                  }
+                >
+                  <option value="">All disciplines</option>
+                  {['bouldering', 'top_rope', 'auto_belay', 'lead'].map((t) => (
+                    <option key={t} value={t}>
+                      {t.replaceAll('_', ' ')}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Climbing venue filter" hint="Exact recorded venue; blank includes all.">
+                <input
+                  maxLength={200}
+                  value={c.climbingVenue ?? ''}
+                  onChange={(e) => patch({ climbingVenue: e.target.value || undefined })}
+                />
+              </Field>
+              <Field label="Climbing tag filter" hint="One recorded tag; blank includes all.">
+                <input
+                  maxLength={40}
+                  value={c.climbingTag ?? ''}
+                  onChange={(e) => patch({ climbingTag: e.target.value || undefined })}
+                />
+              </Field>
+            </details>
+          )}
+        {draft.type === 'personal-goal' && (
+          <>
+            <p>
+              This is a milestone you update yourself. It does not change recorded training or
+              nutrition.
+            </p>
+            {(['goalTarget', 'goalCurrent'] as const).map((key) => (
+              <Field
+                key={key}
+                label={key === 'goalTarget' ? 'Milestone target' : 'Milestone progress'}
+              >
+                <input
+                  required
+                  type="number"
+                  min={key === 'goalTarget' ? 0.000001 : 0}
+                  max={1e12}
+                  step="any"
+                  value={c[key] ?? (key === 'goalTarget' ? 10 : 0)}
+                  onChange={(e) => patch({ [key]: Number(e.target.value) })}
+                />
+              </Field>
+            ))}
+            <Field label="Milestone unit">
+              <input
+                maxLength={40}
+                value={c.goalUnit ?? ''}
+                onChange={(e) => patch({ goalUnit: e.target.value })}
+              />
+            </Field>
+          </>
+        )}
+        {draft.type === 'quick-actions' && (
+          <>
+            <p>Choose up to six shortcuts. Disabled systems stay hidden.</p>
+            {destinations.map(([id, label]) => (
+              <label className="check-label" key={id}>
+                <input
+                  type="checkbox"
+                  checked={(c.quickLinks ?? ['workout', 'climbing-log', 'food-diary']).includes(id)}
+                  onChange={(e) =>
+                    patch({
+                      quickLinks: e.target.checked
+                        ? [...(c.quickLinks ?? ['workout', 'climbing-log', 'food-diary']), id]
+                        : ((c.quickLinks ?? ['workout', 'climbing-log', 'food-diary']).filter(
+                            (r) => r !== id,
+                          ) as Destination[]),
+                    })
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </>
+        )}
         {(exerciseView || draft.type === 'setups') && (
           <Field label="Widget exercise">
             <select
@@ -417,19 +593,9 @@ export function WidgetEditor({
               value={c.link}
               onChange={(e) => patch({ link: e.target.value as typeof c.link })}
             >
-              {[
-                'workout',
-                'routines',
-                'history',
-                'weight',
-                'food-diary',
-                'food-menu',
-                'food-planner',
-                'food-shopping',
-                'paste-workouts',
-              ].map((link) => (
+              {destinations.map(([link, label]) => (
                 <option key={link} value={link}>
-                  {link.replaceAll('-', ' ')}
+                  {label}
                 </option>
               ))}
             </select>

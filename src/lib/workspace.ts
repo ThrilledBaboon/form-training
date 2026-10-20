@@ -45,7 +45,11 @@ export async function savePage(page: WorkspacePage, expectedRevision: number, da
       (previous && previous.revision !== expectedRevision)
     )
       throw Error('This page changed in another tab. Reload the saved page before editing again.');
-    const updated = PageSchema.parse({ ...page, revision: (previous?.revision ?? -1) + 1 });
+    const updated = PageSchema.parse({
+      ...page,
+      phoneOrder: page.phoneOrder?.filter((id) => page.widgets.some((w) => w.id === id)),
+      revision: (previous?.revision ?? -1) + 1,
+    });
     w.pages = previous
       ? w.pages.map((p) => (p.id === page.id ? updated : p))
       : [...w.pages, updated];

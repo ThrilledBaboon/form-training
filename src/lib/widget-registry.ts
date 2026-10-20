@@ -15,6 +15,20 @@ import {
 
 export const WIDGETS = [
   [
+    'quick-actions',
+    'My quick actions',
+    'Your chosen shortcuts for enabled systems.',
+    'shared',
+    'live',
+  ],
+  [
+    'personal-goal',
+    'Personal milestone',
+    'A target and progress value that you choose and update yourself.',
+    'shared',
+    'live',
+  ],
+  [
     'climbing-wall-map',
     'Climbing wall styles',
     'Explore slab, vertical, overhang and roof attempts from recorded session tags.',

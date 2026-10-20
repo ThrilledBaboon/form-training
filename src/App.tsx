@@ -5,6 +5,7 @@ import { CustomPages } from './pages/CustomPages';
 import { EquipmentSetups } from './pages/EquipmentSetups';
 import { PasteWorkouts } from './pages/PasteWorkouts';
 import { defaultWorkspace, routeSystems, pageRoute } from './lib/workspace-model';
+import { personalisation, navigationRows, linkName } from './lib/personalisation';
 import { changeWorkspace, setSystemEnabled } from './lib/workspace';
 import { Component, Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -48,7 +49,6 @@ import { Progress, Records } from './pages/Progress';
 import { Muscles } from './pages/Muscles';
 import { Calendar } from './pages/Calendar';
 import { Weight } from './pages/Weight';
-import { Settings } from './pages/Settings';
 import { FoodMenu } from './pages/FoodMenu';
 import { FoodIngredients } from './pages/FoodIngredients';
 import { FoodDiary } from './pages/FoodDiary';
@@ -62,6 +62,7 @@ import { StreakTrigger, WorkoutStreakDialog, useWorkoutStreak } from './componen
 const Climbing = lazy(() =>
   import('./pages/Climbing').then((module) => ({ default: module.Climbing })),
 );
+const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })));
 const navigation = [
   {
     label: 'YOUR WORKSPACE',
@@ -227,6 +228,13 @@ export default function App() {
       document.documentElement.dataset.theme =
         data.settings.theme === 'system' ? (media.matches ? 'dark' : 'light') : data.settings.theme;
       document.documentElement.dataset.palette = data.settings.palette;
+      const p = personalisation(data.settings);
+      document.documentElement.dataset.density = p.density;
+      document.documentElement.dataset.textSize = p.textSize;
+      document.documentElement.dataset.contrast = p.highContrast ? 'high' : 'normal';
+      document.documentElement.dataset.pageDescriptions = p.showPageDescription
+        ? 'visible'
+        : 'hidden';
       document
         .querySelector('meta[name="theme-color"]')
         ?.setAttribute(
@@ -238,7 +246,12 @@ export default function App() {
     apply();
     media.addEventListener('change', apply);
     return () => media.removeEventListener('change', apply);
-  }, [data?.settings.theme, data?.settings.palette, data?.settings.reducedMotion]);
+  }, [
+    data?.settings.theme,
+    data?.settings.palette,
+    data?.settings.reducedMotion,
+    data?.settings.personalisation,
+  ]);
   useEffect(() => {
     if (!menu) return;
     const previous = document.activeElement as HTMLElement;
@@ -296,12 +309,32 @@ export default function App() {
       </div>
     );
   const workspace = data.workspace ?? defaultWorkspace();
+  const personal = personalisation(data.settings);
+  const navRows = navigationRows(personal);
+  const displayNavigation = personal.navigation.length
+    ? [
+        {
+          label: 'YOUR LINKS',
+          items: navRows
+            .filter((r) => !r.hidden)
+            .map((r) => {
+              const original = navigation
+                .flatMap((n) => [...n.items])
+                .find((n) => n[0] === r.route)!;
+              return [r.route, r.label, original[2]] as const;
+            }),
+        },
+      ]
+    : navigation;
   const homeRoute = pageRoute(workspace.homePageId);
   const effectiveHash = hash || '#/' + homeRoute;
   const route = effectiveHash.replace(/^#\/?/, '').split('?')[0] || 'today';
   const active = data.sessions.find((s) => s.status === 'active');
-  const current =
-    navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found';
+  const current = linkName(
+    personal,
+    route,
+    navigation.flatMap((n) => [...n.items]).find((n) => n[0] === route)?.[1] || 'Page not found',
+  );
   let page: ReactNode;
   switch (route) {
     case 'weekly-review':
@@ -411,12 +444,24 @@ export default function App() {
   const requestedPage =
     route === 'pages' ? new URLSearchParams(effectiveHash.split('?')[1]).get('page') : undefined;
   const disabled = routeSystems(requestedPage || route).filter((s) => !workspace.systems[s]);
-  const mobileLinks = [
-    ['today', 'Overview', LayoutDashboard],
-    ['training-home', 'Train', Dumbbell],
-    ['food-home', 'Food', Utensils],
-    ['climbing-home', 'Climb', Mountain],
-  ].filter(([id]) => routeSystems(id as string).every((s) => workspace.systems[s]));
+  const mobileLinks = personal.mobileRoutes
+    .map((id) => {
+      const original = navigation.flatMap((n) => [...n.items]).find((n) => n[0] === id)!;
+      const short =
+        (
+          { 'training-home': 'Train', 'food-home': 'Food', 'climbing-home': 'Climb' } as Record<
+            string,
+            string
+          >
+        )[id] ?? original[1];
+      const renamed = personal.navigation.find((r) => r.route === id)?.label;
+      return [id, renamed && renamed !== original[1] ? renamed : short, original[2]] as const;
+    })
+    .filter(
+      ([id]) =>
+        routeSystems(id).every((s) => workspace.systems[s]) &&
+        !navRows.find((r) => r.route === id)?.hidden,
+    );
   if (disabled.length)
     page = (
       <Empty
@@ -497,7 +542,7 @@ export default function App() {
             YOUR ACTIVE LIFE
           </div>
           <nav aria-label="Main navigation">
-            {navigation
+            {displayNavigation
               .filter((section) =>
                 section.items.some(([id]) => routeSystems(id).every((s) => workspace.systems[s])),
               )
@@ -594,10 +639,12 @@ export default function App() {
           <main id="main-content" tabIndex={-1} key={route}>
             <Suspense fallback={<p role="status">Opening this system…</p>}>{page}</Suspense>
           </main>
-          <footer className="app-footer">
-            <span>MADE FOR YOUR NEXT PERSONAL BEST.</span>
-            <span>FORM · Your training, in focus.</span>
-          </footer>
+          {personal.showFooter && (
+            <footer className="app-footer">
+              <span>MADE FOR YOUR NEXT PERSONAL BEST.</span>
+              <span>FORM · Your training, in focus.</span>
+            </footer>
+          )}
         </div>
       </div>
       <nav
@@ -625,7 +672,7 @@ export default function App() {
       {workspace.systems.gym && streakOpen && (
         <WorkoutStreakDialog onClose={() => setStreakOpen(false)} />
       )}
-      {notice && (
+      {notice && (personal.feedback !== 'quiet' || notice.error || notice.undo) && (
         <div
           className={`toast ${notice.error ? 'error' : ''}`}
           role={notice.error ? 'alert' : 'status'}

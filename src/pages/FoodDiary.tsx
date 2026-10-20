@@ -2,6 +2,7 @@ import { AddToPage } from '../components/WorkspaceControls';
 import { useId, useState } from 'react';
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../lib/context';
+import { personalisation } from '../lib/personalisation';
 import { uid, now } from '../lib/model';
 import {
   mealSlots,
@@ -310,12 +311,14 @@ function TargetEditor({ onClose }: { onClose: () => void }) {
 }
 export function MacroProgress({ date }: { date: string }) {
   const food = useFood();
+  const { data } = useApp();
+  const display = personalisation(data.settings);
   const totals = dailyMacros(food, date);
   const id = useId();
   const energy = dailyEnergy(food, date);
   return (
     <>
-      <MacroSummary macros={totals} />
+      <MacroSummary macros={totals} targets={food.foodSettings.targets} />
       {food.foodSettings.showCalories && (
         <>
           {energy.missing > 0 && (
@@ -344,7 +347,7 @@ export function MacroProgress({ date }: { date: string }) {
           </p>
         </>
       )}
-      {(['protein', 'carbs', 'fat', 'fibre'] as const).map((key) => {
+      {display.macros.map((key) => {
         const target = food.foodSettings.targets[key];
         return target === undefined ? null : (
           <div className="macro-target" key={key}>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CircuitGrade } from './ClimbingLabels';
 import {
   climbingWallSummary,
   wallStyleName,
@@ -130,7 +131,7 @@ export function ClimbingWallMap({ sessions }: { sessions: ClimbingSession[] }) {
               <strong>{entry.snapshot.name}</strong>
               <small>
                 {session.date} · {entry.snapshot.venue || 'Venue unspecified'} ·{' '}
-                {entry.snapshot.grade || 'Ungraded'} {entry.snapshot.gradeScale}
+                <CircuitGrade climb={entry.snapshot} /> {entry.snapshot.gradeScale}
               </small>
             </span>
             <span>

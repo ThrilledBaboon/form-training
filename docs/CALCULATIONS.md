@@ -1,5 +1,13 @@
 # Transparent calculation methods
 
+## Personal chart display and goals
+
+Customisation can show recorded trend points as area, line or bars. The optional weekly view groups full local calendar dates into Monday–Sunday weeks and averages each numeric series over its recorded points. Missing dates are not zeroes and are not filled; unknown values are excluded independently for each series. This is a weekly average of the chart's points, not a weekly total or a new bodyweight moving-average formula. When full dates are unavailable, the chart retains individual points and states that fallback.
+
+A chart target uses the chart's displayed unit and extends its vertical range when necessary. It is only a reference line. A Personal milestone widget uses manually entered nonnegative progress and a positive target; the progress bar is capped at the target, while the numeric value remains visible. Shared milestones start at zero.
+
+Climbing discipline, venue and tag filters use the historical climb snapshot for each session entry. Session counts and duration refer to sessions with matching entries; duration remains the whole recorded session duration. It is not apportioned to individual climbs. Gym colour circuits match exact venue, grade and scale labels and do not convert grades. Macro display choices change visibility/order only; remaining grams are the known target minus the known consumed amount, clamped at zero. An unknown target or amount produces an unknown remainder.
+
 ## Food quantities, macros and costs
 
 `src/lib/food-calc.ts` supplies every food view. A line contributes

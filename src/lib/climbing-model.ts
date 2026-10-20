@@ -38,6 +38,7 @@ export const ClimbSnapshotSchema = z.object({
   grade: z.string().trim().max(80).default(''),
   gradeScale: z.string().trim().max(80).default(''),
   wallStyle: z.enum(wallStyles).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(30).optional(),
 });
 export const ClimbSchema = ClimbSnapshotSchema.extend({
   id,

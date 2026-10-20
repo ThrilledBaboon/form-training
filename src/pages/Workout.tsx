@@ -22,6 +22,7 @@ import {
   Weight,
 } from 'lucide-react';
 import { useApp, go } from '../lib/context';
+import { personalisation } from '../lib/personalisation';
 import { db } from '../lib/db';
 import {
   addExercise,
@@ -76,6 +77,13 @@ import { BodyweightForm, localInput } from './Weight';
 function SetRow({ set, item, index }: { set: WorkoutSet; item: Item; index: number }) {
   const { data, run, toast } = useApp();
   const [details, setDetails] = useState(false);
+  const [effortScale, setEffortScale] = useState<'rpe' | 'rir'>(() =>
+    set.rir !== undefined
+      ? 'rir'
+      : set.rpe !== undefined
+        ? 'rpe'
+        : personalisation(data.settings).effortScale,
+  );
   const unit = data.settings.unit;
   const label = `${item.name} set ${index + 1}`;
   const patch = (p: Partial<WorkoutSet>) => void run(() => updateSet(set.id, p));
@@ -199,31 +207,28 @@ function SetRow({ set, item, index }: { set: WorkoutSet; item: Item; index: numb
           <div className="form-grid">
             <Field label="Effort scale">
               <select
-                value={set.rir !== undefined ? 'rir' : 'rpe'}
-                onChange={(e) =>
-                  patch(
-                    e.target.value === 'rpe'
-                      ? { rir: undefined, rpe: 0 }
-                      : { rpe: undefined, rir: 0 },
-                  )
-                }
+                value={effortScale}
+                onChange={(e) => setEffortScale(e.target.value as 'rpe' | 'rir')}
               >
                 <option value="rpe">RPE (1–10)</option>
                 <option value="rir">Reps in reserve (0–10)</option>
               </select>
             </Field>
-            <Field label={set.rir !== undefined ? 'RIR (optional)' : 'RPE (optional)'}>
+            <Field label={effortScale === 'rir' ? 'RIR (optional)' : 'RPE (optional)'}>
               <input
                 type="number"
                 min={0}
                 max={10}
                 step={0.5}
-                value={set.rir ?? set.rpe ?? ''}
+                value={(effortScale === 'rir' ? set.rir : set.rpe) ?? ''}
                 onChange={(e) =>
                   patch(
-                    set.rir !== undefined
-                      ? { rir: e.target.value === '' ? undefined : +e.target.value }
-                      : { rpe: e.target.value === '' ? undefined : +e.target.value },
+                    effortScale === 'rir'
+                      ? { rir: e.target.value === '' ? undefined : +e.target.value, rpe: undefined }
+                      : {
+                          rpe: e.target.value === '' ? undefined : +e.target.value,
+                          rir: undefined,
+                        },
                   )
                 }
               />
@@ -589,7 +594,7 @@ function WorkoutExercise({
           {item.restUnknown ? 'Rest unknown; choose before timing' : item.restSeconds + 's rest'}
         </Button>
       </div>
-      <details className="exercise-notes">
+      <details className="exercise-notes" open={personalisation(data.settings).workoutNotesOpen}>
         <summary>Notes, groups & suggested targets</summary>
         <p className="suggestion">
           <strong>

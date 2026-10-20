@@ -14,6 +14,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import { useApp, go } from '../lib/context';
+import { personalisation, linkName, destinations } from '../lib/personalisation';
 import { startSession } from '../lib/actions';
 import {
   completedSessions,
@@ -106,6 +107,47 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
     </Empty>
   );
   const exercise = data.exercises.find((e) => e.id === c.exerciseId);
+  if (w.type === 'personal-goal')
+    return (
+      <>
+        <p className="widget-number">
+          {fmt(c.goalCurrent ?? 0)}
+          <small>
+            {' '}
+            / {fmt(c.goalTarget ?? 10)} {c.goalUnit ?? ''}
+          </small>
+        </p>
+        <progress
+          className="goal-progress"
+          aria-label={w.title || 'Personal milestone'}
+          value={Math.min(c.goalCurrent ?? 0, c.goalTarget ?? 10)}
+          max={c.goalTarget ?? 10}
+        />
+        <p className="small-text muted">
+          Manually recorded progress. Edit this widget to update your milestone.
+        </p>
+        {(c.goalCurrent ?? 0) >= (c.goalTarget ?? 10) &&
+          personalisation(data.settings).feedback === 'messages' && <p>Milestone reached.</p>}
+      </>
+    );
+  if (w.type === 'quick-actions')
+    return (
+      <div className="food-actions">
+        {(c.quickLinks ?? ['workout', 'climbing-log', 'food-diary'])
+          .filter((link) =>
+            routeSystems(link).every((s) => (data.workspace ?? defaultWorkspace()).systems[s]),
+          )
+          .map((link) => (
+            <a className="button secondary" key={link} href={'#/' + link}>
+              {linkName(
+                personalisation(data.settings),
+                link,
+                destinations.find(([id]) => id === link)?.[1] ?? link,
+              )}
+            </a>
+          ))}
+      </div>
+    );
   if (w.type === 'weekly-review') return <WeeklyReviewView date={today} />;
   if (w.type === 'suggest-meal')
     return (
@@ -118,7 +160,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
   if (w.type.startsWith('climbing-'))
     return (
       <Suspense fallback={<p role="status">Opening climbing view…</p>}>
-        <ClimbingWidget type={w.type} from={from} to={to} />
+        <ClimbingWidget type={w.type} from={from} to={to} config={c} />
       </Suspense>
     );
   if (w.type === 'start')
@@ -220,6 +262,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
           const t = sessionStats(data, s);
           return {
             date: dateLabel(s.startAt),
+            day: dateKey(s.startAt),
             value:
               c.metric === 'sets'
                 ? t.sets
@@ -373,6 +416,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
           unit={unit}
           data={[...history].reverse().map((h) => ({
             date: dateLabel(h.session.startAt),
+            day: dateKey(h.session.startAt),
             value:
               c.metric === 'sets'
                 ? h.sets.length
@@ -444,6 +488,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
               zeroBaseline={false}
               data={rows.map((w) => ({
                 date: dateLabel(w.at),
+                day: dateKey(w.at),
                 value: fromKg(w.kg, data.settings.unit),
                 average: fromKg(w.average, data.settings.unit),
               }))}
@@ -532,7 +577,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
             unit={c.mode === 'sets' ? 'contributions' : 'relative points'}
             data={[...daily]
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([date, value]) => ({ date: dateLabel(date + 'T12:00:00'), value }))}
+              .map(([date, value]) => ({ date: dateLabel(date + 'T12:00:00'), day: date, value }))}
           />
           {c.mode === 'recovery' && (
             <p>Trend shows recorded relative volume before recovery decay.</p>
@@ -768,6 +813,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
           unit="g"
           data={known.map((d) => ({
             date: dateLabel(d + 'T12:00:00'),
+            day: d,
             value: dailyMacros(food, d)[metric]!,
           }))}
         />
@@ -912,6 +958,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
         unit={currency}
         data={dates.map((d) => ({
           date: dateLabel(d + 'T12:00:00'),
+          day: d,
           value: purchases.filter((p) => p.date === d).reduce((n, p) => n + p.total, 0),
         }))}
       />
@@ -1026,7 +1073,11 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
           unit={currency + '/' + ingredient.defaultUnit}
           data={rows
             .filter((row) => row.value !== undefined)
-            .map((row) => ({ date: dateLabel(row.date + 'T12:00:00'), value: row.value! }))}
+            .map((row) => ({
+              date: dateLabel(row.date + 'T12:00:00'),
+              day: row.date,
+              value: row.value!,
+            }))}
         />
         <p>
           {rows.filter((row) => row.value === undefined).length} purchase lines cannot be
@@ -1083,7 +1134,7 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
   if (w.type === 'shortcut')
     return (
       <Button onClick={() => go(c.link)}>
-        {
+        {(
           {
             workout: 'Start or resume workout',
             routines: 'Choose a routine',
@@ -1094,8 +1145,13 @@ export function WidgetContent({ widget: w, range }: { widget: Widget; range: Vie
             'food-planner': 'Plan meals',
             'food-shopping': 'Shopping',
             'paste-workouts': 'Paste workout notes',
-          }[c.link]
-        }
+          } as Record<string, string>
+        )[c.link] ??
+          linkName(
+            personalisation(data.settings),
+            c.link,
+            destinations.find(([id]) => id === c.link)?.[1] ?? c.link,
+          )}
       </Button>
     );
   return (

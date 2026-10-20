@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../lib/context';
+import { personalisation } from '../lib/personalisation';
+import { CircuitGrade, ClimbingTagsInput } from '../components/ClimbingLabels';
 import { now, uid } from '../lib/model';
 import { foodDay } from '../lib/food-calc';
 import { imageFile } from '../lib/food-actions';
@@ -36,8 +38,16 @@ export function ClimbingNav() {
   );
 }
 function ClimbEditor({ initial, onClose }: { initial?: Climb; onClose: () => void }) {
-  const { run } = useApp();
-  const [v, set] = useState(initial ?? newClimb());
+  const { run, data } = useApp();
+  const prefs = personalisation(data.settings);
+  const [v, set] = useState(
+    initial ?? {
+      ...newClimb(),
+      type: prefs.climbingType,
+      venue: prefs.climbingVenue,
+      gradeScale: prefs.climbingScale,
+    },
+  );
   const [dirty, setDirty] = useState(false);
   const patch = (p: Partial<Climb>) => {
     set((current) => ({ ...current, ...p }));
@@ -131,6 +141,7 @@ function ClimbEditor({ initial, onClose }: { initial?: Climb; onClose: () => voi
             />
           </Field>
         </div>
+        <ClimbingTagsInput value={v.tags} onChange={(tags) => patch({ tags })} />
         <Field label="Project status">
           <select
             value={v.project}
@@ -378,6 +389,11 @@ function SessionEditor({ initial, onClose }: { initial?: ClimbingSession; onClos
                 ))}
               </select>
             </Field>
+            <ClimbingTagsInput
+              label={'Tags for ' + e.snapshot.name}
+              value={e.snapshot.tags}
+              onChange={(tags) => entry(e.id, { snapshot: { ...e.snapshot, tags } })}
+            />
             <Field label={`Notes for ${e.snapshot.name}`}>
               <textarea
                 value={e.notes}
@@ -487,11 +503,20 @@ export function Climbing({ view }: { view: 'library' | 'projects' | 'log' }) {
                   {climbTypeName[c.type]} · {c.environment} · {c.venue || 'Venue unspecified'}
                 </p>
                 <p>
-                  <strong>{c.grade || 'Ungraded'}</strong>
+                  <strong>
+                    <CircuitGrade climb={c} />
+                  </strong>
                   {c.gradeScale && ' · ' + c.gradeScale}
                   {c.wallStyle && ' · ' + wallStyleName[c.wallStyle]}
                   {c.archived && ' · Archived'}
                 </p>
+                {!!c.tags?.length && (
+                  <div className="climbing-tags">
+                    {c.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                )}
                 {c.project !== 'none' && (
                   <p>{c.project === 'active' ? 'Working on it' : 'Completed project'}</p>
                 )}

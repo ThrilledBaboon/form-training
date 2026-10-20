@@ -8,6 +8,7 @@ import {
   toKg,
   fmt,
   dateLabel,
+  dateKey,
   personalRecords,
   compare,
   roundTo,
@@ -141,6 +142,7 @@ export function Progress() {
     ).size > 1;
   const chart = [...(incompatible ? [] : history)].reverse().map((h) => ({
     date: dateLabel(h.session.startAt),
+    day: dateKey(h.session.startAt),
     value:
       metric === 'sets'
         ? h.sets.length
