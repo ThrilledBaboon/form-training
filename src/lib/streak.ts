@@ -1,6 +1,8 @@
 import { dateKey } from './calc';
 import type { Data } from './model';
 
+export type StreakSystem = 'gym' | 'climbing' | 'rocket-league' | 'football';
+
 export const STREAK_RULES = { startingRestDays: 5, earnedPerWorkoutDay: 1, maxRestDays: 7 };
 
 export type StreakDay = {
@@ -27,15 +29,6 @@ const dayNumber = (date: Date) =>
 const keyForDay = (day: number) => new Date(day * 86400000).toISOString().slice(0, 10);
 
 export function workoutStreak(data: Data, at = Date.now()): WorkoutStreak {
-  const today = dateKey(new Date(at));
-  const result: WorkoutStreak = {
-    current: 0,
-    longest: 0,
-    restDaysLeft: 0,
-    earnedToday: 0,
-    today,
-    days: new Map(),
-  };
   const completed = new Set(
     data.sets
       .filter((set) => set.completed && (!set.completedAt || Date.parse(set.completedAt) <= at))
@@ -53,6 +46,48 @@ export function workoutStreak(data: Data, at = Date.now()): WorkoutStreak {
     const day = dayNumber(new Date(session.startAt));
     trainingDays.set(day, (trainingDays.get(day) || 0) + 1);
   }
+  return streakFromDays(trainingDays, at);
+}
+
+/** Each system contributes only its own finished sessions; streaks are derived, never stored. */
+export function systemStreak(data: Data, system: StreakSystem, at = Date.now()): WorkoutStreak {
+  if (system === 'gym') return workoutStreak(data, at);
+  const today = dateKey(new Date(at));
+  const dates =
+    system === 'climbing'
+      ? (data.climbing?.sessions ?? [])
+          .filter(
+            (s) =>
+              s.status === 'completed' && s.date <= today && s.entries.some((e) => e.attempts > 0),
+          )
+          .map((s) => s.date)
+      : (data.practice?.find((p) => p.id === system)?.sessions ?? [])
+          .filter(
+            (s) =>
+              s.status === 'completed' &&
+              Date.parse(s.startAt) <= at &&
+              (!s.endAt || Date.parse(s.endAt) <= at) &&
+              s.entries.some((e) => e.status === 'completed'),
+          )
+          .map((s) => dateKey(new Date(s.startAt)));
+  const days = new Map<number, number>();
+  for (const date of dates) {
+    const day = dayNumber(new Date(date + 'T12:00:00'));
+    if (Number.isFinite(day)) days.set(day, (days.get(day) ?? 0) + 1);
+  }
+  return streakFromDays(days, at);
+}
+
+function streakFromDays(trainingDays: Map<number, number>, at: number): WorkoutStreak {
+  const today = dateKey(new Date(at));
+  const result: WorkoutStreak = {
+    current: 0,
+    longest: 0,
+    restDaysLeft: 0,
+    earnedToday: 0,
+    today,
+    days: new Map(),
+  };
   let lastDay: number | undefined;
   let streakId = '';
   let count = 0;

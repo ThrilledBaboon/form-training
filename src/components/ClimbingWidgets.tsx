@@ -8,6 +8,7 @@ import { ClimbingWeeklyGoal } from './ClimbingSetup';
 import type { WidgetConfig } from '../lib/workspace-model';
 import type { Climb } from '../lib/climbing-model';
 import { CircuitGrade } from './ClimbingLabels';
+import { ActivityStreak } from './WorkoutStreak';
 export { ClimbingSetupButton } from './ClimbingSetup';
 export function ClimbingWidget({
   type,
@@ -22,6 +23,7 @@ export function ClimbingWidget({
 }) {
   const { data } = useApp();
   const c = data.climbing ?? emptyClimbing;
+  if (type === 'climbing-streak') return <ActivityStreak system="climbing" />;
   const matches = (climb: Pick<Climb, 'type' | 'venue' | 'tags'>) =>
     (!config.climbingType || climb.type === config.climbingType) &&
     (!config.climbingVenue || climb.venue === config.climbingVenue) &&

@@ -27,7 +27,7 @@ import {
   systemForPage,
   systemHomePage,
   systemNames,
-  climbingHomeNeedsUpdate,
+  systemHomeNeedsUpdate,
   type Widget,
   type WorkspacePage,
 } from '../lib/workspace-model';
@@ -77,15 +77,15 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
       workspace.homePageId);
   const storedPage = workspace.pages.find((p) => p.id === id);
   const system = systemForPage(id);
-  const updateClimbingHome = !!storedPage && climbingHomeNeedsUpdate(storedPage);
+  const updateSystemHome = !!storedPage && systemHomeNeedsUpdate(storedPage);
   const [openingFailed, setOpeningFailed] = useState(false);
   const openSystemHome = () => {
     if (system)
       void run(() => ensureSystemHomePage(system)).then((result) => setOpeningFailed(!result));
   };
   useEffect(() => {
-    if (system && (!storedPage || updateClimbingHome)) openSystemHome();
-  }, [system, !!storedPage, updateClimbingHome]);
+    if (system && (!storedPage || updateSystemHome)) openSystemHome();
+  }, [system, !!storedPage, updateSystemHome]);
   const [savedPage, setSavedPage] = useState<WorkspacePage>();
   const page =
     storedPage && savedPage?.id === id && savedPage.revision > storedPage.revision

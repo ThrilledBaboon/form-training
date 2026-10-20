@@ -236,7 +236,7 @@ export function systemHomePage(system: System): WorkspacePage {
       name: systemNames[system],
       range: { days: 30 },
       revision: 0,
-      widgets: ['start', 'week', 'skills', 'progress'].map((type) =>
+      widgets: ['streak', 'start', 'week', 'skills', 'progress'].map((type) =>
         makeWidget(system + '-' + type, {}, system + '-' + type),
       ),
     };
@@ -244,6 +244,7 @@ export function systemHomePage(system: System): WorkspacePage {
   const types =
     system === 'climbing'
       ? [
+          'climbing-streak',
           'climbing-start',
           'climbing-week',
           'climbing-wall-map',
@@ -303,6 +304,7 @@ export function climbingHomeNeedsUpdate(page: WorkspacePage) {
     (w) =>
       w.type !== 'climbing-wall-map' &&
       w.type !== 'climbing-week' &&
+      w.type !== 'climbing-streak' &&
       (w.type !== 'climbing-trend' || page.widgets.some((p) => p.type === 'climbing-trend')),
   );
   return (
@@ -310,6 +312,15 @@ export function climbingHomeNeedsUpdate(page: WorkspacePage) {
     JSON.stringify(page.range) === JSON.stringify(latest.range) &&
     JSON.stringify(page.widgets) === JSON.stringify(old)
   );
+}
+/** Upgrade only an exact, untouched earlier template. Removed widgets on edited pages stay removed. */
+export function systemHomeNeedsUpdate(page: WorkspacePage) {
+  if (climbingHomeNeedsUpdate(page)) return true;
+  const system = systemForPage(page.id);
+  if (!system || system === 'gym' || system === 'food' || page.revision !== 0) return false;
+  const previous = systemHomePage(system);
+  previous.widgets = previous.widgets.filter((w) => w.type !== system + '-streak');
+  return JSON.stringify(PageSchema.parse(page)) === JSON.stringify(PageSchema.parse(previous));
 }
 export const defaultWorkspace = (): Workspace => ({
   planBuilds: [],

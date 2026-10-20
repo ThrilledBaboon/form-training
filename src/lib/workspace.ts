@@ -7,7 +7,7 @@ import {
   SetupSchema,
   defaultWorkspace,
   systemHomePage,
-  climbingHomeNeedsUpdate,
+  systemHomeNeedsUpdate,
   type Workspace,
   type WorkspacePage,
   type EquipmentSetup,
@@ -20,9 +20,9 @@ export function ensureSystemHomePage(
   return changeWorkspace((w) => {
     const page = systemHomePage(system);
     if (!w.pages.some((p) => p.id === page.id)) w.pages.push(page);
-    else if (system === 'climbing')
+    else
       w.pages = w.pages.map((p) =>
-        climbingHomeNeedsUpdate(p) ? { ...page, revision: p.revision + 1 } : p,
+        p.id === page.id && systemHomeNeedsUpdate(p) ? { ...page, revision: p.revision + 1 } : p,
       );
   }, database);
 }

@@ -94,6 +94,9 @@ test('Rocket League is opt-in, runs a saved warm-up, records results and keeps t
   page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Practice history', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Open Rocket League streak, 1 practice day', exact: true }),
+  ).toBeVisible();
   await page
     .getByLabel('Drill & setup')
     .selectOption({ label: 'Shooting accuracy · both · Stationary ball at midfield' });
@@ -156,6 +159,9 @@ test('Football tracks keepy-ups, editable courses, foot-specific shooting and sh
   await expect(page.getByText('Latest session:', { exact: false })).toContainText(
     'typical streak 10',
   );
+  await expect(
+    page.getByRole('button', { name: 'Open Football streak, 1 practice day', exact: true }),
+  ).toBeVisible();
   await page.goto(base + '#/football-library');
   await page.getByRole('button', { name: 'Edit Target shooting', exact: true }).click();
   await page.getByLabel('Foot', { exact: true }).selectOption('left');

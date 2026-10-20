@@ -8,6 +8,7 @@ import {
   SetupSchema,
   WorkspaceSchema,
   pageRoute,
+  systemHomePage,
 } from '../src/lib/workspace-model';
 import {
   changeWorkspace,
@@ -55,6 +56,36 @@ async function reviewed() {
   return { draft, data, exercise };
 }
 describe('workspace persistence and portability', () => {
+  it.each(['climbing', 'football', 'rocket-league'] as const)(
+    'adds a streak widget to an untouched %s home once and preserves customised pages',
+    async (system) => {
+      const previous = systemHomePage(system);
+      previous.widgets = previous.widgets.filter((w) => !w.type.endsWith('-streak'));
+      await changeWorkspace((w) => {
+        w.pages.push(previous);
+      }, database);
+      await ensureSystemHomePage(system, database);
+      let data = await readData(database);
+      const updated = data.workspace!.pages.find((p) => p.id === previous.id)!;
+      expect(updated.widgets.filter((w) => w.type === system + '-streak')).toHaveLength(1);
+      const shared = parseLayout(exportLayout(updated, data));
+      expect(
+        shared.page.widgets.find((w) => w.type === system + '-streak')!.requiredSystems,
+      ).toEqual([system]);
+      await ensureSystemHomePage(system, database);
+      expect((await readData(database)).workspace!.pages.find((p) => p.id === previous.id)).toEqual(
+        updated,
+      );
+      // Removing the widget is a personal choice and must survive subsequent visits.
+      await savePage({ ...updated, widgets: previous.widgets }, updated.revision, database);
+      data = await readData(database);
+      const custom = data.workspace!.pages.find((p) => p.id === previous.id)!;
+      await ensureSystemHomePage(system, database);
+      expect((await readData(database)).workspace!.pages.find((p) => p.id === previous.id)).toEqual(
+        custom,
+      );
+    },
+  );
   it('initializes independent system homes once without overwriting edited layouts or the combined Overview', async () => {
     const overview = (await readData(database)).workspace!.pages[0];
     await Promise.all([

@@ -170,7 +170,10 @@ describe('Climbing system', () => {
   it('adds the new map and weekly widgets only to untouched early climbing homes', async () => {
     const page = systemHomePage('climbing');
     page.widgets = page.widgets.filter(
-      (w) => !['climbing-week', 'climbing-wall-map', 'climbing-trend'].includes(w.type),
+      (w) =>
+        !['climbing-week', 'climbing-wall-map', 'climbing-trend', 'climbing-streak'].includes(
+          w.type,
+        ),
     );
     const data = await readData(db);
     await db.workspaces.put({ ...data.workspace!, pages: [...data.workspace!.pages, page] });

@@ -58,9 +58,9 @@ describe('practice persistence and timer', () => {
     const data = await readData(db);
     expect(data.workspace!.systems.gym).toBe(before.workspace!.systems.gym);
     const page = data.workspace!.pages.find((p) => p.id === 'rocket-league-home')!;
-    expect(page.widgets).toHaveLength(4);
+    expect(page.widgets).toHaveLength(5);
     expect(requiredSystems(page.widgets[0])).toEqual(['rocket-league']);
-    expect(parseLayout(exportLayout(page, data)).page.widgets).toHaveLength(4);
+    expect(parseLayout(exportLayout(page, data)).page.widgets).toHaveLength(5);
     await setSystemEnabled('rocket-league', false, db);
     expect((await readData(db)).workspace!.pages).toContainEqual(page);
   });

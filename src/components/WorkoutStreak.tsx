@@ -3,10 +3,15 @@ import { ChevronLeft, ChevronRight, Flame, Leaf, Trophy, ArrowUpRight } from 'lu
 import { useApp, go } from '../lib/context';
 import { calendarDays, dateKey, dateLabel } from '../lib/calc';
 import { emptyData, type Data } from '../lib/model';
-import { STREAK_RULES, workoutStreak } from '../lib/streak';
+import { STREAK_RULES, systemStreak, type StreakSystem, type WorkoutStreak } from '../lib/streak';
+import { systemNames } from '../lib/workspace-model';
 import { Button, Modal } from './ui';
 
 export function useWorkoutStreak(data: Data | undefined) {
+  return useActivityStreak(data, 'gym');
+}
+
+function useActivityStreak(data: Data | undefined, system: StreakSystem) {
   const [tick, setTick] = useState(Date.now);
   useEffect(() => {
     let timer: number;
@@ -29,7 +34,64 @@ export function useWorkoutStreak(data: Data | undefined) {
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
-  return useMemo(() => workoutStreak(data || emptyData), [data, tick]);
+  return useMemo(() => systemStreak(data || emptyData, system), [data, system, tick]);
+}
+
+export function SystemStreakTrigger({ system }: { system: StreakSystem }) {
+  return system === 'gym' ? <StreakTrigger /> : <ActivityStreak system={system} compact />;
+}
+
+export function ActivityStreak({
+  system,
+  compact = false,
+}: {
+  system: Exclude<StreakSystem, 'gym'>;
+  compact?: boolean;
+}) {
+  const { data } = useApp();
+  const streak = useActivityStreak(data, system);
+  const [open, setOpen] = useState(false);
+  const label = systemNames[system];
+  const days = system === 'climbing' ? 'climbing' : 'practice';
+  return (
+    <>
+      <button
+        className={compact ? `streak-trigger ${streak.current ? 'has-streak' : ''}` : 'streak-card'}
+        aria-label={`Open ${label} streak, ${streak.current} ${days} day${streak.current === 1 ? '' : 's'}`}
+        aria-haspopup="dialog"
+        title={label + ' streak'}
+        onClick={(e) => {
+          e.currentTarget.focus();
+          setOpen(true);
+        }}
+      >
+        <span className={compact ? undefined : 'streak-card-icon'}>
+          <Flame size={compact ? 19 : 23} aria-hidden="true" />
+        </span>
+        {compact ? (
+          <span>{streak.current}</span>
+        ) : (
+          <>
+            <span className="streak-card-copy">
+              <strong>
+                {streak.current} {days} day{streak.current === 1 ? '' : 's'}
+              </strong>
+              <span>
+                {streak.restDaysLeft} rest day{streak.restDaysLeft === 1 ? '' : 's'} left · best{' '}
+                {streak.longest} days
+              </span>
+            </span>
+            <span className="streak-card-link">
+              View streak <ArrowUpRight size={17} aria-hidden="true" />
+            </span>
+          </>
+        )}
+      </button>
+      {open && (
+        <ActivityStreakDialog system={system} streak={streak} onClose={() => setOpen(false)} />
+      )}
+    </>
+  );
 }
 
 export function StreakTrigger() {
@@ -84,6 +146,24 @@ export function StreakCard() {
 
 export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
   const { streak } = useApp();
+  return <ActivityStreakDialog system="gym" streak={streak} onClose={onClose} />;
+}
+
+function ActivityStreakDialog({
+  system,
+  streak,
+  onClose,
+}: {
+  system: StreakSystem;
+  streak: WorkoutStreak;
+  onClose: () => void;
+}) {
+  const title = system === 'gym' ? 'Workout streak' : systemNames[system] + ' streak';
+  const sessionName =
+    system === 'gym' ? 'workout' : system === 'climbing' ? 'climbing session' : 'practice session';
+  const dayName = system === 'gym' ? 'workout' : system === 'climbing' ? 'climbing' : 'practice';
+  const dayHeading =
+    system === 'gym' ? 'Workout days' : system === 'climbing' ? 'Climbing days' : 'Practice days';
   const [month, setMonth] = useState(() => new Date(streak.today + 'T12:00:00'));
   const [selected, setSelected] = useState(streak.today);
   const grid = calendarDays(month.getFullYear(), month.getMonth());
@@ -95,16 +175,18 @@ export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
   const changeMonth = (n: number) =>
     setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
   const status = !streak.latestWorkout
-    ? 'Finish your first workout to start your streak.'
+    ? `Finish your first ${sessionName} to start your streak.`
     : !streak.current
       ? 'Fresh start. Your longest streak is kept.'
       : trainedToday
-        ? 'Workout logged. Rest is part of your rhythm.'
+        ? `${system === 'gym' ? 'Workout' : 'Session'} logged. Rest is part of your rhythm.`
         : streak.restDaysLeft
           ? 'Streak protected. Today stays open until midnight.'
-          : 'No rest days left. Train today to keep your streak.';
+          : system === 'gym'
+            ? 'No rest days left. Train today to keep your streak.'
+            : 'Your rest bank is empty. Today stays open until midnight.';
   return (
-    <Modal title="Workout streak" onClose={onClose} className="streak-modal">
+    <Modal title={title} onClose={onClose} className="streak-modal">
       <div className="streak-summary">
         <div className="streak-stat">
           <span className="streak-stat-icon">
@@ -112,7 +194,7 @@ export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
           </span>
           <div>
             <strong data-testid="streak-count">{streak.current}</strong>
-            <span>Workout days</span>
+            <span>{dayHeading}</span>
           </div>
         </div>
         <div className="streak-stat rest">
@@ -164,11 +246,11 @@ export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
             const continuesAfter = day && next?.streakId === day.streakId;
             const label =
               day?.kind === 'workout'
-                ? `${day.workouts} completed workout${day.workouts === 1 ? '' : 's'}`
+                ? `${day.workouts} completed ${sessionName}${day.workouts === 1 ? '' : 's'}`
                 : day?.kind === 'rest'
                   ? 'protected rest day'
                   : key === streak.today
-                    ? 'today, no completed workout yet'
+                    ? `today, no completed ${sessionName} yet`
                     : key > streak.today
                       ? 'future day'
                       : 'no streak activity';
@@ -193,7 +275,7 @@ export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
         <div className="streak-legend">
           <span>
             <i className="workout" />
-            Workout day
+            {dayHeading.replace(' days', ' day')}
           </span>
           <span>
             <i className="rest" />
@@ -210,7 +292,7 @@ export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
           <strong>{dateLabel(selected + 'T12:00:00', { day: 'numeric', month: 'long' })}</strong>
           <p>
             {selectedDay?.kind === 'workout'
-              ? `${selectedDay.workouts} finished workout${selectedDay.workouts === 1 ? '' : 's'} · counts as 1 streak day`
+              ? `${selectedDay.workouts} finished ${sessionName}${selectedDay.workouts === 1 ? '' : 's'} · counts as 1 streak day`
               : selectedDay?.kind === 'rest'
                 ? '1 rest day used to protect your streak'
                 : selected > streak.today
@@ -225,9 +307,19 @@ export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
             variant="ghost"
             onClick={() => {
               onClose();
-              go('calendar?date=' + selected);
+              go(
+                system === 'gym'
+                  ? 'calendar?date=' + selected
+                  : system === 'climbing'
+                    ? 'climbing-log'
+                    : system + '-history',
+              );
             }}
-            aria-label="View workouts on selected streak day"
+            aria-label={
+              system === 'gym'
+                ? 'View workouts on selected streak day'
+                : `View ${systemNames[system]} history`
+            }
           >
             <ArrowUpRight size={20} />
           </Button>
@@ -237,25 +329,30 @@ export function WorkoutStreakDialog({ onClose }: { onClose: () => void }) {
         <Trophy size={16} aria-hidden="true" />
         <span>Longest streak</span>
         <strong>
-          {streak.longest} workout day{streak.longest === 1 ? '' : 's'}
+          {streak.longest} {dayName} day{streak.longest === 1 ? '' : 's'}
         </strong>
       </div>
       <details className="streak-rules">
         <summary>How your streak works</summary>
         <p>
-          Finish a workout with at least one completed set to count a day. Multiple workouts on the
-          same day count once, using the workout’s local start date.
+          {system === 'gym'
+            ? 'Finish a workout with at least one completed set to count a day. Multiple workouts on the same day count once, using the workout’s local start date.'
+            : system === 'climbing'
+              ? 'Finish a climbing session with at least one recorded attempt to count a day. All climbing types count, including sessions without a clean completion. Multiple sessions on the same recorded date count once.'
+              : 'Finish a practice session with at least one completed drill set to count a day. Multiple sessions on the same local start date count once. Scores are optional; active sessions and skipped sets do not count.'}
         </p>
         <p>
-          Start each streak with {STREAK_RULES.startingRestDays} rest days. Each additional workout
+          Start each streak with {STREAK_RULES.startingRestDays} rest days. Each additional{' '}
+          {dayName}
           day earns {STREAK_RULES.earnedPerWorkoutDay} more, up to {STREAK_RULES.maxRestDays} saved
-          days. A day without a workout uses one at midnight. Rest protects your streak; it does not
-          increase its count.
+          days. A day without a {sessionName} uses one at midnight. Rest protects your streak; it
+          does not increase its count.
         </p>
         <p>
-          If the bank is empty and a day ends without a workout, the next workout starts a new
-          streak. Past streaks stay on the calendar. Planned workouts and rest-day plans do not add
-          credit. Editing or removing history recalculates the streak.
+          If the bank is empty and a day ends without a {sessionName}, the next session starts a new
+          streak. Past streaks stay on the calendar. Plans and future sessions do not add credit.
+          Editing or removing history recalculates the streak. Each system has its own count and
+          rest bank.
         </p>
       </details>
     </Modal>

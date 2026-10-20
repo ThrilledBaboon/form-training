@@ -15,6 +15,7 @@ import { weekDays, foodDay } from '../lib/food-calc';
 import { Field } from './ui';
 import { TrendChart } from './Chart';
 import { PracticeStart } from '../pages/Practice';
+import { ActivityStreak } from './WorkoutStreak';
 export function PracticeWidget({ widget, range }: { widget: Widget; range: ViewRange }) {
   const { data } = useApp();
   const system: PracticeSystem = widget.type.startsWith('football-') ? 'football' : 'rocket-league';
@@ -27,6 +28,7 @@ export function PracticeWidget({ widget, range }: { widget: Widget; range: ViewR
     ),
   };
   if (widget.type.endsWith('-start')) return <PracticeStart p={p} />;
+  if (widget.type.endsWith('-streak')) return <ActivityStreak system={system} />;
   if (widget.type.endsWith('-week'))
     return (
       <>

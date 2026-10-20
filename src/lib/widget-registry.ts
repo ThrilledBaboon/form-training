@@ -15,6 +15,27 @@ import {
 
 export const WIDGETS = [
   [
+    'football-streak',
+    'Football streak',
+    'Practice days and an independent protected rest bank.',
+    'football',
+    'live',
+  ],
+  [
+    'rocket-league-streak',
+    'Rocket League streak',
+    'Practice days and an independent protected rest bank.',
+    'rocket-league',
+    'live',
+  ],
+  [
+    'climbing-streak',
+    'Climbing streak',
+    'Climbing days across all disciplines and an independent rest bank.',
+    'climbing',
+    'live',
+  ],
+  [
     'football-start',
     'Start football practice',
     'Choose a routine or resume practice.',

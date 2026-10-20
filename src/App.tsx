@@ -60,7 +60,11 @@ import { FoodShopping } from './pages/FoodShopping';
 import { FoodBudget } from './pages/FoodBudget';
 import { Button, Empty } from './components/ui';
 import { RestTimer } from './components/Timer';
-import { StreakTrigger, WorkoutStreakDialog, useWorkoutStreak } from './components/WorkoutStreak';
+import {
+  SystemStreakTrigger,
+  WorkoutStreakDialog,
+  useWorkoutStreak,
+} from './components/WorkoutStreak';
 const Climbing = lazy(() =>
   import('./pages/Climbing').then((module) => ({ default: module.Climbing })),
 );
@@ -488,6 +492,7 @@ export default function App() {
   const requestedPage =
     route === 'pages' ? new URLSearchParams(effectiveHash.split('?')[1]).get('page') : undefined;
   const disabled = routeSystems(requestedPage || route).filter((s) => !workspace.systems[s]);
+  const streakSystem = routeSystems(requestedPage || route)[0] ?? 'gym';
   const mobileLinks = personal.mobileRoutes
     .map((id) => {
       const original = navigation.flatMap((n) => [...n.items]).find((n) => n[0] === id)!;
@@ -655,7 +660,9 @@ export default function App() {
                   <Search size={18} />
                 </button>
               )}
-              {workspace.systems.gym && <StreakTrigger />}
+              {streakSystem !== 'food' && workspace.systems[streakSystem] && (
+                <SystemStreakTrigger key={streakSystem} system={streakSystem} />
+              )}
               <button
                 className="icon-button"
                 aria-label="Toggle colour theme"

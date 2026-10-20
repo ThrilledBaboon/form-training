@@ -10,6 +10,8 @@ Start a routine, pause/resume the persisted timer, record optional results, comp
 
 Home widgets can be moved, removed, styled, used on custom pages and included in shared layouts. Practice balance is recorded work time by category, not an ability score. Progress separates drill, metric, setup, foot and course diagram. Missing scores are omitted. Course time uses lower-is-better; accuracy uses recorded hits/attempts. Weekly goals count completed sessions, rather than sets.
 
+Each practice system also has an independent streak calendar and widget, using finished sessions with at least one completed drill set. Its header flame opens the relevant calendar. Counts, longest streaks and protected rest banks stay separate from gym and climbing; Food has none. See [System streaks](SYSTEM-STREAKS.md) for qualification and rest-day rules.
+
 **Share routine** exports only that routine and its drill dependencies. Review instructions, setup and links before sharing. Personal results, sessions and goals are absent. Import shows a review, creates independent copies, removes scheduled weekdays and is idempotent for the exact same file. Updated files can create new copies. Full backups now use schema 6, accept schema 2–5 through migration, and preserve hidden systems. Category exports include practice data separately. Full replacement, merge conflict checks and reset include the new table.
 
 ## Validation
