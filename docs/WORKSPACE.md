@@ -4,7 +4,7 @@ This extension is local only on `codex/custom-workspace`. It includes the unpubl
 
 ## Arrange a page
 
-Open Overview and choose **Edit page**. Every card is a widget. **Add widget** searches 40 Gym, Food and Shared views; add copies with different exercises, metrics or ranges. Configure the title and filters, choose Compact/Half/Full width, and use the arrows or dedicated drag handle to reorder. Phone layouts stack in saved order. Changes save immediately; **Done editing** returns to viewing. The latest change has an **Undo** action.
+Open Overview and choose **Edit page**. Every card is a widget. **Add widget** searches views from your systems and shared tools; add copies with different exercises, metrics or ranges. Configure the title and filters, choose Compact/Half/Full width, and use the arrows or dedicated drag handle to reorder. Phone layouts stack in saved order. Changes save immediately; **Done editing** returns to viewing. The latest change has an **Undo** action.
 
 **My pages → Create page** starts an empty page or a mixed Overview template. The page manager can rename the current page, duplicate, reorder, choose a home, delete, and recover the last 20 removed/replaced layouts. Deleting the home falls back to Overview. An explicit deep link wins over the home preference. **Restore default Overview** only changes its arrangement, after confirmation.
 
@@ -16,7 +16,7 @@ The page date range applies to historical widgets. Their configuration can overr
 
 Layout files contain presentation settings, custom titles, reference names and explicit filter bounds. They exclude recorded workouts/sets, graph points, bodyweight readings, Food entries, receipts, stock, purchases, equipment profiles, drafts and source text. Personal note text is excluded unless **Include personal note-widget text** is checked. Titles, names and numeric filter bounds may themselves be personal: inspect the preview. Equipment contexts are selected locally after import; the recipient's measurements and profiles are used. Import does not change system switches or the home page.
 
-Layouts (`type: page-layout`, `formatVersion: 1`), Gym libraries (`type: library`, `schemaVersion: 1`) and complete backups (`schemaVersion: 5`) have separate import tools. A wrong file produces an explanation without writing records. Known-format unsupported types are retained, while unsupported format/configuration versions and malformed settings are rejected. Imported content is plain data: no HTML, scripts, module loading or remote URLs execute.
+Layouts (`type: page-layout`, `formatVersion: 1`), Gym libraries (`type: library`, `schemaVersion: 1`) and complete backups (`schemaVersion: 6`) have separate import tools. A wrong file produces an explanation without writing records. Known-format unsupported types are retained, while unsupported format/configuration versions and malformed settings are rejected. Imported content is plain data: no HTML, scripts, module loading or remote URLs execute.
 
 ## Choose systems
 
@@ -86,3 +86,7 @@ Choose Edit page to reveal Drag to move, arrow controls, resizing and a visible 
 ### First-use profile
 
 New users can enter an optional name, birthday, height, starting weight and goal weight on Overview, or choose Skip for now. Existing users with history are not interrupted. Settings always provides Your profile. Starting weight creates one identifiable measurement; editing the same value or changing height never adds another. Birthday and profile fields are included in private full backups and excluded from shared page layouts. Preference restoration during a merge is explicit.
+
+## Practice systems
+
+Rocket League and football are separate optional systems, both off by default. Enable either in Settings → Systems. Each has a customizable home and four catalog widgets for starting/resuming, weekly goal/focus, time balance and comparable results. Their routes, navigation preferences, layouts, combined planner and weekly review respect system switches. [Practice guide](PRACTICE-SYSTEMS.md).

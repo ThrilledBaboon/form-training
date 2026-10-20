@@ -31,6 +31,12 @@ test('Rocket League is opt-in, runs a saved warm-up, records results and keeps t
   await expect(page.getByRole('heading', { name: 'Ball control', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Pause timer', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Resume timer', exact: true })).toBeVisible();
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+  await page.context().setOffline(true);
   await page.reload();
   await expect(page.getByRole('button', { name: 'Resume timer', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Complete without results', exact: true }).click();
@@ -53,6 +59,7 @@ test('Rocket League is opt-in, runs a saved warm-up, records results and keeps t
     'Kept the approach consistent',
   );
   await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await page.context().setOffline(false);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.goto(base + '#/settings');
@@ -139,11 +146,9 @@ test('Football tracks keepy-ups, editable courses, foot-specific shooting and sh
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Record & rest', exact: true }).click();
   await page.getByRole('button', { name: 'Finish session', exact: true }).click();
-  await page
-    .getByLabel('Drill & setup', { exact: true })
-    .selectOption({
-      label: 'Target shooting · left · Stationary ball, 10 metres from goal. Aim at a chosen zone.',
-    });
+  await page.getByLabel('Drill & setup', { exact: true }).selectOption({
+    label: 'Target shooting · left · Stationary ball, 10 metres from goal. Aim at a chosen zone.',
+  });
   await expect(page.getByText('Personal best:', { exact: false })).toContainText('66.7 %');
   await expect(page.getByText('right:', { exact: false })).toContainText('Unrecorded');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

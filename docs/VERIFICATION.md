@@ -150,3 +150,13 @@ Overview, system home pages and custom pages now group the current-page selector
 - **9/9 targeted browser checks** pass across desktop Chromium, mobile Chromium and phone-sized WebKit, covering independent system home layouts, sharing/import validation and narrow-screen widget editing with accessibility checks.
 - The populated local Overview shows a closed panel approximately **46 px** high without horizontal overflow. Expanding reveals all four controls; Return collapses it through the native keyboard interaction. Saved layouts, date ranges and records are unchanged.
 - This change is saved in a separate local commit and is not deployed to GitHub Pages.
+
+## Rocket League, football and whole-branch review — 20 October 2026
+
+- Separate local commits `74ad873` and `f53549b` implement the practice systems. Both default off and preserve existing records, enabled systems and layouts. Full backup schema 6 accepts schemas 2–5; data stores upgrade additively to version 6.
+- **210 unit/storage tests pass** across 21 files, including version-5 upgrade preservation, session snapshots, timers, stale edits, invalid results, sharing/import idempotency, category isolation and merge rollback. TypeScript and production build pass.
+- The full production browser run has **188 passes and 1 existing WebKit touch-drag skip** across 189 scenarios on desktop Chromium, phone Chromium and phone WebKit. No browser tests failed.
+- After strengthening the new Rocket League flow with explicit offline reload and offline recording/finishing, its **three additional browser runs pass**, one per project. Football uses the same runner/storage and is independently tested for course/foot persistence, keepy-ups, target hits/misses/Undo and routine sharing.
+- Automated accessibility checks and narrow-screen overflow assertions pass for the new forms and pages. Formatting and `git diff --check` pass. The local 4174 browser received the update through the normal PWA prompt; the new switches are visible and off, while the existing three enabled systems and preferences remain.
+- [Whole-branch review](LOCAL-VS-MAIN-REVIEW.md) compares `ed5fe0f` and `f53549b` using identical fictional gym history in isolated contexts, plus local mixed-system examples. Screenshots and metrics use no personal browser data. The report prioritizes scoped navigation, an explicit edit mode, lean default pages and a shorter Settings index. Existing custom pages were not rearranged.
+- All changes remain local. No push, deployment, HealthKit or game account connection was performed.

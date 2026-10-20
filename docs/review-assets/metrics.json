@@ -1,0 +1,153 @@
+{
+  "date": "2026-10-20",
+  "main": "ed5fe0f",
+  "local": "f53549b",
+  "fixture": {
+    "workouts": 100,
+    "sets": 1548,
+    "bodyweights": 93,
+    "climbs": 46,
+    "foodEntries": 726
+  },
+  "pages": {
+    "main": {
+      "today": {
+        "pageHeight": 3814,
+        "width": 390,
+        "viewportHeight": 664,
+        "firstActionY": 443.765625,
+        "headings": [
+          "Make room for progress.",
+          "A little stronger.\nEvery session.",
+          "This week",
+          "Your next session",
+          "The work, mapped.",
+          "Your routines",
+          "Recent sessions",
+          "Small wins, real progress",
+          "Bodyweight trend",
+          "Exercise progression"
+        ],
+        "navLinks": 11,
+        "overflow": false
+      },
+      "settings": {
+        "pageHeight": 3418,
+        "width": 390,
+        "viewportHeight": 664,
+        "firstActionY": 1998.828125,
+        "headings": [
+          "Settings & your data",
+          "Your training stays with you.",
+          "Training preferences",
+          "Appearance & assumptions",
+          "Browser storage",
+          "Back up & restore",
+          "Local recovery snapshots",
+          "Start fresh"
+        ],
+        "navLinks": 11,
+        "overflow": false
+      }
+    },
+    "local": {
+      "today": {
+        "pageHeight": 5058,
+        "width": 390,
+        "viewportHeight": 664,
+        "firstActionY": 181.6875,
+        "headings": [
+          "Make room for progress.",
+          "Start or resume",
+          "Suggested session",
+          "Your next session",
+          "Combined week planner",
+          "Workout streak",
+          "Training totals",
+          "Progression highlights",
+          "Bodyweight trend",
+          "Daily macros",
+          "Planned meals",
+          "Approaching expiry",
+          "Food spending"
+        ],
+        "navLinks": 30,
+        "overflow": false
+      },
+      "training-home": {
+        "pageHeight": 3608,
+        "width": 390,
+        "viewportHeight": 664,
+        "firstActionY": 181.6875,
+        "headings": [
+          "Training overview",
+          "Start or resume",
+          "Suggested session",
+          "Your next session",
+          "This week",
+          "Workout streak",
+          "Training totals",
+          "Progression highlights",
+          "Routines & upcoming plans",
+          "Recent sessions",
+          "Equipment reminders"
+        ],
+        "navLinks": 30,
+        "overflow": false
+      },
+      "food-home": {
+        "pageHeight": 4718,
+        "width": 390,
+        "viewportHeight": 664,
+        "firstActionY": 85,
+        "headings": [
+          "Food overview",
+          "Daily macros",
+          "Suggest a meal",
+          "Planned meals",
+          "Approaching expiry",
+          "Shopping progress",
+          "Food spending",
+          "Kitchen stock",
+          "Prepared portions",
+          "Kitchen shortages",
+          "Macro trend"
+        ],
+        "navLinks": 30,
+        "overflow": false
+      },
+      "settings": {
+        "pageHeight": 8055,
+        "width": 390,
+        "viewportHeight": 664,
+        "firstActionY": 2205.03125,
+        "headings": [
+          "Settings & your data",
+          "Systems",
+          "Appearance",
+          "Make FORM yours",
+          "Your profile",
+          "Food preferences",
+          "Your records stay with you.",
+          "Training preferences",
+          "Calculation assumptions & storage",
+          "Browser storage",
+          "Back up & restore",
+          "Export & import selected categories",
+          "Jack demo data",
+          "Local recovery snapshots",
+          "Start fresh"
+        ],
+        "navLinks": 30,
+        "overflow": false
+      }
+    }
+  },
+  "build": {
+    "sameInstalledDependencyVersions": true,
+    "mainAppBytes": 194857,
+    "localAppBytes": 506876,
+    "mainPrecacheKiB": 1051.83,
+    "localPrecacheKiB": 1522.0
+  }
+}

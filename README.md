@@ -36,7 +36,10 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 
 - Editable mixed Overview, reusable widgets, multiple custom pages/home choice, independent filters and responsive arrangement with keyboard/tap controls. Share private-data-free layouts with reference mapping and import previews.
 - [Personal customisation](docs/CUSTOMISATION.md): navigation names/order, phone shortcuts, spacing/text/contrast, chart display, macro summaries, logging defaults, page sections, separate phone arrangements and optional shared appearance presets.
-- Independent Gym/Climbing/Food system switches, saved equipment setups with historical snapshots, and an offline pasted-workout review/import tool. See the [workspace guide](docs/WORKSPACE.md).
+- Independent Gym/Climbing/Food/Rocket League/Football system switches, saved equipment setups with historical snapshots, and an offline pasted-workout review/import tool. See the [workspace guide](docs/WORKSPACE.md).
+
+- [Rocket League and football practice](docs/PRACTICE-SYSTEMS.md): separate opt-in systems with drill libraries, shareable routines, work/rest timers, manual results, weekly goals and widgets. Football adds cone courses, keepy-up summaries, foot comparisons and shooting targets. Enable in Settings → Systems.
+- [Local versus main review](docs/LOCAL-VS-MAIN-REVIEW.md): matched phone screenshots, change inventory and priorities for simplifying daily use.
 
 - [Climbing](docs/CLIMBING.md): indoor/outdoor bouldering, top rope, auto belay and lead; a personal climb/photo library, project beta, mixed session logs, saved drafts and separate grade-aware widgets.
 - [Combined week planner](docs/WEEK-PLANNER.md), [meal suggestions](docs/MEAL-SUGGESTIONS.md), [workout session reminders](docs/SESSION-CONTINUITY.md) and an optional [weekly review](docs/WEEKLY-REVIEW.md).
@@ -58,7 +61,7 @@ If this network cannot connect to registry.npmjs.org, use `pnpm install --regist
 - Food diary, historical macro snapshots, independent optional macro targets, weekly summaries and shared training/bodyweight context. Nutrition uses protein, carbohydrates, fat and optional fibre only.
 - Kitchen stock, storage locations, expiry, confidence, waste and movement history; explicit cooking deducts ingredients and creates prepared portions, which can then be eaten or discarded.
 - Daily/weekly meal planning alongside training, stock-aware shopping with package rounding and preserved manual rows; reviewed receipt images, optional local OCR/manual fallback, purchases, recorded prices, budgets and estimated costs.
-- **Export everything** includes gym, climbing and food records, pages, system choices, equipment setups, preferences, drafts and supported images. Category JSON files include dependencies and import previews; food and gym CSV reports support analysis.
+- **Export everything** includes gym, climbing, Rocket League, football and food records, pages, system choices, equipment setups, preferences, drafts and supported images. Category JSON files include dependencies and import previews; food and gym CSV reports support analysis.
 - Validated JSON import preview/merge/replace; duplicate handling; atomic local recovery snapshots; complete JSON backups; separate CSV exports; light/dark/system themes; reduced motion; offline PWA shell and update prompts.
 - Full data reset in **Settings & data → Start fresh**, with a backup export and typed `RESET` confirmation. Restores starter exercises/routines and removes personal records, custom content, preferences and recovery snapshots from this browser.
 
