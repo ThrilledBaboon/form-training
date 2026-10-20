@@ -1,5 +1,4 @@
 import { FoodDisplayPreference } from '../components/FoodGoals';
-import { DemoDataSettings } from '../components/DemoData';
 import { AppearanceSettings } from '../components/AppearanceSettings';
 import { PersonalisationSettings } from '../components/PersonalisationSettings';
 import { ProfileSettings } from '../components/ProfileSetup';
@@ -313,7 +312,6 @@ export function Settings() {
           setRestorePreferences(false);
         }}
       />
-      <DemoDataSettings />
       <Card>
         <SectionTitle
           title="Local recovery snapshots"
