@@ -1,6 +1,6 @@
 # Local feature commits
 
-All work is on `codex/custom-workspace`. Nothing in this follow-up was pushed, merged or deployed. The established local preview remains [FORM on port 4174](http://127.0.0.1:4174/). Refresh it and choose **Update & reload** if the update banner appears. Hosted GitHub Pages remains on its published version.
+The systems expansion was developed on `codex/custom-workspace` in separate commits for integration into `main`; the manual Pages deployment remains separate. The established local preview remains [FORM on port 4174](http://127.0.0.1:4174/). Refresh it and choose **Update & reload** if the update banner appears. Hosted GitHub Pages remains on its published version.
 
 Each feature has its own commit, starting with the original Food system. Later corrections and their regression tests are included with the feature they concern.
 
@@ -16,7 +16,7 @@ Each feature has its own commit, starting with the original Food system. Later c
 | `f766fe7` | Simplify workout action widget and remove the motivational banner                                          |
 | `ad6850d` | Compact clickable streak statistics; keep the larger streak calendar                                       |
 
-The subsequent **Add reversible local Jack demo data and six-month examples** commit contains the separate demo-data work. See [Jack's local demo data](DEMO-DATA.md) for loading, removal, generation and verification details.
+A separate development-only sample loader was removed before integration into `main`. The app no longer generates or loads fictional personal history. Standard editable exercise and practice routine libraries remain available.
 
 The five new feature commits were individually typechecked from isolated Git snapshots. Their final combined file contents also match the verified production build. The separate documentation commit records these results.
 

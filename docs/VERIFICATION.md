@@ -1,5 +1,7 @@
 # Implementation and verification record
 
+Entries describe the commit and date reviewed; local-only statements in earlier entries are historical. The final entry records verification after removing development sample tools for integration into `main`.
+
 ## Personal customisation — 20 October 2026, local
 
 Settings now includes **Make FORM yours** for spacing, text, contrast, navigation names/order/visibility, phone shortcuts, chart defaults, macro display, logging defaults and personal climbing circuits/tags. Pages support sections or filtering tabs, density overrides, independent phone order/widths, configurable widget presentation, saved copies, quick actions and manual milestones. Layout format 2 carries those choices with an optional appearance preset; format 1 remains accepted. See the [customisation guide](CUSTOMISATION.md).
@@ -122,22 +124,12 @@ Climbing, combined week planning, saved-recipe meal suggestions, prior-session r
 - An isolated populated preview at **320 px** passes accessibility checks with no horizontal overflow on Climbing home/library/projects/sessions, the combined planner, meal suggestions and weekly review. Offline reload/navigation to Climbing overview and the deferred library/editor module succeeds. This verification used synthetic records in a separate browser context and did not change the user's database.
 - The local preview at **http://127.0.0.1:4174/** is running and its served index matches the current production build. Existing browser data stays on that origin; refresh and use Update & reload if an older worker prompts. Garmin, Griptonite and Apple Health connections remain outside this implementation.
 
-## Six-month Jack climbing demo — 19 October 2026
-
-The local demo now includes climbing alongside the existing Gym/Food examples. For 19 April–19 October 2026 it generates **46 completed climbing sessions, 49 library climbs, 571 attempts, 199 clean completions and 61 flashes**, plus active/completed projects and three upcoming plans. All four disciplines, indoor/outdoor venues, unsuccessful attempts, climbs with rests, notes and missing durations are represented. Venues and records are fictional and labelled as demo data.
-
-The new **Jack · climbing [Demo]** page spans the full period. Its reusable **Climbing activity** widget plots attempts and clean completions by recorded day; grades stay separate in the grade log. The chart can be added to other pages. Existing page layouts are preserved when extending an older demo.
-
-- All **188 unit/storage tests** pass. New coverage verifies the older-demo extension, repeat loading, preservation of existing records/layouts/preferences, transactional rollback, climbing removal with dependencies used by real sessions retained, and chronological activity aggregation excluding drafts and rested completions.
-- **6/6 targeted production browser checks** pass across desktop Chromium, mobile Chromium and phone-sized WebKit. These exercise the populated graph, reload, repeat load, safe removal, climbing logging, no horizontal overflow and axe accessibility checks. Chart tooltip text now uses the theme's text colour for adequate contrast.
-- Formatting and the TypeScript/production PWA build pass. The generated backup validates against schema 5 and remains in the ignored local artifact folder. This update is local only.
-
 ## Climbing wall map and weekly setup — 19 October 2026
 
-Climbing overview now offers optional weekly-goal setup, a current-week progress widget and an interactive wall-style map. Both widgets can be added to custom pages and shared through layout exports. Untouched older climbing home templates are upgraded; customised layouts are preserved. Existing Jack demo data receives wall tags and a map without duplicating sessions or overwriting corrected records.
+Climbing overview now offers optional weekly-goal setup, a current-week progress widget and an interactive wall-style map. Both widgets can be added to custom pages and shared through layout exports. Untouched older climbing home templates are upgraded; customised layouts are preserved.
 
-- All **193 unit/storage tests** pass. Added coverage includes historical snapshot aggregation, missing styles, Monday–Sunday goal counts, future/draft exclusions, validation and conflicting edits, goal/tag backup round trips, default-layout compatibility and repeat-safe demo upgrades.
-- **15/15 targeted production browser checks** pass across desktop Chromium, mobile Chromium and phone-sized WebKit. These cover goal saving/reloading/cancelling, wall tags, source-session links, populated demo maps, keyboard selection, system toggles, shared chart pages and offline navigation.
+- All **193 unit/storage tests** pass. Added coverage includes historical snapshot aggregation, missing styles, Monday–Sunday goal counts, future/draft exclusions, validation and conflicting edits, goal/tag backup round trips and default-layout compatibility.
+- **15/15 targeted production browser checks** pass across desktop Chromium, mobile Chromium and phone-sized WebKit. These cover goal saving/reloading/cancelling, wall tags, source-session links, populated maps, keyboard selection, system toggles, shared chart pages and offline navigation.
 - An additional isolated preview passes axe checks at **1440 px and 320 px**, with no horizontal overflow or page errors. The map and saved goal setup reopen offline after caching.
 - Formatting and the TypeScript/production PWA build pass. The deferred climbing widget module is precached for offline use. The existing schema-5 backup format remains compatible with records that have no goal or wall style.
 - The local browser shows the populated map and setup button. Its weekly climbing target remains unset for the user to choose. This feature is saved in a separate local commit; no GitHub push or deployment was performed.
@@ -160,3 +152,15 @@ Overview, system home pages and custom pages now group the current-page selector
 - Automated accessibility checks and narrow-screen overflow assertions pass for the new forms and pages. Formatting and `git diff --check` pass. The local 4174 browser received the update through the normal PWA prompt; the new switches are visible and off, while the existing three enabled systems and preferences remain.
 - [Whole-branch review](LOCAL-VS-MAIN-REVIEW.md) compares `ed5fe0f` and `f53549b` using identical fictional gym history in isolated contexts, plus local mixed-system examples. Screenshots and metrics use no personal browser data. The report prioritizes scoped navigation, an explicit edit mode, lean default pages and a shorter Settings index. Existing custom pages were not rearranged.
 - All changes remain local. No push, deployment, HealthKit or game account connection was performed.
+
+## Sample removal and main integration — 20 October 2026
+
+The user approved integration of the systems expansion into `main` with development samples removed. Commit `adcc240` removes the local sample loader, startup query handler, Settings controls, six-month generator, export script and their feature-only tests. Meal suggestions now use a small test-only food fixture imported through the normal reviewed backup flow. Historical Settings images containing the removed tools are no longer included.
+
+- **210 unit/storage tests pass across 21 files.** The ten tests for the deleted sample feature were removed with that feature.
+- TypeScript, the root production/PWA build and a separate `/form-test/` production/PWA build pass. Production JavaScript contains no sample loader or fictional personal-history generator.
+- The **complete repository-subpath browser suite passes 200 checks**, with one existing WebKit-only injected-touch skip, across desktop Chromium, mobile Chromium and phone-sized WebKit. The new retired-link regression verifies empty workout, weight, climbing, practice and food histories, no invented profile name and no sample controls.
+- **Nine additional root-path browser checks pass** for clean startup and meal suggestions across the same three browser projects. Formatting and Git whitespace checks pass.
+- The local preview's sample history was removed using the existing dependency-aware remover before deleting that tool. The remover saved a recovery snapshot and preserved the user's own records and changed preferences. The updated preview visibly shows an empty workout history. No local database, recovery snapshot or personal export is included in Git.
+
+Earlier release-review findings remain recommendations; this integration does not claim to resolve them. The existing manual Pages workflow remains separate: pushing `main` triggers verification and does not update the hosted app. Physical iPhone/PWA checks remain distinct from browser emulation.

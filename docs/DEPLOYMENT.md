@@ -1,8 +1,9 @@
 # GitHub Pages deployment
 
-The food extension is currently local on `codex/food-management`; it has not been pushed or
-published. The deployment history below describes earlier gym releases. The existing manual
-Pages workflow is unchanged. Review the [food report](FOOD-IMPLEMENTATION.md) before publishing.
+The multi-system expansion targets `main` after local verification. The
+development sample loader, fictional history generator and sample export tools have been removed.
+The deployment history below describes earlier gym releases; the manual Pages workflow is unchanged.
+See the [release review](RELEASE-READINESS-2026-10-20.md) for outstanding UX and data-management recommendations.
 
 Published at **[FORM](https://thrilledbaboon.github.io/form-training/)** from the public [source repository](https://github.com/ThrilledBaboon/form-training). The first [deployment](https://github.com/ThrilledBaboon/form-training/actions/runs/38800980991) succeeded on 15 October 2026, after [CI verification](https://github.com/ThrilledBaboon/form-training/actions/runs/38800587905) passed.
 
@@ -18,7 +19,7 @@ The latest **library sharing** update was [deployed successfully](https://github
 
 1. Export a JSON backup of any locally recorded workouts. The hosted origin has separate browser data.
 2. Review current [GitHub Pages limits and permitted uses](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) and your repository visibility. The website will be publicly reachable; records remain in each visitor's own local database.
-3. Verify no personal export, screenshot, reference video, test artefact or secret has been added. `dist`, `node_modules`, `.local` and browser-test outputs are ignored. The committed source contains general exercise templates only.
+3. Verify no personal export, screenshot, reference video, test artefact or secret has been added. `dist`, `node_modules`, `.local` and browser-test outputs are ignored. No personal browser database or backup is committed; synthetic test fixtures and historical review evidence are labelled.
 4. Create/select your repository and push the reviewed code when ready. No credentials are required in frontend source.
 
 ## Exact Pages settings

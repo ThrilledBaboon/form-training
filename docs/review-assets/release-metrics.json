@@ -1,0 +1,57 @@
+{
+  "reviewedAt": "2026-10-20",
+  "main": "ed5fe0f",
+  "local": "eaa0123",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "fixture": {
+    "workouts": 100,
+    "sets": 1548,
+    "bodyweights": 93,
+    "climbs": 46,
+    "foodEntries": 726
+  },
+  "localMeasurements": {
+    "today": {
+      "height": 5058,
+      "overflow": false,
+      "widgets": 11,
+      "navLinks": 30,
+      "firstPrimary": "Edit page"
+    },
+    "training-home": {
+      "height": 3608,
+      "overflow": false,
+      "widgets": 9,
+      "navLinks": 30,
+      "firstPrimary": "Edit page"
+    },
+    "food-home": {
+      "height": 4718,
+      "overflow": false,
+      "widgets": 10,
+      "navLinks": 30,
+      "firstPrimary": "Edit page"
+    },
+    "climbing-home": {
+      "height": 5147,
+      "overflow": false,
+      "widgets": 9,
+      "navLinks": 30,
+      "firstPrimary": "Edit page"
+    },
+    "settings": {
+      "height": 8055,
+      "overflow": false,
+      "widgets": 0,
+      "navLinks": 30,
+      "firstPrimary": "Save customisation"
+    },
+    "all": 38,
+    "gym-only": 17
+  },
+  "baselineReference": "metrics.json",
+  "note": "Synthetic fixture in isolated Chromium contexts. Baseline main metrics were captured earlier on the same day; current local build was rechecked."
+}

@@ -1,6 +1,6 @@
 # FORM: local development versus main
 
-Reviewed 20 October 2026. Baseline: `main` at `ed5fe0f`. Local: `codex/custom-workspace` at `f53549b`, including the two new practice systems. Everything remains local; this review does not deploy or replace anyone’s saved layout.
+Reviewed 20 October 2026. Baseline: `main` at `ed5fe0f`. Local: `codex/custom-workspace` at `f53549b`, including the two new practice systems. This is a historical review of the pre-integration build. Development sample tools were subsequently removed; the recommendations below remain outstanding.
 
 **The extra systems are useful, but the default interface asks people to manage too many things at once. Keep the capabilities and make the daily view simpler.** The gym app has one clear purpose, consistent actions and a small navigation menu. The local app often gives page management, setup, logging, planning and analysis equal prominence.
 
@@ -8,15 +8,15 @@ Reviewed 20 October 2026. Baseline: `main` at `ed5fe0f`. Local: `codex/custom-wo
 
 There are 27 local feature/documentation commits after main, starting with the food system. Before this request, the branch already differed by 147 files, about 28,000 added lines and 800 removed lines. That includes tests and documentation; it is not a measure of user-facing complexity. With the practice systems, the source-only difference is 87 files, 23,707 additions and 786 removals.
 
-| Area                       | Local capabilities worth keeping                                                                                                    | Where the interface grew                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Gym                        | Original logging and analytics, progression suggestions, previous notes, equipment setups, reviewed plan generation, pasted history | More ways to start, plan or import a session; setup prompts remain visible after history exists                 |
-| Food                       | Recipes and photos, diary and macro goals, meal suggestions, planning, kitchen stock, shopping, receipt review and budgets          | Nine main links and ten default home widgets; daily food logging competes with kitchen administration           |
-| Climbing                   | Mixed sessions, projects, grades, wall-style map, weekly goals and session history                                                  | Four navigation links and eight default home widgets                                                            |
-| Shared workspace           | Custom pages, widget editing/removal/dragging, ranges, layout sharing, week planner and weekly review                               | Generic page controls and eleven default Overview widgets, with several overlapping ways to reach a task        |
-| Personal preferences       | System switches, home selection, themes, density, text, navigation, chart and logging preferences                                   | Configuration is available but a new user must make many choices to recover a focused view                      |
-| Data and setup             | Optional profile onboarding, editable goals, complete/category backups, recovery snapshots, reversible demo                         | Settings now combines identity, daily preferences, all systems, portability, demo tools and destructive actions |
-| Rocket League and football | Separate drill/routine libraries, persisted work/rest runner, manual results, weekly goals, sharing and comparable progress         | Four links each when enabled; both start disabled and each gets four default home widgets                       |
+| Area                       | Local capabilities worth keeping                                                                                                    | Where the interface grew                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Gym                        | Original logging and analytics, progression suggestions, previous notes, equipment setups, reviewed plan generation, pasted history | More ways to start, plan or import a session; setup prompts remain visible after history exists          |
+| Food                       | Recipes and photos, diary and macro goals, meal suggestions, planning, kitchen stock, shopping, receipt review and budgets          | Nine main links and ten default home widgets; daily food logging competes with kitchen administration    |
+| Climbing                   | Mixed sessions, projects, grades, wall-style map, weekly goals and session history                                                  | Four navigation links and eight default home widgets                                                     |
+| Shared workspace           | Custom pages, widget editing/removal/dragging, ranges, layout sharing, week planner and weekly review                               | Generic page controls and eleven default Overview widgets, with several overlapping ways to reach a task |
+| Personal preferences       | System switches, home selection, themes, density, text, navigation, chart and logging preferences                                   | Configuration is available but a new user must make many choices to recover a focused view               |
+| Data and setup             | Optional profile onboarding, editable goals, complete/category backups, recovery snapshots                                          | Settings now combines identity, daily preferences, all systems, portability and destructive actions      |
+| Rocket League and football | Separate drill/routine libraries, persisted work/rest runner, manual results, weekly goals, sharing and comparable progress         | Four links each when enabled; both start disabled and each gets four default home widgets                |
 
 ## Matched phone comparison
 
@@ -69,13 +69,13 @@ Main also has an oversized motivational banner. Restoring it would reintroduce t
 
 ### 4. Medium priority: Settings combines too many unrelated tasks
 
-`src/pages/Settings.tsx` renders systems, appearance, personal customization, profile, food preferences, training calculations, storage, backups, category exports, demo and reset in one document. Some customization subsections already collapse, but the overall page remains over twice the height of main in the matched fixture. System-specific settings appear even when someone is only interested in one system.
+`src/pages/Settings.tsx` renders systems, appearance, personal customization, profile, food preferences, training calculations, storage, backups, category exports and reset in one document. Some customization subsections already collapse, but the overall page remains over twice the height of main in the matched fixture. System-specific settings appear even when someone is only interested in one system.
 
-**Recommended change:** a short Settings index with sections for Systems, Appearance & layout, Profile, each enabled system, and Data & backups. Keep access to hidden-system data exports. Place demo tools and calculation assumptions in secondary sections, with Reset separate from everyday controls.
+**Recommended change:** a short Settings index with sections for Systems, Appearance & layout, Profile, each enabled system, and Data & backups. Keep access to hidden-system data exports. Place calculation assumptions in secondary sections, with Reset separate from everyday controls.
 
 **Acceptance:** common settings can be found without scrolling through backup categories or personal measurements. Calorie visibility remains explicit opt-in. Export and recovery remain easy to find.
 
-![Settings comparison](review-assets/settings-comparison.webp)
+The historical Settings screenshots were removed with the development sample tools. Measurements describe the reviewed commit.
 
 ### 5. Medium priority: the shared header still speaks mainly to gym users
 
@@ -113,7 +113,7 @@ The aim is that a friend can use FORM as a clear gym tracker, another can use fo
 
 ## Evidence and limits
 
-Screenshots are captured from production builds using fictional records. Full-page evidence: [main Overview](review-assets/main-today-full.webp), [local Overview](review-assets/local-today-full.webp), [main Settings](review-assets/main-settings-full.webp), [local Settings](review-assets/local-settings-full.webp). [Recorded metrics and fixture counts](review-assets/metrics.json) accompany the images.
+Screenshots are captured from production builds using fictional records. Full-page evidence: [main Overview](review-assets/main-today-full.webp), [local Overview](review-assets/local-today-full.webp), [main Settings](review-assets/main-settings-full.webp). [Recorded metrics and fixture counts](review-assets/metrics.json) accompany the images.
 
 The review combines code comparison, matched phone rendering and automated functional/accessibility checks. It is not a user study, a physiological assessment, a security audit or a native-device performance benchmark. Recommendations above remain review findings; this task has not overwritten the user’s navigation or widget arrangements.
 
