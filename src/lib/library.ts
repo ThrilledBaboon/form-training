@@ -151,6 +151,18 @@ export function createLibrary(
       programmes: programmes.map((p) => ({ ...p, notes: options.notes ? p.notes : '' })),
       routines: routines.map((r) => ({
         ...r,
+        ...(r.benchmark
+          ? {
+              benchmark: {
+                ...r.benchmark,
+                rounds: 0,
+                extraReps: 0,
+                elapsedSeconds: 0,
+                timerStartedAt: undefined,
+                modification: options.notes ? r.benchmark.modification : undefined,
+              },
+            }
+          : {}),
         programmeId: programmes.some((p) => p.id === r.programmeId) ? r.programmeId : undefined,
         description: options.notes ? r.description : '',
         groups: r.groups.map((g) => ({ ...g, notes: options.notes ? g.notes : '' })),
@@ -203,6 +215,7 @@ function routineKey(r: Routine, exercises: Map<string, Exercise>) {
   return stable({
     name: normal(r.name),
     description: r.description,
+    ...(r.benchmark ? { benchmark: r.benchmark } : {}),
     groups: r.groups.map(({ id: _id, ...g }) => g),
     items: r.items.map(({ id: _id, exerciseId, groupId, sets, ...i }) => ({
       ...i,

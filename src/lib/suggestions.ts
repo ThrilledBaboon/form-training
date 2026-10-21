@@ -1,10 +1,11 @@
 import { dateKey, fromKg, roundTo, toKg } from './calc';
 import type { Data, Item, Plan, Routine, Session, WorkoutSet } from './model';
+import type { SuggestionPreferences } from './suggestion-preferences';
 
 export type SessionChoice = {
   key: string;
   source: Routine | Plan;
-  kind: 'planned' | 'weekly' | 'routine';
+  kind: 'planned' | 'weekly' | 'routine' | 'generated' | 'benchmark';
   date?: string;
 };
 export type ExerciseSuggestion = {
@@ -12,12 +13,18 @@ export type ExerciseSuggestion = {
   previous: WorkoutSet[];
   change: 'weight' | 'reps' | 'hold' | 'baseline' | 'unchanged';
   reason: string;
+  slot?: 'push' | 'pull' | 'legs' | 'accessory';
+  selectionReason?: string;
+  slotKey?: string;
 };
 export type SessionSuggestion = {
   choice: SessionChoice;
   source: Routine | Plan;
   previous?: Session;
   exercises: ExerciseSuggestion[];
+  warnings?: string[];
+  blocked?: boolean;
+  estimatedMinutes?: number;
 };
 
 /** Dated plans and weekly schedules first; unscheduled routines remain selectable. */
@@ -70,6 +77,8 @@ export function suggestSession(
   data: Data,
   choice: SessionChoice,
   at = Date.now(),
+  preferences?: Pick<SuggestionPreferences, 'progression'>,
+  useExerciseHistory = false,
 ): SessionSuggestion {
   const source = structuredClone(choice.source);
   source.items = source.items.map((item) => {
@@ -83,9 +92,21 @@ export function suggestSession(
     .filter(
       (s) =>
         s.status === 'completed' &&
+        !s.benchmark &&
         Date.parse(s.startAt) <= at &&
         (!s.endAt || Date.parse(s.endAt) <= at) &&
-        (routineId ? s.routineId === routineId : signature(s.items) === signature(source.items)),
+        (useExerciseHistory
+          ? s.items.some(
+              (i) =>
+                i.exerciseId === source.items[0]?.exerciseId &&
+                i.tracking === source.items[0]?.tracking &&
+                (i.setup?.id ?? '') === (source.items[0]?.setup?.id ?? '') &&
+                (i.setup?.basis ?? 'unspecified') ===
+                  (source.items[0]?.setup?.basis ?? 'unspecified'),
+            )
+          : routineId
+            ? s.routineId === routineId
+            : signature(s.items) === signature(source.items)),
     )
     .sort((a, b) => Date.parse(b.startAt) - Date.parse(a.startAt));
   const completed = data.sets.filter(
@@ -125,6 +146,12 @@ export function suggestSession(
     const before = matchingSets(older, item, index);
     const planned = item.sets.filter((s) => s.label !== 'warmup');
     const result: ExerciseSuggestion = { item, previous: sets, change: 'baseline', reason: '' };
+    if (source.benchmark) {
+      result.change = 'unchanged';
+      result.reason =
+        'Benchmark format locked. Compare circuit scores separately; no automatic rep or load increases.';
+      return result;
+    }
     if (!isRepetition(item) || !planned.length) {
       result.change = 'unchanged';
       result.reason =
@@ -132,8 +159,9 @@ export function suggestSession(
       return result;
     }
     if (!sets.length) {
-      result.reason =
-        'No comparable working sets in the last session of this routine. Keep your planned targets and choose a starting load.';
+      result.reason = useExerciseHistory
+        ? 'No comparable completed working sets for this exercise and setup. Choose starting targets for this session.'
+        : 'No comparable working sets in the last session of this routine. Keep your planned targets and choose a starting load.';
       return result;
     }
     const usable = sets.every(
@@ -171,22 +199,29 @@ export function suggestSession(
       sets.every((s, i) => (s.loadKg || 0) <= (before[i].loadKg || 0));
     const weighted = ['weighted', 'loaded_bodyweight'].includes(item.tracking);
     const allHit = enough && sets.every((s) => (s.reps || 0) >= item.repMax);
-    const increaseWeight = weighted && allHit && effort && !declined;
+    const progress = preferences?.progression ?? 'normal';
+    const increaseWeight = progress === 'normal' && weighted && allHit && effort && !declined;
     const increaseReps =
+      progress !== 'off' &&
       enough &&
       effort &&
       !declined &&
       sets.slice(0, planned.length).some((s) => s.reps! < item.repMax);
     result.change = increaseWeight ? 'weight' : increaseReps ? 'reps' : 'hold';
-    result.reason = !effort
-      ? 'High effort or a failure set was recorded. Repeat the targets before increasing.'
-      : declined
-        ? 'Total reps fell by more than 15% at the same or lower loads. Repeat the targets and review your recovery.'
-        : increaseWeight
-          ? `Every working set reached ${item.repMax} reps. Add a small load increment and return to ${item.repMin} reps.`
-          : increaseReps
-            ? `Keep the load and add up to ${data.settings.repIncrement} rep${data.settings.repIncrement === 1 ? '' : 's'} per working set, up to ${item.repMax}.`
-            : 'The working sets are at the rep target. Repeat them or adjust the routine when ready.';
+    result.reason =
+      progress === 'off'
+        ? 'Progression is off for this preview. Repeat the last comparable working targets.'
+        : !effort
+          ? 'High effort or a failure set was recorded. Repeat the targets before increasing.'
+          : declined
+            ? 'Total reps fell by more than 15% at the same or lower loads. Repeat the targets and review your recovery.'
+            : increaseWeight
+              ? `Every working set reached ${item.repMax} reps. Add a small load increment and return to ${item.repMin} reps.`
+              : increaseReps
+                ? `Keep the load and add up to ${data.settings.repIncrement} rep${data.settings.repIncrement === 1 ? '' : 's'} per working set, up to ${item.repMax}.`
+                : progress === 'conservative' && weighted && allHit
+                  ? 'Conservative progression keeps the load at the rep ceiling. Increase it manually when ready.'
+                  : 'The working sets are at the rep target. Repeat them or adjust the routine when ready.';
     if (effort && !sets.some((s) => s.rpe !== undefined || s.rir !== undefined))
       result.reason += ' Effort was not logged; review how the last session felt.';
     let workingIndex = 0;

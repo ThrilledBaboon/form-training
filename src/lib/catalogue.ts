@@ -42,6 +42,7 @@ const entries: Entry[] = [
   ['Cable hip abduction', 'Cable', ['abductors'], ['glutes']],
   ['Adductor machine', 'Machine', ['adductors'], []],
   ['Push-up', 'Bodyweight', ['chest'], ['triceps', 'front_delts', 'abs'], 'bodyweight'],
+  ['Air squat', 'Bodyweight', ['quads', 'glutes'], ['adductors', 'abs'], 'bodyweight'],
   ['Hanging leg raise', 'Pull-up bar', ['abs'], ['obliques'], 'bodyweight'],
   ['Plank', 'Bodyweight', ['abs', 'obliques'], ['front_delts'], 'duration'],
   ['Side plank', 'Bodyweight', ['obliques'], ['abs', 'abductors'], 'duration'],

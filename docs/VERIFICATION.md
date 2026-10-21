@@ -2,6 +2,16 @@
 
 Entries describe the commit and date reviewed; local-only statements in earlier entries are historical. The final entry records verification after removing development sample tools for integration into `main`.
 
+## Balanced session suggestions — 21 October 2026, local
+
+The `codex/session-suggestions` branch adds balanced full-body generation, saved suggestion preferences, individual replacements and locks, and a separate Cindy benchmark flow. Existing routine progression remains available. Full-body sessions keep compound push, pull and legs; recent recorded coverage and selected priorities guide accessories. See the [suggested-session guide](SUGGESTED-SESSIONS.md).
+
+- All **257 unit/storage tests** pass. The 26 new checks cover protected movement roles, coverage windows, priorities, equipment and exclusions, schedule/climbing context, progression/readiness, immutable replacements, locks, routine preservation, benchmark validation, atomic score edits, rollback, sharing privacy and backward-compatible settings/backups. A final focused rerun passed all **74 relevant tests** after the last score-validation change.
+- Across the complete **237-check production browser suite** and focused reruns, **236 checks pass**, with the existing WebKit touch-drag scenario skipped. The initial run's three failures were the same library export assertion using a hard-coded exercise count; adding Air squat increased the starter catalogue by one. That assertion now derives its expectation from the catalogue. The final **39-check focused run** passes in desktop Chromium, phone-sized Chromium and phone-sized WebKit, covering library export/import, suggestions, narrow widgets, accessibility, saved defaults, isolated replacements, offline Cindy timer/score persistence, history corrections and separate modified-format comparisons.
+- TypeScript, production PWA build, formatting and diff whitespace checks pass. The 375 px suggestion preview was visually inspected; widget regressions also cover 320 px. Physical iPhone use remains unverified.
+- The existing local preview at **http://127.0.0.1:4174/** was updated through **Update & reload**, then the new full-body preview was opened in the user's app without starting a workout or saving preference changes. The update uses additive optional record fields; it does not clear personal data or change the IndexedDB version. Automated tests use isolated synthetic records.
+- This is a separate local feature commit. No push, merge into `main` or deployment was performed.
+
 ## Personal customisation — 20 October 2026, local
 
 Settings now includes **Make FORM yours** for spacing, text, contrast, navigation names/order/visibility, phone shortcuts, chart defaults, macro display, logging defaults and personal climbing circuits/tags. Pages support sections or filtering tabs, density overrides, independent phone order/widths, configurable widget presentation, saved copies, quick actions and manual milestones. Layout format 2 carries those choices with an optional appearance preset; format 1 remains accepted. See the [customisation guide](CUSTOMISATION.md).

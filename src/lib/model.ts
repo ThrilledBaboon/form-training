@@ -3,6 +3,11 @@ import { WeightTagSchema, WeightFilterSchema } from './weight-tags';
 import type { ClimbingData } from './climbing-model';
 import { z } from 'zod';
 import { PersonalisationSchema } from './personalisation';
+import {
+  BenchmarkSchema,
+  SuggestionPreferencesSchema,
+  suggestionRoles,
+} from './suggestion-preferences';
 import { SetupSnapshotSchema, type Workspace } from './workspace-model';
 import type { FoodData } from './food-model';
 import { MUSCLES, trackingTypes } from './constants';
@@ -28,6 +33,7 @@ const date = z.string().datetime({ offset: true });
 const num = z.number().finite().nonnegative().max(1e9);
 const positive = z.number().finite().positive().max(1e6);
 export const ExerciseSchema = z.object({
+  suggestionRole: z.enum(suggestionRoles).optional(),
   id,
   name: z.string().trim().min(1).max(150),
   aliases: z.array(z.string().max(150)).max(50).default([]),
@@ -88,58 +94,93 @@ export const ItemSchema = z.object({
   repMax: num.max(1000),
   restSeconds: num.max(3600),
 });
-export const RoutineSchema = z.object({
-  id,
-  sortOrder: z.number().finite().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
-  name: z.string().trim().min(1).max(150),
-  description: text,
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  programmeId: id.optional(),
-  weekdays: z.array(z.number().int().min(0).max(6)).max(7),
-  items: z.array(ItemSchema).max(100),
-  groups: z.array(GroupSchema).max(100),
-  createdAt: date,
-  updatedAt: date,
-});
+function checkBenchmarkItems(
+  value: { benchmark?: z.infer<typeof BenchmarkSchema>; items: z.infer<typeof ItemSchema>[] },
+  ctx: z.RefinementCtx,
+) {
+  if (!value.benchmark) return;
+  if (value.items.length !== 3)
+    ctx.addIssue({
+      code: 'custom',
+      path: ['items'],
+      message: 'Cindy needs exactly three movements in sequence.',
+    });
+  if (
+    value.benchmark.variant === 'standard' &&
+    value.items.some(
+      (item, index) =>
+        item.tracking !== 'bodyweight' ||
+        item.name.toLowerCase() !== ['pull-up', 'push-up', 'air squat'][index],
+    )
+  )
+    ctx.addIssue({
+      code: 'custom',
+      path: ['benchmark'],
+      message:
+        'Standard Cindy uses bodyweight pull-ups, push-ups and air squats in order. Mark changed movements as modified.',
+    });
+}
+export const RoutineSchema = z
+  .object({
+    benchmark: BenchmarkSchema.optional(),
+    id,
+    sortOrder: z.number().finite().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
+    name: z.string().trim().min(1).max(150),
+    description: text,
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    programmeId: id.optional(),
+    weekdays: z.array(z.number().int().min(0).max(6)).max(7),
+    items: z.array(ItemSchema).max(100),
+    groups: z.array(GroupSchema).max(100),
+    createdAt: date,
+    updatedAt: date,
+  })
+  .superRefine(checkBenchmarkItems);
 export const ProgrammeSchema = z.object({
   id,
   name: z.string().trim().min(1).max(150),
   notes: text,
 });
-export const PlanSchema = z.object({
-  id,
-  routineId: id.optional(),
-  name: z.string().min(1).max(150),
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .refine((s) => {
-      const d = new Date(s + 'T12:00:00Z');
-      return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
-    }, 'Invalid date'),
-  status: z.enum(['planned', 'started', 'rest']),
-  items: z.array(ItemSchema).max(100),
-  groups: z.array(GroupSchema).max(100),
-  notes: text,
-});
-export const SessionSchema = z.object({
-  id,
-  name: z.string().trim().min(1).max(150),
-  dateOnly: z.boolean().optional(),
-  importId: id.optional(),
-  startAt: date,
-  endAt: date.optional(),
-  status: z.enum(['active', 'completed', 'cancelled']),
-  routineId: id.optional(),
-  planId: id.optional(),
-  items: z.array(ItemSchema).max(100),
-  groups: z.array(GroupSchema).max(100),
-  notes: text,
-  rpe: num.max(10).optional(),
-  energy: num.max(5).optional(),
-  calories: num.optional(),
-  updatedAt: date,
-});
+export const PlanSchema = z
+  .object({
+    benchmark: BenchmarkSchema.optional(),
+    id,
+    routineId: id.optional(),
+    name: z.string().min(1).max(150),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .refine((s) => {
+        const d = new Date(s + 'T12:00:00Z');
+        return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+      }, 'Invalid date'),
+    status: z.enum(['planned', 'started', 'rest']),
+    items: z.array(ItemSchema).max(100),
+    groups: z.array(GroupSchema).max(100),
+    notes: text,
+  })
+  .superRefine(checkBenchmarkItems);
+export const SessionSchema = z
+  .object({
+    benchmark: BenchmarkSchema.optional(),
+    id,
+    name: z.string().trim().min(1).max(150),
+    dateOnly: z.boolean().optional(),
+    importId: id.optional(),
+    startAt: date,
+    endAt: date.optional(),
+    status: z.enum(['active', 'completed', 'cancelled']),
+    routineId: id.optional(),
+    planId: id.optional(),
+    items: z.array(ItemSchema).max(100),
+    groups: z.array(GroupSchema).max(100),
+    notes: text,
+    rpe: num.max(10).optional(),
+    energy: num.max(5).optional(),
+    calories: num.optional(),
+    updatedAt: date,
+  })
+  .superRefine(checkBenchmarkItems);
 export const SetSchema = z.object({
   id,
   setup: SetupSnapshotSchema.optional(),
@@ -172,6 +213,7 @@ export const BodyweightSchema = z.object({
   tags: z.array(WeightTagSchema).max(20).optional(),
 });
 export const SettingsSchema = z.object({
+  suggestions: SuggestionPreferencesSchema.optional(),
   weightFilter: WeightFilterSchema.optional(),
   personalisation: PersonalisationSchema.optional(),
   id: z.literal('preferences'),

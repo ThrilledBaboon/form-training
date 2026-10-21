@@ -1,5 +1,7 @@
 import { previousExerciseSession, precedesSession } from '../lib/session-continuity';
 import { WorkoutSetup } from './EquipmentSetups';
+import { BenchmarkSession } from '../components/BenchmarkSession';
+import { benchmarkScoreLabel } from '../lib/benchmark';
 import { LinkButton as WorkspaceLink } from '../components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -751,35 +753,37 @@ export function SessionView({ session }: { session: Session }) {
           </div>
         }
       />
-      <div className="session-summary-strip">
-        <span>
-          <Clock3 size={18} />
-          {session.dateOnly ? (
-            <strong>Duration unrecorded</strong>
-          ) : (
-            <>
-              <strong>{fmt(stats.minutes, 0)}</strong> minutes
-            </>
-          )}
-        </span>
-        <span>
-          <Layers size={18} />
-          <strong>{stats.sets}</strong> working sets
-        </span>
-        <span>
-          <Activity size={18} />
-          <strong>{fmt(fromKg(stats.volume, data.settings.unit), 0)}</strong> {data.settings.unit}{' '}
-          external volume
-        </span>
-        <select
-          aria-label="Workout weight unit"
-          value={data.settings.unit}
-          onChange={(e) => void run(() => saveSettings({ unit: e.target.value as 'kg' | 'lb' }))}
-        >
-          <option value="kg">Kilograms</option>
-          <option value="lb">Pounds</option>
-        </select>
-      </div>
+      {!session.benchmark && (
+        <div className="session-summary-strip">
+          <span>
+            <Clock3 size={18} />
+            {session.dateOnly ? (
+              <strong>Duration unrecorded</strong>
+            ) : (
+              <>
+                <strong>{fmt(stats.minutes, 0)}</strong> minutes
+              </>
+            )}
+          </span>
+          <span>
+            <Layers size={18} />
+            <strong>{stats.sets}</strong> working sets
+          </span>
+          <span>
+            <Activity size={18} />
+            <strong>{fmt(fromKg(stats.volume, data.settings.unit), 0)}</strong> {data.settings.unit}{' '}
+            external volume
+          </span>
+          <select
+            aria-label="Workout weight unit"
+            value={data.settings.unit}
+            onChange={(e) => void run(() => saveSettings({ unit: e.target.value as 'kg' | 'lb' }))}
+          >
+            <option value="kg">Kilograms</option>
+            <option value="lb">Pounds</option>
+          </select>
+        </div>
+      )}
       {!active && records.length > 0 && (
         <div className="record-banner">
           <span>↗</span>
@@ -807,9 +811,13 @@ export function SessionView({ session }: { session: Session }) {
       )}
       <div className="workout-layout">
         <div className="workout-main">
-          {session.items.map((i, index) => (
-            <WorkoutExercise key={i.id} session={session} item={i} index={index} />
-          ))}
+          {session.benchmark ? (
+            <BenchmarkSession session={session} />
+          ) : (
+            session.items.map((i, index) => (
+              <WorkoutExercise key={i.id} session={session} item={i} index={index} />
+            ))
+          )}
           {!session.items.length && (
             <Card>
               <Empty
@@ -825,14 +833,16 @@ export function SessionView({ session }: { session: Session }) {
               </Empty>
             </Card>
           )}
-          <Button
-            variant="secondary"
-            className="full-width add-exercise-button"
-            onClick={() => setPick(true)}
-          >
-            <Plus size={18} />
-            Add exercise
-          </Button>
+          {!session.benchmark && (
+            <Button
+              variant="secondary"
+              className="full-width add-exercise-button"
+              onClick={() => setPick(true)}
+            >
+              <Plus size={18} />
+              Add exercise
+            </Button>
+          )}
         </div>
         <aside className="workout-aside">
           <Card>
@@ -852,30 +862,34 @@ export function SessionView({ session }: { session: Session }) {
               Log bodyweight
             </Button>
           </Card>
-          <Card>
-            <SectionTitle
-              title="Muscles in this session"
-              sub="Completed sets · estimated contribution"
-            />
-            {muscles.length ? (
-              <div className="muscle-session-list">
-                {muscles.map((m) => (
-                  <a href={`#/muscles?muscle=${m.muscle}`} key={m.muscle}>
-                    <span>{muscleName(m.muscle)}</span>
-                    <strong>{fmt(m.details.reduce((n, d) => n + d.contribution, 0))}</strong>
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">Complete a working set to see its muscle contributions.</p>
-            )}
-          </Card>
+          {!session.benchmark && (
+            <Card>
+              <SectionTitle
+                title="Muscles in this session"
+                sub="Completed sets · estimated contribution"
+              />
+              {muscles.length ? (
+                <div className="muscle-session-list">
+                  {muscles.map((m) => (
+                    <a href={`#/muscles?muscle=${m.muscle}`} key={m.muscle}>
+                      <span>{muscleName(m.muscle)}</span>
+                      <strong>{fmt(m.details.reduce((n, d) => n + d.contribution, 0))}</strong>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted">Complete a working set to see its muscle contributions.</p>
+              )}
+            </Card>
+          )}
           <Card>
             <SectionTitle title="Session tools" />
-            <Button variant="secondary" className="full-width" onClick={() => setGroup(true)}>
-              <Layers size={16} />
-              Add exercise group
-            </Button>
+            {!session.benchmark && (
+              <Button variant="secondary" className="full-width" onClick={() => setGroup(true)}>
+                <Layers size={16} />
+                Add exercise group
+              </Button>
+            )}
             <p className="small-text muted">
               Supersets and circuits keep each set attached to its exercise. Assign exercises to
               your group in their notes panel.
@@ -1209,12 +1223,19 @@ export function History() {
                         month: 'short',
                         day: 'numeric',
                       })}{' '}
-                      · {s.items.length} exercises · {stats.sets} sets
+                      ·{' '}
+                      {s.benchmark
+                        ? benchmarkScoreLabel(s.benchmark)
+                        : `${s.items.length} exercises · ${stats.sets} sets`}
                     </small>
                   </span>
                   <span className="session-list-stats">
                     <strong>
-                      {fmt(fromKg(stats.volume, data.settings.unit), 0)} {data.settings.unit}
+                      {s.benchmark
+                        ? s.benchmark.variant === 'standard'
+                          ? 'Cindy'
+                          : 'Modified Cindy'
+                        : `${fmt(fromKg(stats.volume, data.settings.unit), 0)} ${data.settings.unit}`}
                     </strong>
                     <small>
                       {s.dateOnly ? 'Duration unrecorded' : fmt(stats.minutes, 0) + ' min'} ·{' '}

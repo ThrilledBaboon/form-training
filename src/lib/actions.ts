@@ -27,6 +27,7 @@ import { readData } from './db';
 import { catalogue } from './catalogue';
 import { weightTags } from './weight-tags';
 import type { SessionSuggestion } from './suggestions';
+import type { Benchmark } from './suggestion-preferences';
 export async function resetAllData(database = db) {
   const starter = catalogue();
   await database.transaction('rw', database.tables, async () => {
@@ -89,7 +90,7 @@ export function exerciseItem(e: Exercise): Item {
 export async function startSession(
   source?: Routine | Plan,
   database: TrainingDB = db,
-  options: { prefillHistory?: boolean } = {},
+  options: { prefillHistory?: boolean; linkSource?: boolean } = {},
 ): Promise<string> {
   const data = await readData(database);
   const t = now();
@@ -108,51 +109,64 @@ export async function startSession(
   const bodyweight = [...data.bodyweights]
     .filter((b) => b.at <= t)
     .sort((a, b) => b.at.localeCompare(a.at))[0]?.kg;
-  const sets: WorkoutSet[] = items.flatMap((item) => {
-    const previous =
-      options.prefillHistory === false
-        ? undefined
-        : exerciseHistory(
-            {
-              ...data,
-              sets: data.sets.filter(
-                (s) =>
-                  (s.setup?.id ?? '') === (item.setup?.id ?? '') &&
-                  (s.setup?.basis ?? 'unspecified') === (item.setup?.basis ?? 'unspecified'),
-              ),
-            },
-            item.exerciseId,
-            item.tracking,
-          )[0]?.sets.at(-1);
-    return item.sets.map((p, order) => ({
-      id: uid(),
-      sessionId,
-      itemId: item.id,
-      exerciseId: item.exerciseId,
-      setup: item.setup,
-      order,
-      ...p,
-      loadKg: p.loadKg ?? previous?.loadKg ?? 0,
-      bodyweightKg: item.includeBodyweight ? bodyweight : undefined,
-      restSeconds: p.restSeconds ?? item.restSeconds ?? settings.defaultRest,
-      label: p.label || 'working',
-      completed: false,
-      notes: p.notes ?? '',
-      restUnknown: p.restSeconds === undefined && item.restUnknown,
-    }));
-  });
+  const sets: WorkoutSet[] = source?.benchmark
+    ? []
+    : items.flatMap((item) => {
+        const previous =
+          options.prefillHistory === false
+            ? undefined
+            : exerciseHistory(
+                {
+                  ...data,
+                  sets: data.sets.filter(
+                    (s) =>
+                      (s.setup?.id ?? '') === (item.setup?.id ?? '') &&
+                      (s.setup?.basis ?? 'unspecified') === (item.setup?.basis ?? 'unspecified'),
+                  ),
+                },
+                item.exerciseId,
+                item.tracking,
+              )[0]?.sets.at(-1);
+        return item.sets.map((p, order) => ({
+          id: uid(),
+          sessionId,
+          itemId: item.id,
+          exerciseId: item.exerciseId,
+          setup: item.setup,
+          order,
+          ...p,
+          loadKg: p.loadKg ?? previous?.loadKg ?? 0,
+          bodyweightKg: item.includeBodyweight ? bodyweight : undefined,
+          restSeconds: p.restSeconds ?? item.restSeconds ?? settings.defaultRest,
+          label: p.label || 'working',
+          completed: false,
+          notes: p.notes ?? '',
+          restUnknown: p.restSeconds === undefined && item.restUnknown,
+        }));
+      });
   const session: Session = {
     id: sessionId,
     name: source?.name || 'Freestyle workout',
     startAt: t,
     status: 'active',
+    benchmark: source?.benchmark
+      ? {
+          ...structuredClone(source.benchmark),
+          rounds: 0,
+          extraReps: 0,
+          elapsedSeconds: 0,
+          timerStartedAt: undefined,
+        }
+      : undefined,
     routineId:
-      source && 'weekdays' in source
-        ? source.id
-        : source && 'routineId' in source
-          ? source.routineId
-          : undefined,
-    planId: source && 'date' in source ? source.id : undefined,
+      options.linkSource === false
+        ? undefined
+        : source && 'weekdays' in source
+          ? source.id
+          : source && 'routineId' in source
+            ? source.routineId
+            : undefined,
+    planId: options.linkSource !== false && source && 'date' in source ? source.id : undefined,
     items,
     groups: source?.groups || [],
     notes: source && 'notes' in source ? source.notes : '',
@@ -164,12 +178,45 @@ export async function startSession(
     SessionSchema.parse(session);
     await database.sessions.add(session);
     if (sets.length) await database.sets.bulkAdd(sets);
-    if (source && 'date' in source) await database.plans.update(source.id, { status: 'started' });
+    if (options.linkSource !== false && source && 'date' in source)
+      await database.plans.update(source.id, { status: 'started' });
   });
   return sessionId;
 }
 export async function startSuggestedSession(suggestion: SessionSuggestion, database = db) {
-  return startSession(suggestion.source, database, { prefillHistory: false });
+  if (suggestion.blocked)
+    throw Error('Resolve the missing movements or constraints before starting.');
+  return database.transaction('rw', database.tables, async () => {
+    for (const item of suggestion.source.items) {
+      const exercise = await database.exercises.get(item.exerciseId);
+      if (
+        (exercise && (exercise.archived || exercise.tracking !== item.tracking)) ||
+        (!exercise && suggestion.choice.kind !== 'benchmark')
+      )
+        throw Error(`${item.name} changed in your library. Generate a fresh preview.`);
+    }
+    // The built-in circuit adds its missing starter movements only when the preview is accepted.
+    if (suggestion.choice.kind === 'benchmark') {
+      const starter = catalogue();
+      for (const item of suggestion.source.items) {
+        const existing = await database.exercises.get(item.exerciseId);
+        if (existing?.archived)
+          throw Error(`${item.name} is archived. Review your exercise library.`);
+        if (!existing) {
+          const exercise = starter.exercises.find((e) => e.id === item.exerciseId);
+          if (!exercise) throw Error('A benchmark exercise is missing. Generate a new preview.');
+          await database.exercises.add(exercise);
+          await database.mappings.bulkAdd(
+            starter.mappings.filter((m) => m.exerciseId === exercise.id),
+          );
+        }
+      }
+    }
+    return startSession(suggestion.source, database, {
+      prefillHistory: false,
+      linkSource: !['generated', 'benchmark'].includes(suggestion.choice.kind),
+    });
+  });
 }
 export async function addExercise(sessionId: string, exercise: Exercise, database = db) {
   return insertExercise(sessionId, exercise, database);
@@ -250,6 +297,24 @@ export async function updateSession(id: string, patch: Partial<Session>, databas
     const s = await database.sessions.get(id);
     if (!s) throw Error('Workout not found.');
     await database.sessions.put(SessionSchema.parse({ ...s, ...patch, id, updatedAt: now() }));
+  });
+}
+export async function updateBenchmark(
+  id: string,
+  patch: Partial<Benchmark> | ((value: Benchmark) => Partial<Benchmark>),
+  database = db,
+) {
+  await database.transaction('rw', database.sessions, async () => {
+    const session = await database.sessions.get(id);
+    if (!session?.benchmark) throw Error('Circuit no longer exists.');
+    const changes = typeof patch === 'function' ? patch(session.benchmark) : patch;
+    await database.sessions.put(
+      SessionSchema.parse({
+        ...session,
+        benchmark: { ...session.benchmark, ...changes },
+        updatedAt: now(),
+      }),
+    );
   });
 }
 export async function updateSet(id: string, patch: Partial<WorkoutSet>, database = db) {
@@ -364,10 +429,30 @@ export async function finishSession(id: string, database = db) {
       const s = await database.sessions.get(id);
       if (!s) throw Error('Workout not found.');
       const sets = await database.sets.where('sessionId').equals(id).toArray();
-      if (!sets.some((x) => x.completed))
-        throw Error('Complete at least one set to finish, or cancel the session.');
+      if (
+        !sets.some((x) => x.completed) &&
+        !(s.benchmark && (s.benchmark.rounds > 0 || s.benchmark.extraReps > 0))
+      )
+        throw Error(
+          s.benchmark
+            ? 'Log a completed round or additional reps to finish, or cancel the circuit.'
+            : 'Complete at least one set to finish, or cancel the session.',
+        );
       const t = now();
-      await database.sessions.put({ ...s, status: 'completed', endAt: t, updatedAt: t });
+      const benchmark = s.benchmark
+        ? {
+            ...s.benchmark,
+            elapsedSeconds:
+              s.benchmark.elapsedSeconds +
+              (s.benchmark.timerStartedAt
+                ? Math.max(0, (Date.parse(t) - Date.parse(s.benchmark.timerStartedAt)) / 1000)
+                : 0),
+            timerStartedAt: undefined,
+          }
+        : undefined;
+      await database.sessions.put(
+        SessionSchema.parse({ ...s, benchmark, status: 'completed', endAt: t, updatedAt: t }),
+      );
       await database.timers.delete('rest');
     },
   );

@@ -6,6 +6,7 @@ import './themes.css';
 import './personalisation.css';
 import './practice.css';
 import './widget-layout.css';
+import './suggestions.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

@@ -38,7 +38,11 @@ export function workoutStreak(data: Data, at = Date.now()): WorkoutStreak {
   for (const session of data.sessions) {
     if (
       session.status !== 'completed' ||
-      !completed.has(session.id) ||
+      (!completed.has(session.id) &&
+        !(
+          session.benchmark &&
+          (session.benchmark.rounds > 0 || session.benchmark.extraReps > 0)
+        )) ||
       Date.parse(session.startAt) > at ||
       (session.endAt && Date.parse(session.endAt) > at)
     )

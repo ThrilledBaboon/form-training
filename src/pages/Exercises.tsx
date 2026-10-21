@@ -177,6 +177,26 @@ export function ExerciseEditor({
               ))}
             </select>
           </Field>
+          <Field
+            label="Suggested-session role"
+            hint="Mark compound movements explicitly so custom exercises can fill the full-body foundation. Auto recognises FORM’s starter movements."
+          >
+            <select
+              value={e.suggestionRole ?? ''}
+              onChange={(v) =>
+                patch({
+                  suggestionRole: (v.target.value || undefined) as Exercise['suggestionRole'],
+                })
+              }
+            >
+              <option value="">Auto / accessory for unknown movements</option>
+              <option value="push">Compound push</option>
+              <option value="pull">Compound pull</option>
+              <option value="squat">Compound legs · squat / lunge</option>
+              <option value="hinge">Compound legs · hinge</option>
+              <option value="accessory">Accessory</option>
+            </select>
+          </Field>
           <Field label="Rest (seconds)">
             <input
               type="number"

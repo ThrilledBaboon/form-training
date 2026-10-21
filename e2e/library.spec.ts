@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
+import { catalogue } from '../src/lib/catalogue';
 import { libraryFixture } from '../tests/library-fixture';
 import { createLibrary, type LibraryFile } from '../src/lib/library';
 const base = process.env.TEST_SUBPATH || '/';
@@ -146,7 +147,7 @@ test('library sharing downloads only selected content with optional notes/weight
       path: `test-results/library-share-${theme}-${test.info().project.name}.png`,
     });
     const all = await downloadFile(page, dialog);
-    expect(all.data.exercises).toHaveLength(36);
+    expect(all.data.exercises).toHaveLength(catalogue().exercises.length + 1);
     expect(all.data.routines).toHaveLength(4);
     expect(all.data.programmes).toHaveLength(1);
     await page.keyboard.press('Escape');
