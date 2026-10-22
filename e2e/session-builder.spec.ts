@@ -102,8 +102,14 @@ test('Cindy persists its timer and score offline, finishes into history and sepa
   await dialog.getByRole('button', { name: 'Start suggested session', exact: true }).click();
   const circuit = page.getByRole('region', { name: 'Cindy circuit', exact: true });
   await expect(circuit).toBeVisible();
+  // Keep Date fixed while browser/IndexedDB timers keep running: a slower CI
+  // reload must not consume another second before the deadline assertion.
+  await page.clock.setFixedTime(new Date('2026-10-21T14:05:00Z'));
   await circuit.getByRole('button', { name: 'Start circuit timer', exact: true }).click();
-  await page.clock.fastForward('00:00:12');
+  await expect(
+    circuit.getByRole('button', { name: 'Pause circuit timer', exact: true }),
+  ).toBeEnabled();
+  await page.clock.setFixedTime(new Date('2026-10-21T14:05:12Z'));
   await expect(circuit.getByRole('timer')).toHaveText('19:48');
   await page.reload();
   await expect(circuit.getByRole('timer')).toHaveText('19:48');
