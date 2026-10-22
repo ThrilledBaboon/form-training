@@ -24,6 +24,9 @@ test('weigh-in tags filter history, averages and independent widgets after reloa
   await expect(
     page.locator('.metric-grid .metric-value').filter({ hasText: /^80\s*kg$/ }),
   ).toHaveCount(3);
+  // The page filters optimistically; wait for the disabled-during-save control to
+  // acknowledge the IndexedDB transaction before intentionally reloading.
+  await expect(page.getByLabel('Weigh-in tag filter', { exact: true })).toBeEnabled();
   await page.reload();
   await expect(page.getByLabel('Weigh-in tag filter', { exact: true })).toHaveValue('tag:Fresh');
   await page.getByLabel('Weigh-in tag filter', { exact: true }).selectOption('untagged');
@@ -36,12 +39,14 @@ test('weigh-in tags filter history, averages and independent widgets after reloa
   await page.getByRole('button', { name: 'Save measurement' }).click();
   await expect(page.getByText('No measurements match this view')).toBeVisible();
   await page.getByLabel('Weigh-in tag filter', { exact: true }).selectOption('tag:Fresh');
+  await expect(page.getByLabel('Weigh-in tag filter', { exact: true })).toBeEnabled();
   await page.goto(base + '#/today');
   const widget = page
     .locator('.workspace-widget')
     .filter({ has: page.getByRole('heading', { name: 'Bodyweight trend', exact: true }) });
   await expect(widget.getByLabel('Weigh-in tag filter', { exact: true })).toHaveValue('tag:Fresh');
   await widget.getByLabel('Weigh-in tag filter', { exact: true }).selectOption('tag:Gym');
+  await expect(widget.getByLabel('Weigh-in tag filter', { exact: true })).toBeEnabled();
   await page.reload();
   await expect(widget.getByLabel('Weigh-in tag filter', { exact: true })).toHaveValue('tag:Gym');
   await widget.getByRole('link', { name: /Explore/ }).click();
