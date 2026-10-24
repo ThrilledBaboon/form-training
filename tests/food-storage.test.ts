@@ -320,7 +320,7 @@ describe('complete portable food data', () => {
     delete b.manifest;
     delete b.data.food;
     const parsed = parseBackup(JSON.stringify(b));
-    expect(parsed.schemaVersion).toBe(6);
+    expect(parsed.schemaVersion).toBe(7);
     expect(parsed.data.food).toEqual(emptyFood);
     await importBackup(parsed, 'merge', database);
     expect((await readData(database)).food?.recipes).toEqual(before.food?.recipes);

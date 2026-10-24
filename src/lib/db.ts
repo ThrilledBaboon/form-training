@@ -19,6 +19,8 @@ import {
   type FoodFile,
   type FoodDraft,
   type FoodData,
+  type FoodProgramme,
+  type FoodSchedule,
 } from './food-model';
 import {
   defaults,
@@ -45,6 +47,8 @@ export class TrainingDB extends Dexie {
   climbing!: EntityTable<ClimbingData, 'id'>;
   workspaces!: EntityTable<Workspace, 'id'>;
   ingredients!: EntityTable<Ingredient, 'id'>;
+  foodProgrammes!: EntityTable<FoodProgramme, 'id'>;
+  foodSchedules!: EntityTable<FoodSchedule, 'id'>;
   recipes!: EntityTable<Recipe, 'id'>;
   foodEntries!: EntityTable<FoodEntry, 'id'>;
   mealPlans!: EntityTable<MealPlan, 'id'>;
@@ -104,6 +108,11 @@ export class TrainingDB extends Dexie {
       .upgrade(async (tx) => {
         await tx.table('workspaces').put(defaultWorkspace());
       });
+    this.version(7).stores({
+      foodProgrammes: 'id,name,updatedAt',
+      foodSchedules: 'id,start,status',
+      foodEntries: 'id,date,recipeId,batchId,&occurrenceId',
+    });
     this.version(6).stores({ practice: 'id' });
     this.version(5).stores({ climbing: 'id' });
     this.version(3).stores({

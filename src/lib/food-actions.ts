@@ -61,7 +61,7 @@ export async function saveRecipe(value: Recipe, database = db) {
     'rw',
     [database.recipes, database.ingredients, database.foodFiles, database.foodDrafts],
     async () => {
-      for (const line of recipe.ingredients)
+      for (const line of [...recipe.ingredients, ...(recipe.composition ?? [])])
         if (!(await database.ingredients.get(line.ingredientId)))
           throw Error('Choose an existing ingredient for every recipe line.');
       for (const image of [recipe.imageId, ...recipe.steps.map((s) => s.imageId)].filter(Boolean))
@@ -193,6 +193,8 @@ export async function cookRecipe(
     const food = (await readData(database)).food!;
     const recipe = food.recipes.find((r) => r.id === recipeId);
     if (!recipe) throw Error('Recipe not found.');
+    if (recipe.unmeasured)
+      throw Error('Add measured quantities before cooking this meal into tracked portions.');
     if (!recipe.ingredients.some((i) => i.quantity > 0))
       throw Error('Add ingredient quantities before confirming cooking.');
     const stock = structuredClone(food.stock);
@@ -279,6 +281,14 @@ export async function cookRecipe(
 export async function saveFoodEntry(value: FoodEntry, database = db) {
   const entry = FoodEntrySchema.parse(value);
   await database.transaction('rw', database.tables, async () => {
+    if (entry.date > foodDay()) throw Error('Choose today or a past date for food eaten.');
+    if (
+      entry.unmeasured &&
+      (entry.batchId ||
+        entry.snapshot.cost !== undefined ||
+        Object.values(entry.snapshot.macros).some((v) => v !== undefined))
+    )
+      throw Error('Unmeasured food cannot carry measured nutrition or prepared portions.');
     const old = await database.foodEntries.get(entry.id);
     if (old?.batchId) {
       const batch = await database.batches.get(old.batchId);
@@ -375,6 +385,16 @@ export async function saveMealPlan(value: MealPlan, database = db) {
 }
 export async function deleteMealPlan(id: string, database = db) {
   await database.transaction('rw', database.tables, async () => {
+    const plan = await database.mealPlans.get(id);
+    if (plan?.scheduleId && plan.occurrenceId) {
+      const schedule = await database.foodSchedules.get(plan.scheduleId);
+      if (schedule)
+        await database.foodSchedules.put({
+          ...schedule,
+          omitted: [...new Set([...(schedule.omitted ?? []), plan.occurrenceId])],
+          updatedAt: now(),
+        });
+    }
     await database.mealPlans.delete(id);
     for (const list of await database.shoppingLists.toArray())
       if (list.from && list.to) await regenerateShopping(list.id, database);
@@ -396,6 +416,28 @@ export async function regenerateShopping(id: string, database = db) {
     const retained = list.items.filter((i) => !i.generated || i.received);
     await database.shoppingLists.put({
       ...list,
+      checklist: [
+        ...new Set(
+          (list.recipeId
+            ? food.recipes.filter((r) => r.id === list.recipeId)
+            : food.mealPlans
+                .filter((p) => p.date >= list.from! && p.date <= list.to!)
+                .flatMap((p) => food.recipes.filter((r) => r.id === p.recipeId))
+          ).flatMap((r) =>
+            r.unmeasured
+              ? (r.composition ?? [])
+                  .filter((c) => c.quantity === undefined)
+                  .map((c) => c.ingredientId)
+              : [],
+          ),
+        ),
+      ].map((ingredientId) => ({
+        id: 'checklist:' + ingredientId,
+        ingredientId,
+        name: food.ingredients.find((i) => i.id === ingredientId)?.name ?? 'Unknown ingredient',
+        checked: list.checklist?.find((i) => i.ingredientId === ingredientId)?.checked ?? false,
+        notes: 'Additional unmeasured demand. Review quantity; not received into stock.',
+      })),
       items: [
         ...retained,
         ...generated

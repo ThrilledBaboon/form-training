@@ -24,6 +24,8 @@ export const dataCategories = {
   plans: 'Training plans',
   bodyweights: 'Bodyweight',
   preferences: 'Training preferences & timer',
+  foodProgrammes: 'Food programme library',
+  foodSchedules: 'Personal food programmes & check-ins',
   ingredients: 'Ingredients',
   recipes: 'Recipes',
   diary: 'Food diary',
@@ -46,6 +48,8 @@ export const gymCategories: DataCategory[] = [
   'preferences',
 ];
 export const foodCategories: DataCategory[] = [
+  'foodProgrammes',
+  'foodSchedules',
   'ingredients',
   'recipes',
   'diary',
@@ -77,15 +81,32 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
     if (!row) throw Error(`Cannot export a missing ${key} dependency.`);
     included.get(key)!.add(id);
     (target[key] as { id: string }[]).push(structuredClone(row));
+    if (key === 'foodProgrammes' || key === 'foodSchedules') {
+      const programme =
+        key === 'foodProgrammes'
+          ? (row as FoodData['foodProgrammes'][number])
+          : (row as FoodData['foodSchedules'][number]).snapshot;
+      if (key === 'foodSchedules') {
+        const schedule = row as FoodData['foodSchedules'][number];
+        addFood('foodProgrammes', schedule.programmeId);
+        schedule.exclusions.forEach((id) => addFood('ingredients', id));
+      }
+      programme.rotation.forEach((r) => r.recipeIds.forEach((id) => addFood('recipes', id)));
+      programme.groups.forEach((g) => g.ingredientIds.forEach((id) => addFood('ingredients', id)));
+    }
     if (key === 'recipes') {
       const r = row as Recipe;
-      for (const line of r.ingredients) addFood('ingredients', line.ingredientId);
+      for (const line of [...r.ingredients, ...(r.composition ?? [])])
+        addFood('ingredients', line.ingredientId);
       addFood('foodFiles', r.imageId);
       for (const step of r.steps) addFood('foodFiles', step.imageId);
     }
     if (key === 'foodEntries' || key === 'mealPlans' || key === 'batches') {
       const r = row as FoodEntry | MealPlan | Batch;
       addFood('recipes', r.recipeId);
+      if ('scheduleId' in r) addFood('foodSchedules', r.scheduleId);
+      if ('composition' in r)
+        (r.composition ?? []).forEach((line) => addFood('ingredients', line.ingredientId));
       if ('batchId' in r) addFood('batches', r.batchId);
       if ('snapshot' in r)
         for (const line of r.snapshot.ingredients) addFood('ingredients', line.ingredientId);
@@ -107,6 +128,7 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
       for (const line of p.lines) addFood('ingredients', line.ingredientId);
     }
     if (key === 'shoppingLists') {
+      (row as ShoppingList).checklist?.forEach((i) => addFood('ingredients', i.ingredientId));
       const s = row as ShoppingList;
       addFood('recipes', s.recipeId);
       for (const line of s.items) addFood('ingredients', line.ingredientId);
@@ -150,6 +172,20 @@ export function categoryExport(data: Data, selected: DataCategory[]) {
       case 'preferences':
         result.settings = structuredClone(data.settings);
         result.timer = structuredClone(data.timer);
+        break;
+      case 'foodProgrammes':
+        copyFood('foodProgrammes');
+        break;
+      case 'foodSchedules':
+        copyFood('foodSchedules');
+        source.mealPlans.filter((p) => p.scheduleId).forEach((p) => addFood('mealPlans', p.id));
+        source.foodEntries
+          .filter(
+            (e) =>
+              e.occurrenceId &&
+              source.foodSchedules.some((s) => e.occurrenceId!.startsWith(s.id + ':')),
+          )
+          .forEach((e) => addFood('foodEntries', e.id));
         break;
       case 'ingredients':
         copyFood('ingredients');

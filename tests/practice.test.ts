@@ -195,7 +195,7 @@ describe('practice portability and meaningful comparisons', () => {
     await sample();
     const data = await readData(db);
     const backup = parseBackup(serialise(data));
-    expect(backup.schemaVersion).toBe(6);
+    expect(backup.schemaVersion).toBe(7);
     expect(backup.data.practice).toEqual(data.practice);
     await importBackup(backup, 'replace', db);
     expect((await readData(db)).practice).toEqual(data.practice);

@@ -8,12 +8,42 @@ export const importPromptKinds = {
   layout: 'Page layouts',
   categories: 'Food, climbing, bodyweight & other categories',
   bodyweight: 'Bodyweight measurements',
+  'food-programmes': 'Food programme library',
 } as const;
 export type ImportPromptKind = keyof typeof importPromptKinds;
 
 export async function getImportPrompt(kind: ImportPromptKind) {
   let schema: z.ZodType, instructions: string, example: unknown;
   switch (kind) {
+    case 'food-programmes': {
+      const { FoodProgrammeLibrarySchema } = await import('./food-programme-library');
+      const { fillingBowlStarter } = await import('./food-programme-starter');
+      schema = FoodProgrammeLibrarySchema;
+      const starter = fillingBowlStarter();
+      const recipe = starter.recipes[0];
+      const ids = new Set(recipe.composition!.map((i) => i.ingredientId));
+      example = {
+        ...starter,
+        title: 'Example one-day programme',
+        ingredients: starter.ingredients.filter((i) => ids.has(i.id)),
+        recipes: [recipe],
+        programmes: [
+          {
+            ...starter.programmes[0],
+            name: 'My food programme',
+            days: 7,
+            cycleDays: 1,
+            groups: [],
+            habits: [],
+            rotation: [{ day: 0, slot: 'Breakfast', recipeIds: [recipe.id] }],
+          },
+        ],
+        files: [],
+      };
+      instructions =
+        'Create a reusable food programme library, never a personal diary or replacement backup. Use app:"FORM", type:"food-programme-library", schemaVersion:1, title, exportedAt, ingredients, recipes, programmes and files. Include all referenced ingredients and recipes. Each programme rotation day is zero-based and less than cycleDays; each day/slot pair is unique. Recipe IDs in a rotation are ordered alternatives, first is default. Unmeasured meals use unmeasured:true, ingredients:[], servings:1 as an internal record multiplier, and a nonempty composition of ingredientId, role, state and optional guidance. Omit composition quantity and unit together when unknown. Quantified recipes use ordinary ingredient lines with positive amounts, units and matching food states. Never use zero or one gram to stand for unknown amounts; never invent nutrition, brands, prices, density or cooking times. Source/group guidance is advisory, not a medical guarantee. Programme groups and habits have unique IDs. sourceUrl must use http or https. Leave personal schedules, check-ins, calorie preferences, nutrition targets, stock, purchases, profiles and bodyweights out. Use stable unique IDs, no executable rules, no base64 images unless explicitly requested. Import in Food > Programmes > Import programme, review additions/conflicts and confirm. Reimporting unchanged content reuses it; conflicts require cancellation or a separate copy.';
+      break;
+    }
     case 'bodyweight': {
       const { BodyweightFileSchema } = await import('./bodyweight-file');
       schema = BodyweightFileSchema;
@@ -137,7 +167,7 @@ Templates match a whole trimmed line, case-insensitively, with exact literal sep
       const { emptyData } = await import('./model');
       schema = BackupSchema;
       example = JSON.parse(categoryExport(structuredClone(emptyData), ['bodyweights']));
-      instructions = `Create a category import, not a replacement backup. Use schemaVersion:6, scope:"categories", manifest.format:"FORM category export", manifest.version:6. Categories: ${JSON.stringify(dataCategories)}. Tell me which categories you are including. Keep every required top-level data array and settings object from the blank example; populate only the requested categories. Set manifest.requested to the requested category keys. Set manifest.categories to the actual nonempty data arrays or food table names (e.g. bodyweights, ingredients, recipes, foodEntries), plus climbing or the practice system IDs where included. Use settings/timer for preferences and foodSettings for foodPreferences. Use attachments:0 when no files. Use unique IDs; all referenced ingredient, recipe, batch, exercise, route, session and drill IDs must resolve. Include required dependencies in the same file. Recipe nutrition is based on included ingredients and quantities, not invented facts. Climbing routes/sessions must use the exact grade system, discipline and outcome enums. Bodyweights use kg and ISO at timestamps, notes and optional tags (up to 20 labels of 40 characters). Food uses the units and per-100g fields defined in the schema. Leave workspace absent unless explicitly requested. Do not include base64 images. Import this in Settings > Export & import selected categories using merge; review conflicts first. Never suggest replacing existing data for an AI-generated file.`;
+      instructions = `Create a category import, not a replacement backup. Use schemaVersion:7, scope:"categories", manifest.format:"FORM category export", manifest.version:7. Categories: ${JSON.stringify(dataCategories)}. Tell me which categories you are including. Keep every required top-level data array and settings object from the blank example; populate only the requested categories. Set manifest.requested to the requested category keys. Set manifest.categories to the actual nonempty data arrays or food table names (e.g. bodyweights, ingredients, recipes, foodEntries), plus climbing or the practice system IDs where included. Use settings/timer for preferences and foodSettings for foodPreferences. Use attachments:0 when no files. Use unique IDs; all referenced ingredient, recipe, batch, exercise, route, session and drill IDs must resolve. Include required dependencies in the same file. Recipe nutrition is based on included ingredients and quantities, not invented facts. Climbing routes/sessions must use the exact grade system, discipline and outcome enums. Bodyweights use kg and ISO at timestamps, notes and optional tags (up to 20 labels of 40 characters). Food uses the units and per-100g fields defined in the schema. Leave workspace absent unless explicitly requested. Do not include base64 images. Import this in Settings > Export & import selected categories using merge; review conflicts first. Never suggest replacing existing data for an AI-generated file.`;
       break;
     }
   }

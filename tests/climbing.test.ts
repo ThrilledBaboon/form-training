@@ -277,7 +277,7 @@ describe('Climbing system', () => {
     await saveClimbingRecord('climbs', { ...c, photo }, c.updatedAt, db);
     const original = await readData(db),
       backup = parseBackup(serialise(original));
-    expect(backup.schemaVersion).toBe(6);
+    expect(backup.schemaVersion).toBe(7);
     expect(backup.manifest!.attachments).toBe(1);
     const changed = (await readData(db)).climbing!.climbs[0];
     await saveClimbingRecord('climbs', { ...changed, notes: 'Keep local' }, changed.updatedAt, db);

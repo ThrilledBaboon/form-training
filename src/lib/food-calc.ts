@@ -139,6 +139,13 @@ export function recipeNutrition(
       estimated: true,
       ingredients: [],
     };
+  if (recipe.unmeasured)
+    return {
+      macros: {},
+      missing: ['Unmeasured meal — add quantities for nutrition'],
+      estimated: false,
+      ingredients: [],
+    };
   const scale = servings / recipe.servings;
   const ingredients = recipe.ingredients.map((i) => ({ ...i, quantity: i.quantity * scale }));
   const parts = ingredients.map((i) =>
@@ -213,7 +220,24 @@ export function requirements(
     if (selection.batchId) continue; // Prepared portions already consumed the raw ingredients.
     const recipe = food.recipes.find((r) => r.id === selection.recipeId);
     if (!recipe) continue;
-    for (const line of recipe.ingredients) {
+    const lines = recipe.unmeasured
+      ? (recipe.composition ?? []).flatMap((line, i) =>
+          line.quantity !== undefined && line.unit
+            ? [
+                {
+                  id: String(i),
+                  ingredientId: line.ingredientId,
+                  quantity: line.quantity,
+                  unit: line.unit,
+                  state: line.state,
+                  optional: false,
+                  notes: line.guidance,
+                },
+              ]
+            : [],
+        )
+      : recipe.ingredients;
+    for (const line of lines) {
       if (!line.quantity) continue;
       const ingredient = food.ingredients.find((i) => i.id === line.ingredientId);
       const base = ingredient?.defaultUnit ?? line.unit;

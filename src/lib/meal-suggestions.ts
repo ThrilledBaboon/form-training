@@ -1,3 +1,4 @@
+import { activeFoodSchedule, mealIngredientIds } from './food-programmes';
 import { type FoodData, type Recipe, macroKeys } from './food-model';
 import {
   dailyMacros,
@@ -11,6 +12,7 @@ import {
 export type MealPriority = 'balanced' | 'macros' | 'stock' | 'quick' | 'cost';
 export type MealOptions = {
   priority?: MealPriority;
+  programmeId?: string;
   category?: Recipe['category'];
   maxMinutes?: number;
   maxCost?: number;
@@ -21,6 +23,9 @@ export function suggestMeals(food: FoodData, options: MealOptions = {}) {
   const date = options.date ?? foodDay(),
     logged = dailyMacros(food, date);
   const priority = options.priority ?? 'balanced';
+  const schedule = activeFoodSchedule(food, date);
+  const exclusions =
+    schedule && schedule.programmeId === options.programmeId ? schedule.exclusions : [];
   const needed = macroKeys.filter(
     (k) =>
       food.foodSettings.targets[k] !== undefined &&
@@ -32,7 +37,12 @@ export function suggestMeals(food: FoodData, options: MealOptions = {}) {
       (r) =>
         !r.archived &&
         !r.draft &&
-        r.ingredients.length > 0 &&
+        (r.ingredients.length > 0 || !!r.composition?.length) &&
+        (!options.programmeId ||
+          food.foodProgrammes
+            .find((p) => p.id === options.programmeId)
+            ?.rotation.some((row) => row.recipeIds.includes(r.id))) &&
+        !mealIngredientIds(r).some((id) => exclusions.includes(id)) &&
         (!options.category || r.category === options.category),
     )
     .map((recipe) => {
@@ -40,7 +50,7 @@ export function suggestMeals(food: FoodData, options: MealOptions = {}) {
         shortages = requirements(food, [{ recipeId: recipe.id, servings: 1, date }], date);
       // Zero is the legacy default for unrecorded prep/cook times.
       const minutes = recipe.prepMinutes + recipe.cookMinutes || undefined;
-      const available = shortages.length === 0;
+      const available = !recipe.unmeasured && shortages.length === 0;
       const expiring = [
         ...new Set(
           recipe.ingredients.flatMap((line) => {
@@ -89,9 +99,11 @@ export function suggestMeals(food: FoodData, options: MealOptions = {}) {
         costScore * weights[3] +
         (recipe.favourite ? 0.1 : 0);
       const reasons = [
-        available
-          ? 'Recorded kitchen stock covers one serving'
-          : `${shortages.length} ingredient shortage${shortages.length === 1 ? '' : 's'} for one serving`,
+        recipe.unmeasured
+          ? 'Unmeasured meal: stock coverage and full nutrition are unknown'
+          : available
+            ? 'Recorded kitchen stock covers one serving'
+            : `${shortages.length} ingredient shortage${shortages.length === 1 ? '' : 's'} for one serving`,
         ...(expiring.length
           ? ['Uses ingredients with recorded expiry in the next 3 days: ' + expiring.join(', ')]
           : []),

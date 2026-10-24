@@ -73,12 +73,36 @@ export const RecipeLineSchema = z.object({
   optional: z.boolean().default(false),
   notes: text.default(''),
 });
+export const mealRoles = ['protein', 'volume', 'fat', 'flavouring', 'other'] as const;
+export const CompositionLineSchema = z
+  .object({
+    ingredientId: id,
+    name: name.optional(),
+    role: z.enum(mealRoles),
+    quantity: positive.optional(),
+    unit: UnitSchema.optional(),
+    state: z.enum(['raw', 'cooked', 'as sold']).default('as sold'),
+    guidance: z.string().max(500).default(''),
+  })
+  .refine(
+    (line) => (line.quantity === undefined) === (line.unit === undefined),
+    'Supply both an amount and unit, or leave both blank',
+  );
+export type CompositionLine = z.infer<typeof CompositionLineSchema>;
 export const RecipeSchema = z.object({
   id,
   name,
   description: text.default(''),
   category: z.enum(mealSlots).default('Dinner'),
   servings: positive.max(10000),
+  unmeasured: z.boolean().optional(),
+  composition: z.array(CompositionLineSchema).max(100).optional(),
+  sourceUrl: z
+    .string()
+    .url()
+    .max(2000)
+    .refine((s) => /^https?:/.test(s), 'Use an http or https source')
+    .optional(),
   ingredients: z.array(RecipeLineSchema).max(500),
   steps: z.array(z.object({ id, text, imageId: id.optional() })).max(500),
   prepMinutes: n.max(10000).default(0),
@@ -98,6 +122,65 @@ export const RecipeSchema = z.object({
   createdAt: timestamp,
   updatedAt: timestamp,
 });
+export const FoodProgrammeSchema = z.object({
+  id,
+  name,
+  description: text.default(''),
+  sourceName: z.string().max(200).default(''),
+  sourceUrl: z
+    .string()
+    .max(2000)
+    .default('')
+    .refine((s) => !s || /^https?:\/\//.test(s), 'Use an http or https source'),
+  contentVersion: z.number().int().min(1).max(10000).default(1),
+  days: z.number().int().min(1).max(366).default(30),
+  cycleDays: z.number().int().min(1).max(28).default(7),
+  groups: z
+    .array(
+      z.object({
+        id,
+        name,
+        role: z.enum(mealRoles),
+        ingredientIds: z.array(id).max(200),
+        guidance: text.default(''),
+      }),
+    )
+    .max(30)
+    .default([]),
+  habits: z
+    .array(z.object({ id, name, notes: text.default('') }))
+    .max(20)
+    .default([]),
+  rotation: z
+    .array(
+      z.object({
+        day: z.number().int().min(0).max(27),
+        slot: z.enum(mealSlots),
+        recipeIds: z.array(id).min(1).max(100),
+      }),
+    )
+    .max(112)
+    .default([]),
+  archived: z.boolean().default(false),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+});
+export type FoodProgramme = z.infer<typeof FoodProgrammeSchema>;
+export const FoodScheduleSchema = z.object({
+  id,
+  programmeId: id,
+  snapshot: FoodProgrammeSchema,
+  start: foodDate,
+  days: z.number().int().min(1).max(366),
+  slots: z.array(z.enum(mealSlots)).min(1).max(4),
+  habits: z.array(id).max(20).default([]),
+  exclusions: z.array(id).max(200).default([]),
+  omitted: z.array(id).max(2000).default([]),
+  status: z.enum(['active', 'paused', 'completed']),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+});
+export type FoodSchedule = z.infer<typeof FoodScheduleSchema>;
 export const NutritionSnapshotSchema = z.object({
   macros: MacroSchema,
   missing: z.array(z.string().max(200)).max(1000),
@@ -116,6 +199,9 @@ export const FoodEntrySchema = z.object({
   name,
   recipeId: id.optional(),
   batchId: id.optional(),
+  unmeasured: z.boolean().optional(),
+  composition: z.array(CompositionLineSchema).max(100).optional(),
+  occurrenceId: id.optional(),
   servings: positive.max(10000),
   snapshot: NutritionSnapshotSchema,
   notes: text.default(''),
@@ -123,6 +209,8 @@ export const FoodEntrySchema = z.object({
 });
 export const MealPlanSchema = z.object({
   id,
+  scheduleId: id.optional(),
+  occurrenceId: id.optional(),
   date: foodDate,
   slot: z.enum(mealSlots),
   recipeId: id,
@@ -233,6 +321,10 @@ export const ShoppingItemSchema = z.object({
 });
 export const ShoppingListSchema = z.object({
   id,
+  checklist: z
+    .array(z.object({ id, ingredientId: id, name, checked: z.boolean(), notes: text.default('') }))
+    .max(1000)
+    .optional(),
   name,
   from: foodDate.optional(),
   to: foodDate.optional(),
@@ -291,7 +383,7 @@ export const FoodFileSchema = z
   );
 export const FoodDraftSchema = z.object({
   id,
-  kind: z.enum(['recipe', 'ingredient', 'purchase']),
+  kind: z.enum(['recipe', 'ingredient', 'purchase', 'bowl', 'food-programme']),
   json: z.string().max(20 * 1024 * 1024),
   updatedAt: timestamp,
 });
@@ -299,7 +391,22 @@ export const FoodDraftSchema = z.object({
 const draftMacros = z.object(
   Object.fromEntries(macroKeys.map((key) => [key, z.number().finite().optional()])),
 );
+const recipeEditorSchema = RecipeSchema.extend({
+  name: text,
+  servings: z.number().finite(),
+  sourceUrl: text.optional(),
+  ingredients: z
+    .array(RecipeLineSchema.extend({ ingredientId: text, quantity: z.number().finite() }))
+    .max(500),
+});
 const editorSchemas = {
+  bowl: recipeEditorSchema,
+  'food-programme': FoodProgrammeSchema.extend({
+    name: text,
+    sourceUrl: text,
+    days: z.number().finite(),
+    cycleDays: z.number().finite(),
+  }),
   ingredient: z.object({ ...IngredientSchema.shape, name: text, macros: draftMacros }),
   recipe: RecipeSchema.extend({
     name: text,
@@ -327,6 +434,8 @@ export function readFoodDraft(kind: keyof typeof editorSchemas, json: string): u
   }
 }
 export const foodSchemas = {
+  foodProgrammes: FoodProgrammeSchema,
+  foodSchedules: FoodScheduleSchema,
   ingredients: IngredientSchema,
   recipes: RecipeSchema,
   foodEntries: FoodEntrySchema,
@@ -341,6 +450,8 @@ export const foodSchemas = {
 } as const;
 export const foodTables = Object.keys(foodSchemas) as (keyof typeof foodSchemas)[];
 export const FoodDataSchema = z.object({
+  foodProgrammes: z.array(FoodProgrammeSchema).max(1000).default([]),
+  foodSchedules: z.array(FoodScheduleSchema).max(10000).default([]),
   ingredients: z.array(IngredientSchema).max(50000).default([]),
   recipes: z.array(RecipeSchema).max(50000).default([]),
   foodEntries: z.array(FoodEntrySchema).max(500000).default([]),
@@ -399,7 +510,95 @@ export function validateFood(data: FoodData) {
   const check = (ok: boolean, message: string) => {
     if (!ok) throw Error(message);
   };
+  const occurrenceIds = data.foodEntries.map((e) => e.occurrenceId).filter(Boolean);
+  check(new Set(occurrenceIds).size === occurrenceIds.length, 'Duplicate meal check-in.');
+  for (const programme of [...data.foodProgrammes, ...data.foodSchedules.map((s) => s.snapshot)]) {
+    check(
+      new Set(programme.rotation.map((r) => r.day + ':' + r.slot)).size ===
+        programme.rotation.length,
+      'Duplicate rotation slot.',
+    );
+    check(
+      new Set(programme.groups.map((g) => g.id)).size === programme.groups.length,
+      'Duplicate food group.',
+    );
+    check(
+      new Set(programme.habits.map((g) => g.id)).size === programme.habits.length,
+      'Duplicate programme habit.',
+    );
+    for (const row of programme.rotation) {
+      check(row.day < programme.cycleDays, 'Rotation day exceeds cycle length.');
+      check(new Set(row.recipeIds).size === row.recipeIds.length, 'Duplicate meal alternative.');
+      check(
+        row.recipeIds.every((id) => has('recipes', id)),
+        'Programme references a missing meal.',
+      );
+    }
+    check(
+      programme.groups.every((g) => g.ingredientIds.every((id) => has('ingredients', id))),
+      'Programme references a missing ingredient.',
+    );
+  }
+  const activeSchedules = data.foodSchedules.filter((s) => s.status === 'active');
+  const scheduleEnd = (s: FoodSchedule) => {
+    const d = new Date(s.start + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + s.days - 1);
+    return d.toISOString().slice(0, 10);
+  };
+  check(
+    !activeSchedules.some((a, i) =>
+      activeSchedules
+        .slice(i + 1)
+        .some((b) => a.start <= scheduleEnd(b) && b.start <= scheduleEnd(a)),
+    ),
+    'Active food programme schedules overlap.',
+  );
+  for (const schedule of data.foodSchedules) {
+    check(new Set(schedule.slots).size === schedule.slots.length, 'Duplicate schedule meal slot.');
+    check(
+      schedule.habits.every((id) => schedule.snapshot.habits.some((h) => h.id === id)),
+      'Unknown schedule reminder.',
+    );
+    check(has('foodProgrammes', schedule.programmeId), 'Schedule references a missing programme.');
+    check(
+      schedule.snapshot.id === schedule.programmeId,
+      'Schedule snapshot belongs to another programme.',
+    );
+    check(
+      schedule.exclusions.every((id) => has('ingredients', id)),
+      'Schedule exclusion is missing.',
+    );
+  }
+  for (const entry of [...data.foodEntries, ...data.mealPlans]) {
+    if ('scheduleId' in entry)
+      check(has('foodSchedules', entry.scheduleId), 'Meal schedule is missing.');
+    if ('composition' in entry)
+      check(
+        (entry.composition ?? []).every((line) => has('ingredients', line.ingredientId)),
+        'Meal composition ingredient is missing.',
+      );
+    if ('unmeasured' in entry && entry.unmeasured && 'snapshot' in entry)
+      check(
+        !entry.batchId &&
+          entry.snapshot.cost === undefined &&
+          Object.values(entry.snapshot.macros).every((v) => v === undefined),
+        'Unmeasured intake cannot have measured nutrition or prepared portions.',
+      );
+  }
+  for (const list of data.shoppingLists)
+    check(
+      (list.checklist ?? []).every((i) => has('ingredients', i.ingredientId)),
+      'Shopping checklist ingredient is missing.',
+    );
   for (const recipe of data.recipes) {
+    check(
+      (recipe.composition ?? []).every((line) => has('ingredients', line.ingredientId)),
+      'Recipe composition ingredient is missing.',
+    );
+    check(
+      !recipe.unmeasured || (!recipe.ingredients.length && !!recipe.composition?.length),
+      'Unmeasured meals need a composition instead of guessed recipe quantities.',
+    );
     check(
       new Set(recipe.ingredients.map((i) => i.id)).size === recipe.ingredients.length,
       'Duplicate recipe line.',

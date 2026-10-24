@@ -28,12 +28,12 @@ import {
 } from './model';
 export const BackupSchema = z.object({
   app: z.literal('FORM'),
-  schemaVersion: z.literal(6),
+  schemaVersion: z.literal(7),
   exportedAt: z.string().datetime({ offset: true }),
   manifest: z
     .object({
       format: z.enum(['FORM complete backup', 'FORM category export']),
-      version: z.literal(6),
+      version: z.literal(7),
       categories: z.array(z.string()),
       requested: z.array(z.string()).optional(),
       attachments: z.number().int().nonnegative(),
@@ -77,12 +77,12 @@ export function serialise(data: Data) {
   const output = JSON.stringify(
     {
       app: 'FORM',
-      schemaVersion: 6,
+      schemaVersion: 7,
       exportedAt: now(),
       scope: 'complete',
       manifest: {
         format: 'FORM complete backup',
-        version: 6,
+        version: 7,
         categories: [
           'rocket-league',
           'football',
@@ -178,11 +178,24 @@ export function parseBackup(input: string): Backup {
       data: { ...old.data, practice: [] },
     };
   }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'schemaVersion' in value &&
+    value.schemaVersion === 6
+  ) {
+    const old = value as { manifest?: object };
+    value = {
+      ...value,
+      schemaVersion: 7,
+      manifest: old.manifest ? { ...old.manifest, version: 7 } : undefined,
+    };
+  }
   const parsed = BackupSchema.safeParse(value);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw Error(
-      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2, 3, 4, 5 or 6 backup.`,
+      `Invalid backup at ${issue.path.join('.')}: ${issue.code === 'unrecognized_keys' ? 'Unsupported fields in this record' : issue.message}. Expected a FORM schema version 2, 3, 4, 5, 6 or 7 backup.`,
     );
   }
   const b = parsed.data;
