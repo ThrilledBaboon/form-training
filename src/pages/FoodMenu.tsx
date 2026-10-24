@@ -1,3 +1,4 @@
+import { MealComposition, ProgrammeMealEditor } from './FoodProgrammes';
 import { useRef, useState } from 'react';
 import {
   Plus,
@@ -486,6 +487,26 @@ function RecipeDetails({
     servings,
   );
   const substituted = JSON.stringify(preview.ingredients) !== JSON.stringify(recipe.ingredients);
+  if (recipe.unmeasured)
+    return (
+      <Modal title={recipe.name} onClose={onClose} wide>
+        <FoodImage id={recipe.imageId} alt={recipe.name} className="food-detail-image" />
+        <MealComposition recipe={recipe} />
+        <div className="modal-actions">
+          <Button variant="secondary" onClick={onEdit}>
+            Edit bowl
+          </Button>
+          <Button
+            onClick={() => {
+              onClose();
+              go('food-planner?recipe=' + encodeURIComponent(recipe.id));
+            }}
+          >
+            Plan this meal
+          </Button>
+        </div>
+      </Modal>
+    );
   return (
     <Modal title={recipe.name} onClose={onClose} wide>
       <FoodImage id={recipe.imageId} alt={recipe.name} className="food-detail-image" />
@@ -734,7 +755,8 @@ export function FoodMenu() {
         (!favourites || r.favourite) &&
         (!available || (!missing.length && r.ingredients.some((i) => i.quantity > 0))) &&
         (!useSoon || r.ingredients.some((i) => soonIds.has(i.ingredientId))) &&
-        (!time || r.prepMinutes + r.cookMinutes <= Number(time)) &&
+        (!time ||
+          (r.prepMinutes + r.cookMinutes > 0 && r.prepMinutes + r.cookMinutes <= Number(time))) &&
         (!protein || (n.macros.protein !== undefined && n.macros.protein >= Number(protein))) &&
         (!carbs || (n.macros.carbs !== undefined && n.macros.carbs <= Number(carbs))) &&
         (!fat || (n.macros.fat !== undefined && n.macros.fat <= Number(fat))) &&
@@ -744,7 +766,7 @@ export function FoodMenu() {
         (!dietary || r.dietary.some((s) => s.toLowerCase().includes(dietary.toLowerCase()))) &&
         [
           r.name,
-          ...r.ingredients.map(
+          ...[...r.ingredients, ...(r.composition ?? [])].map(
             (l) => food.ingredients.find((i) => i.id === l.ingredientId)?.name ?? '',
           ),
         ].some((s) => s.toLowerCase().includes(search.toLowerCase())),
@@ -755,13 +777,13 @@ export function FoodMenu() {
         : sort === 'cost'
           ? (a.nutrition.cost ?? Infinity) - (b.nutrition.cost ?? Infinity)
           : sort === 'time'
-            ? a.recipe.prepMinutes +
-              a.recipe.cookMinutes -
-              (b.recipe.prepMinutes + b.recipe.cookMinutes)
+            ? (a.recipe.prepMinutes + a.recipe.cookMinutes || Infinity) -
+              (b.recipe.prepMinutes + b.recipe.cookMinutes || Infinity)
             : sort === 'rating'
               ? b.recipe.rating - a.recipe.rating
               : sort === 'stock'
-                ? a.missing.length - b.missing.length
+                ? Number(!!a.recipe.unmeasured) - Number(!!b.recipe.unmeasured) ||
+                  a.missing.length - b.missing.length
                 : a.recipe.name.localeCompare(b.recipe.name),
     );
   const selected = food.recipes.find((r) => r.id === detail);
@@ -915,8 +937,10 @@ export function FoodMenu() {
               </div>
               <p>{r.description || 'Your own recipe, ready to make your own.'}</p>
               <p className="small-text muted">
-                {r.prepMinutes + r.cookMinutes} min · {r.difficulty} ·{' '}
-                {money(n.cost, food.foodSettings.currency)} / serving
+                {r.prepMinutes + r.cookMinutes
+                  ? r.prepMinutes + r.cookMinutes + ' min'
+                  : 'Time unrecorded'}{' '}
+                · {r.difficulty} · {money(n.cost, food.foodSettings.currency)} / serving
               </p>
               <MacroSummary macros={n.macros} compact />
               <p className="recipe-stock">
@@ -970,7 +994,10 @@ export function FoodMenu() {
             : 'Your menu starts here. Add ingredients from your labels, then create your first recipe.'}
         </FoodEmpty>
       )}
-      {edit !== undefined && (
+      {edit?.composition && (
+        <ProgrammeMealEditor initial={edit} onClose={() => setEdit(undefined)} />
+      )}
+      {edit !== undefined && !edit?.composition && (
         <RecipeEditor initial={edit ?? undefined} onClose={() => setEdit(undefined)} />
       )}{' '}
       {selected && (

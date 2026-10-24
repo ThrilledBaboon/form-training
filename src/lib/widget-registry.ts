@@ -16,6 +16,13 @@ import {
 
 export const WIDGETS = [
   [
+    'food-programme',
+    'Food programme',
+    'Planned programme meals, quick check-ins and optional reminders.',
+    'food',
+    'today',
+  ],
+  [
     'football-streak',
     'Football streak',
     'Practice days and an independent protected rest bank.',
@@ -467,6 +474,7 @@ export function widgetDestination(w: Widget) {
     sessions: 'history',
     routines: 'routines',
     setups: 'setups',
+    'food-programme': 'food-programmes',
     'suggest-meal': 'food-suggest',
     macros: 'food-diary',
     'macro-trend': 'food-diary',

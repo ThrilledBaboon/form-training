@@ -4,6 +4,12 @@ Open **Food** in the sidebar, **More** on a phone, or the food links on Overview
 Ingredients, recipes, stock, purchases and meals start empty. Existing training history,
 routines, streaks and bodyweight records remain in the same database.
 
+## Food programmes
+
+Open **Food → Programmes** for the optional filling-bowl starter, editable rotations, bowl
+builder, quick unmeasured check-ins and programme sharing. See the [programme guide](FOOD-PROGRAMMES.md)
+for activation, swaps, shopping checklists, widgets and backup compatibility.
+
 ## Get started
 
 1. **Ingredients → Add ingredient**: enter the food state and macros per 100 g or 100 ml.

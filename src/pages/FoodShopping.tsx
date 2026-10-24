@@ -669,9 +669,12 @@ export function FoodShopping() {
                   }
                 />
                 <p className="small-text muted">
-                  Estimated checkout cost: {money(total, food.foodSettings.currency)}. Generated
-                  quantities round shortages to your recorded package sizes. Unknown prices stay
-                  unknown.
+                  Estimated checkout cost:{' '}
+                  {list.checklist?.length
+                    ? 'Incomplete — unmeasured ingredients'
+                    : money(total, food.foodSettings.currency)}
+                  . Generated quantities round shortages to your recorded package sizes. Unknown
+                  prices stay unknown.
                 </p>
                 {[
                   ...new Set(
@@ -756,7 +759,42 @@ export function FoodShopping() {
                         ))}
                     </div>
                   ))}
-                {!list.items.length && (
+                {!!list.checklist?.length && (
+                  <div>
+                    <h3>Unmeasured ingredients — review quantities</h3>
+                    <p className="small-text muted">
+                      These meals need quantities before stock or full shopping cost can be
+                      estimated. A tick is a checklist action; it does not receive stock.
+                    </p>
+                    {list.checklist.map((row) => (
+                      <label className="check-label" key={row.id}>
+                        <input
+                          type="checkbox"
+                          checked={row.checked}
+                          onChange={() =>
+                            void run(async () => {
+                              await db.transaction('rw', db.shoppingLists, async () => {
+                                const current = await db.shoppingLists.get(list.id);
+                                if (current)
+                                  await saveShoppingList({
+                                    ...current,
+                                    checklist: current.checklist?.map((i) =>
+                                      i.id === row.id ? { ...i, checked: !i.checked } : i,
+                                    ),
+                                  });
+                              });
+                            })
+                          }
+                        />
+                        <span>
+                          {row.name}
+                          <small>{row.notes}</small>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {!list.items.length && !list.checklist?.length && (
                   <p className="muted">
                     No shopping items. Your plan may already be covered by stock; you can add manual
                     entries.

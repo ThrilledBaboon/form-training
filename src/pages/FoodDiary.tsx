@@ -1,3 +1,4 @@
+import { ProgrammeCheckIn } from './FoodProgrammes';
 import { AddToPage } from '../components/WorkspaceControls';
 import { useId, useState } from 'react';
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -104,7 +105,16 @@ export function FoodEntryEditor({
               recipeId:
                 mode === 'manual' ? undefined : mode === 'batch' ? selectedBatch!.recipeId : recipe,
               batchId: mode === 'batch' ? batch : undefined,
-              servings,
+              servings: mode === 'recipe' && selectedRecipe?.unmeasured ? 1 : servings,
+              unmeasured: mode === 'recipe' && !!selectedRecipe?.unmeasured,
+              composition:
+                mode === 'recipe'
+                  ? selectedRecipe?.composition?.map((line) => ({
+                      ...line,
+                      name:
+                        food.ingredients.find((i) => i.id === line.ingredientId)?.name ?? line.name,
+                    }))
+                  : undefined,
               snapshot: structuredClone(snapshot),
               notes,
               createdAt: initial?.createdAt ?? now(),
@@ -190,16 +200,18 @@ export function FoodEntryEditor({
               ))}
             </select>
           </Field>
-          <Field label="Servings eaten">
-            <input
-              type="number"
-              min={0.01}
-              step="any"
-              required
-              value={servings}
-              onChange={(e) => setServings(Number(e.target.value))}
-            />
-          </Field>
+          {!(mode === 'recipe' && selectedRecipe?.unmeasured) && (
+            <Field label="Servings eaten">
+              <input
+                type="number"
+                min={0.01}
+                step="any"
+                required
+                value={servings}
+                onChange={(e) => setServings(Number(e.target.value))}
+              />
+            </Field>
+          )}
         </div>
         <Field label="Meal notes">
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -314,11 +326,20 @@ export function MacroProgress({ date }: { date: string }) {
   const { data } = useApp();
   const display = personalisation(data.settings);
   const totals = dailyMacros(food, date);
+  const unmeasured = food.foodEntries.filter(
+    (entry) => entry.date === date && entry.unmeasured,
+  ).length;
   const id = useId();
   const energy = dailyEnergy(food, date);
   return (
     <>
       <MacroSummary macros={totals} targets={food.foodSettings.targets} />
+      {unmeasured > 0 && (
+        <p className="small-text muted">
+          {unmeasured} unmeasured {unmeasured === 1 ? 'meal' : 'meals'} recorded. Macro totals are
+          incomplete.
+        </p>
+      )}
       {food.foodSettings.showCalories && (
         <>
           {energy.missing > 0 && (
@@ -446,7 +467,9 @@ export function FoodDiary() {
                     <div>
                       <h3>{entry.name}</h3>
                       <p className="small-text muted">
-                        {foodNumber(entry.servings)} servings
+                        {entry.unmeasured
+                          ? 'Unmeasured meal'
+                          : foodNumber(entry.servings) + ' servings'}
                         {entry.batchId ? ' · Prepared portions' : ''}
                       </p>
                     </div>
@@ -480,6 +503,18 @@ export function FoodDiary() {
                     macros={scaleMacros(entry.snapshot.macros, entry.servings)}
                     compact
                   />
+                  {entry.composition && (
+                    <p className="small-text muted">
+                      {entry.composition
+                        .map(
+                          (line) =>
+                            line.name ??
+                            food.ingredients.find((i) => i.id === line.ingredientId)?.name,
+                        )
+                        .filter(Boolean)
+                        .join(', ')}
+                    </p>
+                  )}
                   <p>{entry.notes}</p>
                   <NutritionNote {...entry.snapshot} />
                 </div>
@@ -513,7 +548,13 @@ export function FoodDiary() {
                 if (!confirm(`Copy ${entries.length} entries to ${date}?`)) return;
                 await db.transaction('rw', db.tables, async () => {
                   for (const entry of entries)
-                    await saveFoodEntry({ ...entry, id: uid(), date, createdAt: now() });
+                    await saveFoodEntry({
+                      ...entry,
+                      id: uid(),
+                      date,
+                      occurrenceId: undefined,
+                      createdAt: now(),
+                    });
                 });
               }, 'Meals copied')
             }
@@ -566,7 +607,23 @@ export function FoodDiary() {
           </table>
         </div>
       </Card>
-      {editor !== undefined && (
+      {editor?.occurrenceId && (
+        <ProgrammeCheckIn
+          plan={{
+            id: editor.occurrenceId,
+            occurrenceId: editor.occurrenceId,
+            recipeId: editor.recipeId!,
+            date: editor.date,
+            slot: editor.slot,
+            servings: 1,
+            notes: '',
+            createdAt: editor.createdAt,
+          }}
+          entry={editor}
+          onClose={() => setEditor(undefined)}
+        />
+      )}
+      {editor !== undefined && !editor?.occurrenceId && (
         <FoodEntryEditor
           initial={editor ?? undefined}
           date={date}

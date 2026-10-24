@@ -269,6 +269,7 @@ export function systemHomePage(system: System): WorkspacePage {
             'setups',
           ]
         : [
+            'food-programme',
             'macros',
             'suggest-meal',
             'meal-plan',

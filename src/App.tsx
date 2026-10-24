@@ -51,6 +51,7 @@ import { Progress, Records } from './pages/Progress';
 import { Muscles } from './pages/Muscles';
 import { Calendar } from './pages/Calendar';
 import { Weight } from './pages/Weight';
+import { FoodProgrammes } from './pages/FoodProgrammes';
 import { FoodMenu } from './pages/FoodMenu';
 import { FoodIngredients } from './pages/FoodIngredients';
 import { FoodDiary } from './pages/FoodDiary';
@@ -120,6 +121,7 @@ const navigation = [
     label: 'FOOD',
     items: [
       ['food-home', 'Food overview', Utensils],
+      ['food-programmes', 'Food programmes', BookOpen],
       ['food-menu', 'Menu & recipes', Utensils],
       ['food-suggest', 'Suggest a meal', Utensils],
       ['food-diary', 'Food diary', BookOpen],
@@ -424,6 +426,9 @@ export default function App() {
       break;
     case 'food-suggest':
       page = <MealSuggestions />;
+      break;
+    case 'food-programmes':
+      page = <FoodProgrammes key={hash} />;
       break;
     case 'food-menu':
       page = <FoodMenu key={hash} />;

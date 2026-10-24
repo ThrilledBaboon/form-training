@@ -12,6 +12,7 @@ For a format that does not fit the available templates, expand **Import or expor
 
 ## Other Get prompt buttons
 
+- **Food → Programmes → Get prompt**: reusable programme-library version 1, including optional amounts, food groups, rotations, meals, source information and resolving dependencies. No personal schedules or completed eating history.
 - Gym **Import to library**: exercises, routines and programmes, with relationship and unit rules.
 - Football and Rocket League **Drills & routines**: practice library files for that system.
 - **Page options** beside Import layout: portable page layouts and the supported widget catalogue.

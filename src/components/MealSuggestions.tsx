@@ -1,3 +1,4 @@
+import { activeFoodSchedule } from '../lib/food-programmes';
 import { useState } from 'react';
 import { useFood, MacroSummary } from './FoodUI';
 import { suggestMeals, type MealPriority } from '../lib/meal-suggestions';
@@ -9,12 +10,14 @@ import { Button, Card, Empty, Field, Modal, PageTitle } from './ui';
 export function MealSuggestions({ onClose }: { onClose?: () => void }) {
   const food = useFood();
   const Heading = onClose ? 'h3' : 'h2';
+  const [programmeId, setProgrammeId] = useState(() => activeFoodSchedule(food)?.programmeId ?? '');
   const [priority, setPriority] = useState<MealPriority>('balanced'),
     [category, setCategory] = useState('');
   const [maxMinutes, setMaxMinutes] = useState(''),
     [maxCost, setMaxCost] = useState('');
   const [action, setAction] = useState<{ type: 'plan' | 'log'; recipe: Recipe }>();
   const rows = suggestMeals(food, {
+    programmeId: programmeId || undefined,
     priority,
     category: category ? (category as Recipe['category']) : undefined,
     maxMinutes: maxMinutes ? +maxMinutes : undefined,
@@ -44,6 +47,18 @@ export function MealSuggestions({ onClose }: { onClose?: () => void }) {
         your saved gram goals. Planned meals are not counted as eaten.
       </p>
       <div className="form-grid">
+        <Field label="Meal collection">
+          <select value={programmeId} onChange={(e) => setProgrammeId(e.target.value)}>
+            <option value="">All saved recipes & meals</option>
+            {food.foodProgrammes
+              .filter((p) => !p.archived)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </Field>
         <Field label="Meal priority">
           <select value={priority} onChange={(e) => setPriority(e.target.value as MealPriority)}>
             <option value="balanced">Balanced</option>

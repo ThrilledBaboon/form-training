@@ -1,3 +1,4 @@
+import { ProgrammeCheckIn } from './FoodProgrammes';
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp, go } from '../lib/context';
@@ -69,7 +70,14 @@ export function PlanEditor({
               await saveMealPlan(value);
               for (const date of copies)
                 if (date !== value.date)
-                  await saveMealPlan({ ...value, id: uid(), date, createdAt: now() });
+                  await saveMealPlan({
+                    ...value,
+                    id: uid(),
+                    date,
+                    occurrenceId: undefined,
+                    scheduleId: undefined,
+                    createdAt: now(),
+                  });
             });
             onClose();
           }, 'Meal plan saved; linked shopping lists recalculated');
@@ -91,21 +99,23 @@ export function PlanEditor({
               ))}
           </select>
         </Field>
-        <Field label="Use prepared leftovers (optional)">
-          <select
-            value={value.batchId ?? ''}
-            onChange={(e) => patch({ batchId: e.target.value || undefined })}
-          >
-            <option value="">Cook from ingredients</option>
-            {food.batches
-              .filter((b) => b.recipeId === value.recipeId && b.remaining > 0)
-              .map((b) => (
-                <option value={b.id} key={b.id}>
-                  {b.name} · {foodNumber(b.remaining)} remaining · {b.prepared}
-                </option>
-              ))}
-          </select>
-        </Field>
+        {!food.recipes.find((r) => r.id === value.recipeId)?.unmeasured && (
+          <Field label="Use prepared leftovers (optional)">
+            <select
+              value={value.batchId ?? ''}
+              onChange={(e) => patch({ batchId: e.target.value || undefined })}
+            >
+              <option value="">Cook from ingredients</option>
+              {food.batches
+                .filter((b) => b.recipeId === value.recipeId && b.remaining > 0)
+                .map((b) => (
+                  <option value={b.id} key={b.id}>
+                    {b.name} · {foodNumber(b.remaining)} remaining · {b.prepared}
+                  </option>
+                ))}
+            </select>
+          </Field>
+        )}
         <div className="form-grid">
           <Field label="Planned date">
             <input
@@ -125,16 +135,18 @@ export function PlanEditor({
               ))}
             </select>
           </Field>
-          <Field label="Planned servings">
-            <input
-              type="number"
-              min={0.01}
-              step="any"
-              required
-              value={value.servings}
-              onChange={(e) => patch({ servings: Number(e.target.value) })}
-            />
-          </Field>
+          {!food.recipes.find((r) => r.id === value.recipeId)?.unmeasured && (
+            <Field label="Planned servings">
+              <input
+                type="number"
+                min={0.01}
+                step="any"
+                required
+                value={value.servings}
+                onChange={(e) => patch({ servings: Number(e.target.value) })}
+              />
+            </Field>
+          )}
         </div>
         <Field label="Plan notes">
           <textarea value={value.notes} onChange={(e) => patch({ notes: e.target.value })} />
@@ -323,7 +335,11 @@ export function FoodPlanner() {
                     <span className="eyebrow">{p.slot}</span>
                     <h3>{recipe?.name}</h3>
                     <p>
-                      {foodNumber(p.servings)} servings{p.batchId ? ' · Prepared leftovers' : ''}
+                      {recipe?.unmeasured
+                        ? 'Unmeasured meal'
+                        : foodNumber(p.servings) + ' servings'}
+                      {p.scheduleId ? ' · Programme' : ''}
+                      {p.batchId ? ' · Prepared leftovers' : ''}
                     </p>
                     <MacroSummary macros={nutrition.macros} compact />
                     <p className="small-text muted">
@@ -397,7 +413,8 @@ export function FoodPlanner() {
           onClose={() => setEditor(undefined)}
         />
       )}{' '}
-      {log && (
+      {log?.scheduleId && <ProgrammeCheckIn plan={log} onClose={() => setLog(undefined)} />}
+      {log && !log.scheduleId && (
         <FoodEntryEditor
           date={log.date}
           recipeId={log.recipeId}

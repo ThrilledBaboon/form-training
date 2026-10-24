@@ -7,7 +7,7 @@
 3. Check your browser's download completed and keep the JSON file outside browser storage, for example in your normal backed-up documents folder.
 4. Repeat regularly and before changing browser/device/site address or installing updates.
 
-The app can start a download, but cannot verify that a file was actually retained on your disk. It therefore labels the timestamp **last file export requested**. Schema 5 includes all gym/climbing/food records, preferences, timers, editor drafts and supported receipt/recipe/step images as embedded base64 data. A manifest records version, timestamp, categories and attachment count. Local recovery snapshots are not recursively included. CSV is for analysis and does not restore the complete database.
+The app can start a download, but cannot verify that a file was actually retained on your disk. It therefore labels the timestamp **last file export requested**. Schema 7 includes all gym/climbing/practice/food records, preferences, timers, editor drafts and supported receipt/recipe/step images as embedded base64 data. A manifest records version, timestamp, categories and attachment count. Local recovery snapshots are not recursively included. CSV is for analysis and does not restore the complete database.
 
 Your workouts belong to the browser origin: scheme + hostname + port. Development (`127.0.0.1:5173`), production preview (`127.0.0.1:4173`), `localhost`, GitHub Pages and another browser/device do not automatically share history. A GitHub push transfers source code only. Export locally and import on the hosted site when you move.
 
@@ -26,11 +26,13 @@ Invalid JSON, unsupported schemas, duplicate IDs/mappings, invalid fields and br
 
 ## Supported versions
 
+Schemas 2–6 remain supported. Schema 7 adds food programme definitions, schedule snapshots, unmeasured meal records and editor drafts; old files initialise empty programme arrays. Older app versions cannot read schema 7. Food programme library sharing uses its own version 1 format and excludes private schedules/history. See [food programmes](FOOD-PROGRAMMES.md).
+
 Schema 2 gym backups remain supported; their missing food tables are initialised in memory. A merge preserves existing food data. Unsupported versions, missing referenced food records/files and attachment-count mismatches are rejected before writes. The retired optional workout nutrition metric is deliberately omitted from all new exports.
 
 ## Category files
 
-In **Choose categories to export**, select gym history, exercises, routines, programmes, plans, bodyweight, recipes, ingredients, diary, meal plans, stock/movements, shopping, purchases/prices, attachments/drafts or preferences. The JSON includes dependencies needed to reconnect selected records. Import through **Import selected categories** or the regular backup picker. Review per-table counts and duplicate IDs before confirming.
+In **Choose categories to export**, select gym history, exercises, routines, programmes, plans, bodyweight, recipes, ingredients, diary, meal plans, food programme libraries, personal food programmes/check-ins, stock/movements, shopping, purchases/prices, attachments/drafts or preferences. The JSON includes dependencies needed to reconnect selected records. Import through **Import selected categories** or the regular backup picker. Review per-table counts and duplicate IDs before confirming.
 
 Category imports merge only. Existing IDs keep local values; there is no silent overwrite. Preferences, budgets, targets and timer restore only when their checkbox is explicitly selected. A conflicting relationship rejects the whole import. Quick export buttons create workout, food or financial category files. Arbitrary third-party CSV field mapping is not implemented; CSV reports are for analysis, while FORM JSON is the supported restorable format.
 

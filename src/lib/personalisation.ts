@@ -22,6 +22,7 @@ export const destinations = [
   ['climbing-library', 'Climb library'],
   ['climbing-projects', 'Climbing projects'],
   ['food-home', 'Food overview'],
+  ['food-programmes', 'Food programmes'],
   ['food-menu', 'Menu & recipes'],
   ['food-suggest', 'Suggest a meal'],
   ['food-diary', 'Food diary'],

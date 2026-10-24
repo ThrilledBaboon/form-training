@@ -631,15 +631,16 @@ export function WidgetEditor({
             </select>
           </Field>
         )}
-        {meta?.[4] === 'today' && ['macros', 'meal-plan', 'expiry'].includes(draft.type) && (
-          <Field label="Specific date (blank follows today)">
-            <input
-              type="date"
-              value={c.date ?? ''}
-              onChange={(e) => patch({ date: e.target.value || undefined })}
-            />
-          </Field>
-        )}
+        {meta?.[4] === 'today' &&
+          ['macros', 'meal-plan', 'food-programme', 'expiry'].includes(draft.type) && (
+            <Field label="Specific date (blank follows today)">
+              <input
+                type="date"
+                value={c.date ?? ''}
+                onChange={(e) => patch({ date: e.target.value || undefined })}
+              />
+            </Field>
+          )}
         {meta?.[4] === 'range' && (
           <>
             <label className="check-label">

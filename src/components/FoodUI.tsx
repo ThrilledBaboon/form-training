@@ -23,6 +23,7 @@ import { Button, Field, Modal } from './ui';
 export const useFood = () => useApp().data.food ?? emptyFood;
 export const foodLinks = [
   ['food-home', 'Overview'],
+  ['food-programmes', 'Programmes'],
   ['food-menu', 'Menu'],
   ['food-diary', 'Food diary'],
   ['food-kitchen', 'Kitchen'],

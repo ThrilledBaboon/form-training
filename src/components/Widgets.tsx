@@ -1,3 +1,6 @@
+const ProgrammeDay = lazy(() =>
+  import('../pages/FoodProgrammes').then((m) => ({ default: m.ProgrammeDay })),
+);
 const PracticeWidget = lazy(() =>
   import('./PracticeWidgets').then((m) => ({ default: m.PracticeWidget })),
 );
@@ -121,6 +124,12 @@ export function WidgetContent({
     </Empty>
   );
   const exercise = data.exercises.find((e) => e.id === c.exerciseId);
+  if (w.type === 'food-programme')
+    return (
+      <Suspense fallback={<p>Loading programme…</p>}>
+        <ProgrammeDay date={today} compact />
+      </Suspense>
+    );
   if (w.type === 'personal-goal')
     return (
       <>
