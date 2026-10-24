@@ -121,7 +121,8 @@ programmes and drafts. Category export offers **Food programme library** and **P
 programmes & check-ins** with required dependencies. Category files merge; complete replacement
 uses the existing transactional recovery snapshot. Versions 2–6 remain readable with missing
 programme arrays initialised empty. Older applications reject version 7; keep the app updated
-when transferring a new backup. Sharing a programme does not transfer personal history.
+when transferring a new backup. Sharing a programme does not transfer personal history. Diary and meal-plan CSV reports mark
+unmeasured rows explicitly and leave their servings blank; JSON retains its internal record multiplier.
 
 ## Starter sources and interpretation
 

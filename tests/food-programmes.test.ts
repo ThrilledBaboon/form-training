@@ -30,7 +30,7 @@ import {
   removeFoodEntry,
 } from '../src/lib/food-actions';
 import { serialise, parseBackup, importBackup } from '../src/lib/backup';
-import { categoryExport } from '../src/lib/category-backup';
+import { categoryExport, foodCsv } from '../src/lib/category-backup';
 import { getImportPrompt } from '../src/lib/import-prompts';
 import { foodFixture } from './food-fixture';
 import { suggestMeals } from '../src/lib/meal-suggestions';
@@ -112,6 +112,9 @@ describe('food programmes and unmeasured meals', () => {
     await startFoodSchedule(schedule(), database);
     expect((await food()).mealPlans).toHaveLength(90);
     const plan = (await food()).mealPlans.find((p) => p.scheduleId)!;
+    await expect(saveMealPlan({ ...plan, id: 'duplicate-occurrence' }, database)).rejects.toThrow(
+      'already planned',
+    );
     await saveMealPlan({ ...plan, recipeId: library.recipes[0].id }, database);
     expect(await fillFoodSchedule('schedule-test', undefined, database)).toBe(0);
     expect((await database.mealPlans.get(plan.id))?.recipeId).toBe(library.recipes[0].id);
@@ -143,6 +146,9 @@ describe('food programmes and unmeasured meals', () => {
     let data = await food();
     expect(data.foodEntries).toHaveLength(1);
     expect(data.foodEntries[0].unmeasured).toBe(true);
+    expect(foodCsv(data, 'diary').split('\r\n')[1].split('","')[4]).toBe('');
+    expect(foodCsv(data, 'diary')).toContain('"unmeasured"');
+    expect(foodCsv(data, 'mealPlans').split('\r\n')[1].split('","')[5]).toBe('');
     expect(dailyMacros(data, foodDay()).protein).toBeUndefined();
     expect(data.movements).toEqual([]);
     const composition = data.foodEntries[0].composition;
@@ -342,6 +348,14 @@ describe('food programmes and unmeasured meals', () => {
     await checkInMeal((await food()).mealPlans[0], {}, database);
     const data = await readData(database);
     const full = parseBackup(serialise(data));
+    const duplicate = structuredClone(full);
+    duplicate.data.food.mealPlans.push({
+      ...duplicate.data.food.mealPlans[0],
+      id: 'duplicate-plan',
+    });
+    expect(() => parseBackup(JSON.stringify(duplicate))).toThrow(
+      'Duplicate planned programme meal',
+    );
     expect(full.schemaVersion).toBe(7);
     expect(full.data.food.foodSchedules).toHaveLength(1);
     expect(full.data.food.foodEntries).toHaveLength(1);

@@ -177,7 +177,7 @@ test('shared Overview stays outside Train, and each system home saves its own la
   await route(page, 'food-home');
   await expect(page.getByRole('heading', { name: 'Food overview', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Daily macros', exact: true })).toBeVisible();
-  await expect(page.locator('.workspace-widget')).toHaveCount(10);
+  await expect(page.locator('.workspace-widget')).toHaveCount(11);
   await route(page, 'today');
   await expect(page.locator('.workspace-widget')).toHaveCount(10);
   await route(page, 'settings');

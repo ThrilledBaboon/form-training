@@ -372,6 +372,13 @@ export async function wasteBatch(id: string, quantity: number, notes: string, da
 export async function saveMealPlan(value: MealPlan, database = db) {
   const plan = MealPlanSchema.parse(value);
   await database.transaction('rw', database.tables, async () => {
+    if (
+      plan.occurrenceId &&
+      (await database.mealPlans.toArray()).some(
+        (p) => p.id !== plan.id && p.occurrenceId === plan.occurrenceId,
+      )
+    )
+      throw Error('This programme meal is already planned. Edit its existing occurrence.');
     if (!(await database.recipes.get(plan.recipeId))) throw Error('Choose a recipe.');
     if (plan.batchId) {
       const batch = await database.batches.get(plan.batchId);

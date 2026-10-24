@@ -512,6 +512,11 @@ export function validateFood(data: FoodData) {
   };
   const occurrenceIds = data.foodEntries.map((e) => e.occurrenceId).filter(Boolean);
   check(new Set(occurrenceIds).size === occurrenceIds.length, 'Duplicate meal check-in.');
+  const plannedOccurrences = data.mealPlans.map((p) => p.occurrenceId).filter(Boolean);
+  check(
+    new Set(plannedOccurrences).size === plannedOccurrences.length,
+    'Duplicate planned programme meal.',
+  );
   for (const programme of [...data.foodProgrammes, ...data.foodSchedules.map((s) => s.snapshot)]) {
     check(
       new Set(programme.rotation.map((r) => r.day + ':' + r.slot)).size ===

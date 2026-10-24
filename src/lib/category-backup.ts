@@ -327,19 +327,21 @@ export function foodCsv(food: FoodData, kind: FoodCsvKind): string {
           'recipe_id',
           'batch_id',
           'notes',
+          'measurement',
         ],
         ...food.foodEntries.map((e) => [
           e.id,
           e.date,
           e.slot,
           e.name,
-          e.servings,
+          e.unmeasured ? undefined : e.servings,
           ...(['protein', 'carbs', 'fat', 'fibre'] as const).map((k) =>
             e.snapshot.macros[k] === undefined ? undefined : e.snapshot.macros[k]! * e.servings,
           ),
           e.recipeId,
           e.batchId,
           e.notes,
+          e.unmeasured ? 'unmeasured' : 'recorded portion',
         ]),
       ]);
     case 'inventory':
@@ -416,15 +418,18 @@ export function foodCsv(food: FoodData, kind: FoodCsvKind): string {
       ]);
     case 'mealPlans':
       return csv([
-        ['id', 'date', 'meal', 'recipe_id', 'batch_id', 'servings', 'notes'],
+        ['id', 'date', 'meal', 'recipe_id', 'batch_id', 'servings', 'notes', 'measurement'],
         ...food.mealPlans.map((p) => [
           p.id,
           p.date,
           p.slot,
           p.recipeId,
           p.batchId,
-          p.servings,
+          food.recipes.find((r) => r.id === p.recipeId)?.unmeasured ? undefined : p.servings,
           p.notes,
+          food.recipes.find((r) => r.id === p.recipeId)?.unmeasured
+            ? 'unmeasured'
+            : 'planned portion',
         ]),
       ]);
     case 'shopping':

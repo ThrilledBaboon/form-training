@@ -1,5 +1,57 @@
 # Implementation and verification record
 
+## Food programmes — 24 October 2026, local
+
+The [7,570-word implementation prompt](prompts/FORM-food-programmes-mega-prompt.md) was saved
+and executed on `codex/food-programmes`. The [programme guide](FOOD-PROGRAMMES.md) covers the
+optional 18-meal starter, seven-day/30-day rotation, bowl builder, swaps, quick unmeasured
+check-ins, shopping, widgets, sharing and Get prompt. No personal diet or history is seeded.
+Nothing in this update was pushed to GitHub or deployed.
+
+| Check                                                          | Result                                                                   |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Full unit/IndexedDB suite                                      | 274 passed across 27 files                                               |
+| Root production/PWA build and TypeScript                       | Passed                                                                   |
+| Repository-subpath production/PWA build                        | Passed at `/form-test/`                                                  |
+| New feature browser coverage at root                           | All 36 scenarios pass across the main run and focused corrections        |
+| Complete subpath browser run plus final focused verification   | 272 distinct scenarios passed; 1 intentional WebKit touch-injection skip |
+| Final programme and backup verification at subpath, one worker | 39 passed, including phone Chromium and phone WebKit                     |
+| Formatting and Git whitespace                                  | Passed                                                                   |
+
+The initial full 270-scenario subpath run passed 266 checks and skipped one; three backup
+checks still expected schema 6. They now correctly assert schema 7, and all three pass in the
+final focused run. That run also covers the additional menu-composition filter scenario in all
+three browser projects. Counts above are deduplicated by scenario and project, rather than
+adding repeated runs together. One root helper initially expected an h1 on the deliberately
+disabled Food screen (which uses h3); its route readiness check now waits for main, while the
+explicit disabled-screen and retained-data assertions remain. Async checklist checks wait for
+the saved state, and the calorie test expands the existing Food display controls first.
+
+Overlapping verification runs caused four unit timeouts and three WebKit navigation/dialog
+timeouts under heavy local load. The unchanged full unit suite then passed in 4.65 seconds;
+the final focused browser suite passed with one worker in 1.7 minutes. Timeouts and behavioural
+assertions were not relaxed. Separate regression assertions reject duplicate programme plan
+occurrences and ensure CSV does not expose the technical record multiplier as measured servings.
+
+Coverage includes an actual v6 database upgrade, legacy backups, transactional schedule and
+import conflicts, idempotent installation/generation/check-in, historical snapshots, undo,
+known-plus-unmeasured shopping demand, draft recovery, share privacy, Get prompt's importable
+example, calories off/on, Food off/on, offline reload, and custom dated widgets. Automated axe
+checks pass on the programme page. Full-width 375/320 px screens and a true half-width 375 px
+phone widget were inspected. These are emulated browsers, not a physical iPhone test.
+
+Checks used `pnpm test`, `pnpm build`, `pnpm format:check` and Playwright production previews.
+The full subpath run used `BASE_PATH=/form-test/` and `TEST_SUBPATH=/form-test/`; its build was
+kept in `.local/` so the established root preview at `http://127.0.0.1:4174/` stayed usable.
+Logs, JSON reports and screenshots are ignored local artefacts. Existing non-fatal bundle-size
+and shared static/dynamic import warnings remain; compilation and PWA generation succeed.
+
+Local commits separate the prompt (`7a9fb7f`), domain/storage/sharing (`76a1ea1`), interface and
+integrations (`86fa0ea`), then final regression checks and validation hardening. IndexedDB and
+complete backups now use version 7; programme libraries retain their separate version 1 format.
+Older app builds cannot read version 7 backups. Files remain the explicit transfer between
+browsers/devices: publishing source code does not synchronise personal programmes or history.
+
 Entries describe the commit and date reviewed; local-only statements in earlier entries are historical. The final entry records verification after removing development sample tools for integration into `main`.
 
 ## Balanced session suggestions — 21 October 2026, local
