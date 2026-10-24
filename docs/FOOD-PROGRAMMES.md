@@ -30,6 +30,18 @@ return during regeneration.
 
 ## Record what you actually ate
 
+Open **Ingredients & method** on a meal suggestion, or **View meal** on a planned meal, to see
+the full ingredient list and numbered cooking steps. The 18 starter meals include individual
+preparation directions, optional household portion ideas, equipment and estimated cooking times.
+These are independently developed home-cooking guides, not tested publisher recipes. Optional
+portion suggestions are not recorded as measured nutrition. Cooking checks follow the
+[Food Standards Agency guidance](https://www.food.gov.uk/safety-hygiene/cooking-your-food).
+
+The app refreshes the original generic starter cooking guides automatically. It matches the
+original recipe content and ingredient names before updating; edited recipes and separate
+copies stay intact. Personal notes, photos, ratings and favourites are retained. Plans and diary
+snapshots are not rewritten, and a fresh profile does not receive starter content automatically.
+
 **Ate this** opens a quick check-in: confirm the meal actually eaten, date, slot and optional
 notes. Amounts are not required. A quick check-in produces one ordinary diary entry with an
 unmeasured flag and a snapshot of the composition. It does not assume a bowl weighs a fixed

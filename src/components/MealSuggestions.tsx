@@ -6,6 +6,7 @@ import { foodDay, money } from '../lib/food-calc';
 import { mealSlots, type Recipe } from '../lib/food-model';
 import { PlanEditor } from '../pages/FoodPlanner';
 import { FoodEntryEditor } from '../pages/FoodDiary';
+import { MealRecipeGuide } from './MealRecipeGuide';
 import { Button, Card, Empty, Field, Modal, PageTitle } from './ui';
 export function MealSuggestions({ onClose }: { onClose?: () => void }) {
   const food = useFood();
@@ -135,21 +136,23 @@ export function MealSuggestions({ onClose }: { onClose?: () => void }) {
               </details>
             )}
             <details>
-              <summary>Recipe & shortages</summary>
-              <p className="preserve-lines">{s.recipe.description}</p>
-              {s.recipe.steps.map((step, i) => (
-                <p className="preserve-lines" key={step.id}>
-                  {i + 1}. {step.text}
-                </p>
-              ))}
+              <summary>Ingredients & method</summary>
+              <MealRecipeGuide
+                recipe={s.recipe}
+                servings={1}
+                headingLevel={onClose ? 'h4' : 'h3'}
+              />
               {s.shortages.length > 0 && (
-                <ul>
-                  {s.shortages.map((line) => (
-                    <li key={line.id}>
-                      {line.name}: {Number(line.shortage?.toFixed(2))} {line.unit} short
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <strong>Kitchen stock shortages for one serving</strong>
+                  <ul>
+                    {s.shortages.map((line) => (
+                      <li key={line.id}>
+                        {line.name}: {Number(line.shortage?.toFixed(2))} {line.unit} short
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </details>
             <div className="inline-actions">

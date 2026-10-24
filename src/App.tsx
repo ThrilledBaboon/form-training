@@ -41,6 +41,7 @@ import {
   ShoppingBasket,
 } from 'lucide-react';
 import { readData } from './lib/db';
+import { fillingBowlRecipeUpdates, refreshFillingBowlRecipes } from './lib/food-programme-refresh';
 import { saveSettings } from './lib/actions';
 import { AppContext, go, type Run } from './lib/context';
 import { Today } from './pages/Today';
@@ -190,6 +191,15 @@ export default function App() {
     error?: boolean;
   }>();
   const [online, setOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    if (!data?.food || !fillingBowlRecipeUpdates(data.food).length) return;
+    void refreshFillingBowlRecipes().catch((error: unknown) => {
+      setNotice({
+        message: 'Could not refresh starter cooking guides: ' + String(error),
+        error: true,
+      });
+    });
+  }, [data?.food?.recipes, data?.food?.ingredients]);
   const toast = useCallback(
     (message: string, undo?: () => Promise<unknown>) => setNotice({ message, undo }),
     [],

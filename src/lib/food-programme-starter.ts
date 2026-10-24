@@ -1,6 +1,8 @@
 import { IngredientSchema, RecipeSchema, FoodProgrammeSchema } from './food-model';
 import { parseFoodProgrammeLibrary } from './food-programme-library';
+import { fillingBowlGuides, fillingBowlRecipeNotes } from './food-programme-recipe-guides';
 const stamp = '2026-10-24T12:00:00Z';
+const recipeRevisionStamp = '2026-10-24T14:00:00Z';
 const source = 'https://www.youtube.com/watch?v=z9cd8jJqELw';
 const groups = {
   protein: [
@@ -69,7 +71,7 @@ const guidance: Record<string, string> = {
   Almonds: '20 almonds',
   'Light cream cheese': '2 tbsp',
 };
-export function fillingBowlStarter() {
+export function fillingBowlStarter(contentVersion: 1 | 2 = 2) {
   const ingredients = Object.entries(groups).flatMap(([role, names]) =>
     names.map((name) =>
       IngredientSchema.parse({
@@ -198,7 +200,7 @@ export function fillingBowlStarter() {
     ],
     ['Tilapia squash bowl', 'Dinner', ['Tilapia'], ['Squash', 'Broccoli'], ['Olive oil']],
   ] as const;
-  const recipes = meals.map(([name, category, protein, volume, fat, flavouring]) =>
+  const legacyRecipes = meals.map(([name, category, protein, volume, fat, flavouring]) =>
     RecipeSchema.parse({
       id: slug(name),
       name,
@@ -233,6 +235,37 @@ export function fillingBowlStarter() {
       updatedAt: stamp,
     }),
   );
+  const recipes =
+    contentVersion === 1
+      ? legacyRecipes
+      : legacyRecipes.map((recipe) => {
+          const guide = fillingBowlGuides[recipe.name];
+          if (!guide) throw Error('Missing starter cooking guide: ' + recipe.name);
+          const composition = recipe.composition!.map((line) => {
+            const ingredient = ingredients.find((i) => i.id === line.ingredientId)!;
+            return { ...line, guidance: guide.portions[ingredient.name] ?? line.guidance };
+          });
+          for (const name of guide.flavourings ?? []) {
+            if (composition.some((line) => line.ingredientId === slug(name))) continue;
+            composition.push({
+              ingredientId: slug(name),
+              role: 'flavouring',
+              state: 'as sold',
+              guidance: guide.portions[name] ?? '',
+            });
+          }
+          return RecipeSchema.parse({
+            ...recipe,
+            composition,
+            description: guide.description,
+            steps: guide.steps.map((text, index) => ({ id: `step-${index + 1}`, text })),
+            prepMinutes: guide.prepMinutes,
+            cookMinutes: guide.cookMinutes,
+            equipment: guide.equipment,
+            notes: [fillingBowlRecipeNotes, guide.notes].filter(Boolean).join('\n\n'),
+            updatedAt: recipeRevisionStamp,
+          });
+        });
   const index = [
     [0, 1, 2],
     [3, 4, 5],
@@ -245,6 +278,7 @@ export function fillingBowlStarter() {
   const programme = FoodProgrammeSchema.parse({
     id: 'filling-bowls-programme-v1',
     name: 'Filling bowls — 30 days',
+    contentVersion,
     description:
       'An editable seven-day rotation inspired by the supplied filling-diet video. Build meals from protein, volume foods and one listed fat choice. No weighing is required. The source food list is restrictive; edit your own version to add foods that suit your needs. Fullness does not demonstrate complete nutrition. Eat comfortably rather than forcing a bowl to be finished.',
     sourceName:
@@ -302,7 +336,7 @@ export function fillingBowlStarter() {
       })),
     ),
     createdAt: stamp,
-    updatedAt: stamp,
+    updatedAt: contentVersion === 1 ? stamp : recipeRevisionStamp,
   });
   return parseFoodProgrammeLibrary(
     JSON.stringify({
@@ -310,7 +344,7 @@ export function fillingBowlStarter() {
       type: 'food-programme-library',
       schemaVersion: 1,
       title: programme.name,
-      exportedAt: stamp,
+      exportedAt: contentVersion === 1 ? stamp : recipeRevisionStamp,
       ingredients,
       recipes,
       programmes: [programme],

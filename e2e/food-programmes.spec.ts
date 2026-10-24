@@ -407,11 +407,22 @@ test('menu searches bowl ingredients and keeps unknown preparation times out of 
   page,
 }) => {
   await install(page);
+  await page.getByRole('button', { name: 'Build a bowl', exact: true }).click();
+  const bowl = page.getByRole('dialog', { name: 'Build a bowl', exact: true });
+  await bowl.getByLabel('Meal name', { exact: true }).fill('Konjac bowl with no recorded time');
+  await bowl
+    .getByLabel('Add fruit, vegetables & volume', { exact: true })
+    .selectOption({ label: 'Konjac noodles' });
+  await bowl.getByRole('button', { name: 'Save bowl', exact: true }).click();
+  await expect(bowl).not.toBeVisible();
   await route(page, 'food-menu');
   await page.getByLabel('Search meals or ingredients', { exact: true }).fill('Konjac');
-  await expect(page.locator('.recipe-card')).toHaveCount(2);
+  await expect(page.locator('.recipe-card')).toHaveCount(3);
   await expect(
-    page.locator('.recipe-card').first().getByText('Time unrecorded', { exact: false }),
+    page
+      .locator('.recipe-card')
+      .filter({ hasText: 'Konjac bowl with no recorded time' })
+      .getByText('Time unrecorded', { exact: false }),
   ).toBeVisible();
   await page.getByText('Macro, time, cost & kitchen filters', { exact: true }).click();
   await page.getByLabel('Maximum time (minutes)', { exact: true }).fill('15');

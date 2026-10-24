@@ -42,6 +42,7 @@ import {
 } from '../lib/food-programme-library';
 import { saveMealPlan, removeFoodEntry } from '../lib/food-actions';
 import { FoodNav, useFood, useFoodDraft } from '../components/FoodUI';
+import { MealRecipeGuide } from '../components/MealRecipeGuide';
 import { ImportPrompt } from '../components/ImportPrompt';
 import { IngredientEditor } from './FoodIngredients';
 import { Button, AsyncButton, Card, PageTitle, Field, Modal, Badge, Empty } from '../components/ui';
@@ -54,50 +55,7 @@ const roleNames = {
   other: 'Other foods',
 };
 export function MealComposition({ recipe }: { recipe: Recipe }) {
-  const food = useFood();
-  return (
-    <div className="programme-composition">
-      <p>{recipe.description}</p>
-      {recipe.unmeasured && (
-        <p className="small-text muted">
-          Unmeasured meal. Nutrition and portions are unknown; quantities are optional.
-        </p>
-      )}
-      <ul>
-        {(
-          recipe.composition ??
-          recipe.ingredients.map((line) => ({
-            ...line,
-            role: 'other' as const,
-            guidance: line.notes,
-            name: undefined,
-          }))
-        ).map((line, i) => (
-          <li key={i}>
-            <strong>
-              {line.name ??
-                food.ingredients.find((ing) => ing.id === line.ingredientId)?.name ??
-                'Unavailable ingredient'}
-            </strong>
-            {line.quantity !== undefined
-              ? ` · ${foodNumber(line.quantity)} ${line.unit}`
-              : line.guidance
-                ? ` · ${line.guidance}`
-                : ' · amount unmeasured'}{' '}
-            <span className="muted small-text">({roleNames[line.role]})</span>
-          </li>
-        ))}
-      </ul>
-      {recipe.steps.map((s) => (
-        <p key={s.id}>{s.text}</p>
-      ))}
-      {recipe.sourceUrl && (
-        <a href={recipe.sourceUrl} target="_blank" rel="noreferrer">
-          Programme inspiration & source
-        </a>
-      )}
-    </div>
-  );
+  return <MealRecipeGuide recipe={recipe} />;
 }
 
 export function ProgrammeMealEditor({
