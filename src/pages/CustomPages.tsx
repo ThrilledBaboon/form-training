@@ -69,7 +69,15 @@ const ClimbingSetupButton = lazy(() =>
   import('../components/ClimbingWidgets').then((m) => ({ default: m.ClimbingSetupButton })),
 );
 
-export function CustomPages({ overview = false, pageId }: { overview?: boolean; pageId?: string }) {
+export function CustomPages({
+  overview = false,
+  pageId,
+  embedded = false,
+}: {
+  overview?: boolean;
+  pageId?: string;
+  embedded?: boolean;
+}) {
   const { data, run, toast, pending } = useApp();
   const workspace = data.workspace ?? defaultWorkspace();
   const id = overview
@@ -166,36 +174,48 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
   const personal = personalisation(data.settings);
   return (
     <div className="personal-page" data-density={page.density ?? personal.density}>
-      <PageTitle
-        eyebrow={
-          system === 'gym'
-            ? 'YOUR TRAINING'
-            : system === 'food'
-              ? 'YOUR FOOD'
-              : system === 'climbing'
-                ? 'YOUR CLIMBING'
-                : system
-                  ? systemNames[system].toUpperCase()
-                  : 'YOUR WORKSPACE, YOUR VIEW'
-        }
-        title={overview && page.name === 'Overview' ? 'Make room for progress.' : page.name}
-        description={
-          overview
-            ? 'Your training, climbing and food, arranged around you.'
-            : `${page.widgets.length} saved widgets · ${rangeLabel(page.range)}`
-        }
-        action={
-          <div className="inline-actions workspace-actions">
-            <Button variant="secondary" onClick={() => setManage(true)}>
-              My pages
-            </Button>
-            <Button onClick={() => setEditing(!editing)}>
-              <Pencil size={16} />
-              {editing ? 'Done editing' : 'Edit page'}
-            </Button>
-          </div>
-        }
-      />
+      {embedded ? (
+        <div className="inline-actions workspace-actions">
+          <Button variant="secondary" onClick={() => setManage(true)}>
+            My pages
+          </Button>
+          <Button onClick={() => setEditing(!editing)}>
+            <Pencil size={16} />
+            {editing ? 'Done editing' : 'Edit page'}
+          </Button>
+        </div>
+      ) : (
+        <PageTitle
+          eyebrow={
+            system === 'gym'
+              ? 'YOUR TRAINING'
+              : system === 'food'
+                ? 'YOUR FOOD'
+                : system === 'climbing'
+                  ? 'YOUR CLIMBING'
+                  : system
+                    ? systemNames[system].toUpperCase()
+                    : 'YOUR WORKSPACE, YOUR VIEW'
+          }
+          title={overview && page.name === 'Overview' ? 'Make room for progress.' : page.name}
+          description={
+            overview
+              ? 'Your training, climbing and food, arranged around you.'
+              : `${page.widgets.length} saved widgets · ${rangeLabel(page.range)}`
+          }
+          action={
+            <div className="inline-actions workspace-actions">
+              <Button variant="secondary" onClick={() => setManage(true)}>
+                My pages
+              </Button>
+              <Button onClick={() => setEditing(!editing)}>
+                <Pencil size={16} />
+                {editing ? 'Done editing' : 'Edit page'}
+              </Button>
+            </div>
+          }
+        />
+      )}
       {system === 'gym' && (
         <div className="food-actions">
           <TrainingPlanBuilder />
@@ -220,7 +240,7 @@ export function CustomPages({ overview = false, pageId }: { overview?: boolean; 
           </a>
         </div>
       )}
-      {system === 'food' && (
+      {system === 'food' && !embedded && (
         <div className="food-actions">
           <FoodGoalBuilder />
           {!page.widgets.some((w) => w.type === 'suggest-meal') && <SuggestMealButton />}

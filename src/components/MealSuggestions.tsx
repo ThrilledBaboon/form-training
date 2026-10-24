@@ -1,6 +1,6 @@
 import { activeFoodSchedule } from '../lib/food-programmes';
 import { useState } from 'react';
-import { useFood, MacroSummary } from './FoodUI';
+import { useFood, MacroSummary, FoodNav } from './FoodUI';
 import { suggestMeals, type MealPriority } from '../lib/meal-suggestions';
 import { foodDay, money } from '../lib/food-calc';
 import { mealSlots, type Recipe } from '../lib/food-model';
@@ -177,6 +177,7 @@ export function MealSuggestions({ onClose }: { onClose?: () => void }) {
     </Modal>
   ) : (
     <>
+      <FoodNav />
       <PageTitle
         eyebrow="YOUR FOOD"
         title="Suggest a meal"

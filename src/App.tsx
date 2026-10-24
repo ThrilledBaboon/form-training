@@ -53,6 +53,9 @@ import { Muscles } from './pages/Muscles';
 import { Calendar } from './pages/Calendar';
 import { Weight } from './pages/Weight';
 import { FoodProgrammes } from './pages/FoodProgrammes';
+import { FoodHome } from './pages/FoodHome';
+import { FoodTools } from './pages/FoodTools';
+import { FoodGuide } from './components/FoodGuide';
 import { FoodMenu } from './pages/FoodMenu';
 import { FoodIngredients } from './pages/FoodIngredients';
 import { FoodDiary } from './pages/FoodDiary';
@@ -121,11 +124,12 @@ const navigation = [
   {
     label: 'FOOD',
     items: [
-      ['food-home', 'Food overview', Utensils],
-      ['food-programmes', 'Food programmes', BookOpen],
+      ['food-home', 'Today’s food', Utensils],
+      ['food-programmes', 'Manage programmes', BookOpen],
       ['food-menu', 'Menu & recipes', Utensils],
       ['food-suggest', 'Suggest a meal', Utensils],
       ['food-diary', 'Food diary', BookOpen],
+      ['food-more', 'More food tools', Layers],
       ['food-kitchen', 'Kitchen', Refrigerator],
       ['food-planner', 'Meal planner', CalendarDays],
       ['food-shopping', 'Shopping', ShoppingBasket],
@@ -182,6 +186,7 @@ export default function App() {
   const data = result?.data;
   const streak = useWorkoutStreak(data);
   const [streakOpen, setStreakOpen] = useState(false);
+  const [foodGuideStep, setFoodGuideStep] = useState<number | null>(null);
   const [pending, setPending] = useState(0);
   const [hash, setHash] = useState(location.hash);
   const [menu, setMenu] = useState(false);
@@ -230,6 +235,7 @@ export default function App() {
       setHash(location.hash);
       setMenu(false);
       setStreakOpen(false);
+      if (!location.hash.startsWith('#/food-')) setFoodGuideStep(null);
       window.scrollTo(0, 0);
     };
     const onNetwork = () => setOnline(navigator.onLine);
@@ -362,7 +368,16 @@ export default function App() {
             }),
         },
       ]
-    : navigation;
+    : navigation.map((section) =>
+        section.label === 'FOOD'
+          ? {
+              ...section,
+              items: section.items.filter(([id]) =>
+                ['food-home', 'food-programmes', 'food-diary', 'food-more'].includes(id),
+              ),
+            }
+          : section,
+      );
   const homeRoute = pageRoute(workspace.homePageId);
   const effectiveHash = hash || '#/' + homeRoute;
   const route = effectiveHash.replace(/^#\/?/, '').split('?')[0] || 'today';
@@ -417,8 +432,13 @@ export default function App() {
     case 'rocket-league-home':
     case 'climbing-home':
     case 'training-home':
-    case 'food-home':
       page = <CustomPages key={route} pageId={route} />;
+      break;
+    case 'food-home':
+      page = <FoodHome onShowHelp={() => setFoodGuideStep(0)} />;
+      break;
+    case 'food-more':
+      page = <FoodTools onShowHelp={() => setFoodGuideStep(0)} />;
       break;
     case 'pages':
       page = (
@@ -438,7 +458,7 @@ export default function App() {
       page = <MealSuggestions />;
       break;
     case 'food-programmes':
-      page = <FoodProgrammes key={hash} />;
+      page = <FoodProgrammes key={hash} onShowHelp={() => setFoodGuideStep(0)} />;
       break;
     case 'food-menu':
       page = <FoodMenu key={hash} />;
@@ -699,6 +719,13 @@ export default function App() {
             </div>
           </header>
           <main id="main-content" tabIndex={-1} key={route}>
+            {foodGuideStep !== null && route.startsWith('food-') && !disabled.length && (
+              <FoodGuide
+                step={foodGuideStep}
+                onStep={setFoodGuideStep}
+                onClose={() => setFoodGuideStep(null)}
+              />
+            )}
             <Suspense fallback={<p role="status">Opening this system…</p>}>{page}</Suspense>
           </main>
           {personal.showFooter && (

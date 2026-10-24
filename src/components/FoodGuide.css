@@ -1,0 +1,17 @@
+.food-guide {
+  margin-bottom: 1.5rem;
+}
+.food-guide-heading,
+.food-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.food-guide h2:focus {
+  outline: none;
+}
+.food-guide p {
+  max-width: 70ch;
+}

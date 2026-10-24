@@ -13,6 +13,17 @@ test.beforeEach(async ({ page }) => {
 async function route(page: Page, route: string) {
   await page.goto(base + '#/' + route);
   await expect(page.locator('main')).toBeVisible();
+  if (route === 'food-programmes') await previewDay(page);
+}
+async function previewDay(page: Page) {
+  const preview = page.locator('.food-programme-day-preview');
+  await expect(preview).toBeVisible();
+  if ((await preview.getAttribute('open')) === null)
+    await preview.getByText('Preview programme day', { exact: true }).click();
+}
+async function reload(page: Page) {
+  await page.reload();
+  if (page.url().includes('#/food-programmes')) await previewDay(page);
 }
 async function install(page: Page) {
   await route(page, 'food-programmes');
@@ -63,16 +74,16 @@ test('installs a programme, starts 30 days, records an unmeasured meal once and 
   await expect(page.getByText('Comfortably full; no quantities recorded.')).toBeVisible();
   await expect(page.getByText('Unmeasured meal', { exact: true })).toBeVisible();
   await route(page, 'food-programmes');
-  await page.reload();
+  await reload(page);
   await expect(
     page.locator('.programme-meal-row').first().getByText('Checked in · unmeasured'),
   ).toBeVisible();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
-  await page.reload();
+  await reload(page);
   await context.setOffline(true);
-  await page.reload();
+  await reload(page);
   await expect(page.locator('.programme-meal-row')).toHaveCount(3);
   await page
     .locator('.programme-meal-row')
@@ -108,7 +119,7 @@ test('swaps persist, re-planning does not duplicate and pausing retains plans', 
   await page.getByText('My schedules (1)', { exact: true }).click();
   await page.getByRole('button', { name: 'Plan this week', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Plan this week', exact: true })).toBeEnabled();
-  await page.reload();
+  await reload(page);
   await expect(page.locator('.programme-meal-row').first().locator('h3')).toHaveText(after);
   await page.getByText('My schedules (1)', { exact: true }).click();
   await page.getByRole('button', { name: 'Pause programme', exact: true }).click();
@@ -287,7 +298,7 @@ test('shopping keeps unmeasured ingredients as a checklist and preserves ticks o
   await expect(tick).toBeChecked();
   await page.getByRole('button', { name: 'Regenerate requirements', exact: true }).click();
   await expect(tick).toBeChecked();
-  await page.reload();
+  await reload(page);
   await expect(tick).toBeChecked();
   const food = (await backup(page)).data.food;
   expect(food.shoppingLists[0].items).toEqual([]);
@@ -305,21 +316,24 @@ test('unfinished bowls survive reload, with calorie visibility and system contro
   await bowl.getByLabel('Meal name', { exact: true }).fill('Recover my draft');
   await bowl.getByLabel('Add protein', { exact: true }).selectOption({ label: 'Chicken breast' });
   await expect(page.getByRole('button', { name: 'Save bowl', exact: true })).toBeEnabled();
-  await page.reload();
+  await reload(page);
   await page.getByRole('button', { name: 'Build a bowl', exact: true }).click();
   bowl = page.getByRole('dialog', { name: 'Build a bowl', exact: true });
   await expect(bowl.getByLabel('Meal name', { exact: true })).toHaveValue('Recover my draft');
   await expect(bowl.getByText('Chicken breast', { exact: true }).first()).toBeVisible();
   await bowl.getByRole('button', { name: 'Close dialog' }).click();
-  await route(page, 'food-home');
-  await page.getByText('Food display', { exact: true }).click();
+  await route(page, 'settings');
   await page.getByRole('switch', { name: 'Show calories', exact: true }).check();
+  await route(page, 'food-home');
+  await page.getByText('My food widgets', { exact: true }).click();
   await expect(page.getByText('Estimated calories', { exact: true }).first()).toBeVisible();
+  await route(page, 'settings');
   await page.getByRole('switch', { name: 'Show calories', exact: true }).uncheck();
+  await route(page, 'food-home');
   await expect(page.getByText('Estimated calories', { exact: true })).toHaveCount(0);
   await route(page, 'settings');
   await page.getByRole('switch', { name: 'Enable Food system' }).uncheck();
-  await route(page, 'food-programmes');
+  await page.goto(base + '#/food-programmes');
   await expect(
     page.getByRole('heading', { name: 'Food is switched off', exact: true }),
   ).toBeVisible();
@@ -339,6 +353,7 @@ test('programme widget can be added to a personal page with its own date and hal
   await install(page);
   await activate(page);
   await route(page, 'food-home');
+  await page.getByText('My food widgets', { exact: true }).click();
   await page.getByRole('button', { name: 'My pages', exact: true }).click();
   await page.getByRole('button', { name: 'Create page', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Create page', exact: true });
@@ -361,7 +376,7 @@ test('programme widget can be added to a personal page with its own date and hal
   await expect(widget).toHaveClass(/widget-size-half/);
   await expect(widget.locator('.programme-meal-row')).toHaveCount(3);
   await expect(widget.getByText('2026-10-25', { exact: true })).toBeVisible();
-  await page.reload();
+  await reload(page);
   await expect(widget.locator('.programme-meal-row')).toHaveCount(3);
   await page.setViewportSize({ width: 375, height: 812 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

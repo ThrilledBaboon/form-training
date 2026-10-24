@@ -37,11 +37,13 @@ export function PlanEditor({
   date,
   initial,
   recipeId,
+  defaultSlot,
   onClose,
 }: {
   date: string;
   initial?: MealPlan;
   recipeId?: string;
+  defaultSlot?: MealPlan['slot'];
   onClose: () => void;
 }) {
   const food = useFood();
@@ -50,7 +52,7 @@ export function PlanEditor({
     initial ?? {
       id: uid(),
       date,
-      slot: 'Dinner',
+      slot: defaultSlot ?? 'Dinner',
       recipeId: recipeId ?? food.recipes.find((r) => !r.archived && !r.draft)?.id ?? '',
       servings: 1,
       notes: '',

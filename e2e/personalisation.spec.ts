@@ -59,6 +59,7 @@ test('personal settings persist, keep Settings reachable, and apply food and cli
   );
   await page.setViewportSize({ width: 320, height: 800 });
   await route(page, 'food-home');
+  await page.getByText('My food widgets', { exact: true }).click();
   const macros = page.getByRole('region', { name: 'Daily macros', exact: true });
   await expect(macros.locator('dt')).toHaveText(['Protein']);
   await expect(macros).not.toContainText('Estimated calories');

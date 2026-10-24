@@ -35,6 +35,7 @@ export function FoodEntryEditor({
   batchId,
   defaultSlot,
   defaultServings,
+  occurrenceId,
   onClose,
 }: {
   date: string;
@@ -43,10 +44,12 @@ export function FoodEntryEditor({
   batchId?: string;
   defaultSlot?: FoodEntry['slot'];
   defaultServings?: number;
+  occurrenceId?: string;
   onClose: () => void;
 }) {
   const food = useFood();
   const { run } = useApp();
+  const [entryId] = useState(initial?.id ?? uid());
   const firstRecipe =
     recipeId ?? initial?.recipeId ?? food.recipes.find((r) => !r.archived && !r.draft)?.id ?? '';
   const [mode, setMode] = useState(
@@ -93,7 +96,7 @@ export function FoodEntryEditor({
           void run(async () => {
             if (!snapshot) throw Error('Choose a recipe or prepared batch.');
             await saveFoodEntry({
-              id: initial?.id ?? uid(),
+              id: entryId,
               date: day,
               slot,
               name:
@@ -105,6 +108,7 @@ export function FoodEntryEditor({
               recipeId:
                 mode === 'manual' ? undefined : mode === 'batch' ? selectedBatch!.recipeId : recipe,
               batchId: mode === 'batch' ? batch : undefined,
+              occurrenceId: initial?.occurrenceId ?? occurrenceId,
               servings: mode === 'recipe' && selectedRecipe?.unmeasured ? 1 : servings,
               unmeasured: mode === 'recipe' && !!selectedRecipe?.unmeasured,
               composition:

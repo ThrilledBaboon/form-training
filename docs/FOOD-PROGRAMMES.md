@@ -1,12 +1,29 @@
 # Food programmes
 
-Food → Programmes adds reusable eating patterns to FORM's existing Menu, planner, diary,
+Food → Manage programmes adds reusable eating patterns to FORM's existing Menu, planner, diary,
 shopping and custom pages. Programmes work locally and offline after the app shell is cached.
 There is no account synchronisation. A different browser, origin, port or phone has separate data.
 
+## The everyday flow
+
+Open **Food → Today** for breakfast, lunch and dinner. **View meal** shows ingredients and
+the method; **Swap** changes a planned meal; **Ate this → Save check-in** records eating it.
+Amounts are optional. Empty slots offer **Plan breakfast/lunch/dinner**. Individually planned
+meals and diary entries appear alongside programme meals; prepared portions use the existing
+Kitchen deduction and undo workflow. **My food widgets** retains your saved layout and its
+editing/sharing tools beneath the daily view.
+
+**Manage programmes** contains programme setup, editing, sharing and imports. **Food diary**
+contains recorded meals. **More** groups Menu, Meal planner, Shopping, Kitchen stock, Spending,
+Ingredients and optional food preferences. Existing tool links continue to work.
+
+Choose **Show me how** on Today, Manage programmes or More for an optional four-step guide.
+It stays available while you navigate Food, has Back/Next/Skip controls and can be replayed.
+The guide itself does not activate programmes, change preferences or record meals.
+
 ## Start the optional filling-bowl programme
 
-1. Open **Food → Programmes → Review starter programme**. Review the reusable content and
+1. Open **Food → Manage programmes → Review starter programme**. Review the reusable content and
    choose **Import programme**. This installs 18 meals, their ingredient choices and one
    programme. It does not start a diet, create diary entries or change your preferences.
 2. **View programme** shows the source, food groups, portion guidance, seven-day rotation
@@ -27,6 +44,23 @@ Duration edits change the generation window; they retain existing plans. **Remov
 plans** explicitly removes this schedule's unchecked plans from today, preserving completed
 check-ins and unrelated meals. It asks for confirmation. Plans removed deliberately do not
 return during regeneration.
+
+## Leave out foods you dislike
+
+During setup, open **Foods I avoid** and select ingredients such as Tuna. Programme planning
+and programme-filtered suggestions use suitable alternatives from that programme's collection.
+These choices exclude meals containing the ingredient rather than silently removing its protein
+or pretending a different ingredient has equivalent nutrition.
+
+After starting, open **Manage programmes → My schedules → Foods I avoid**. Search for Tuna,
+select it and review the proposed changes before **Save food preferences**. Only unchecked
+programme meals from today onwards can change. Safe swaps, manually planned meals, past meals,
+recorded check-ins and their snapshots are retained. If no alternative fits, the review explicitly
+shows that the affected slot will be left empty. Removed slots stay empty during regeneration;
+add a meal manually if wanted. Dated shopping lists are recalculated after changes. Ingredient
+exclusions are preferences, not a check of allergy suitability or cross-contamination. If the
+schedule changes in another tab while these preferences are open, close and reopen the window
+to review its latest settings before saving.
 
 ## Record what you actually ate
 

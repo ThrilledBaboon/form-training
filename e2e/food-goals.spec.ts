@@ -2,7 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 const base = process.env.TEST_SUBPATH || '/';
 async function details(page: Page, show = false) {
-  await page.goto(base + '#/food-home');
+  await page.goto(base + '#/food-more');
+  await page.getByText('Food preferences', { exact: true }).click();
   await page.getByRole('button', { name: 'Set food goals', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Age (years)', { exact: true }).fill('30');
@@ -27,13 +28,21 @@ test('food goals save reviewed grams while calories remain hidden until an expli
   await dialog.getByLabel('Protein target (g)', { exact: true }).fill('130');
   await dialog.getByRole('button', { name: 'Apply food goals', exact: true }).click();
   await expect(dialog).toHaveCount(0);
+  await page.goto(base + '#/food-home');
+  await page.getByText('My food widgets', { exact: true }).click();
   await expect(page.getByText('Protein: 0 / 130 g', { exact: false })).toBeVisible();
   await expect(page.getByText(/kcal/)).toHaveCount(0);
   await page.reload();
+  await page.getByText('My food widgets', { exact: true }).click();
   await expect(page.getByText('Protein: 0 / 130 g', { exact: false })).toBeVisible();
-  await page.getByText('Food display', { exact: true }).click();
+  await page.goto(base + '#/food-more');
+  await page.getByText('Food preferences', { exact: true }).click();
   await page.getByRole('switch', { name: 'Show calories', exact: true }).check();
+  await page.goto(base + '#/food-home');
+  await page.getByText('My food widgets', { exact: true }).click();
   await expect(page.getByText('Estimated calories: 0 / 2,448 kcal', { exact: true })).toBeVisible();
+  await page.goto(base + '#/food-more');
+  await page.getByText('Food preferences', { exact: true }).click();
   await page.getByRole('button', { name: 'Review food goals', exact: true }).click();
   await expect(
     page.getByRole('dialog').getByLabel('Would you like to see calories?', { exact: true }),

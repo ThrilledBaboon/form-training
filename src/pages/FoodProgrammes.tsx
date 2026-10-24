@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Plus, Pencil, Copy, Archive, ArrowLeftRight, Check, Undo2 } from 'lucide-react';
 import { useApp, go } from '../lib/context';
 import { db, readData } from '../lib/db';
@@ -43,8 +43,10 @@ import {
 import { saveMealPlan, removeFoodEntry } from '../lib/food-actions';
 import { FoodNav, useFood, useFoodDraft } from '../components/FoodUI';
 import { MealRecipeGuide } from '../components/MealRecipeGuide';
+import { FoodAvoidances } from '../components/FoodAvoidances';
 import { ImportPrompt } from '../components/ImportPrompt';
 import { IngredientEditor } from './FoodIngredients';
+import { FoodEntryEditor } from './FoodDiary';
 import { Button, AsyncButton, Card, PageTitle, Field, Modal, Badge, Empty } from '../components/ui';
 
 const roleNames = {
@@ -54,8 +56,14 @@ const roleNames = {
   flavouring: 'Flavourings',
   other: 'Other foods',
 };
-export function MealComposition({ recipe }: { recipe: Recipe }) {
-  return <MealRecipeGuide recipe={recipe} />;
+export function MealComposition({
+  recipe,
+  headingLevel = 'h3',
+}: {
+  recipe: Recipe;
+  headingLevel?: 'h3' | 'h4' | 'h5';
+}) {
+  return <MealRecipeGuide recipe={recipe} headingLevel={headingLevel} />;
 }
 
 export function ProgrammeMealEditor({
@@ -760,10 +768,10 @@ function ActivateProgramme({
           </fieldset>
         )}
         <details>
-          <summary>Exclude foods</summary>
+          <summary>Foods I avoid</summary>
           <p>
-            Meals containing selected ingredients are omitted. This does not certify allergy
-            suitability.
+            Choose foods you dislike or avoid. Meals containing those recorded ingredients are
+            omitted. Always check ingredients yourself for allergies or intolerances.
           </p>
           {food.ingredients
             .filter((i) => !i.archived)
@@ -1003,19 +1011,33 @@ function SwapProgrammeMeal({ plan, onClose }: { plan: MealPlan; onClose: () => v
 export function ProgrammeDay({
   date = foodDay(),
   compact = false,
+  includeAllPlans = false,
+  showEmptySlots = false,
+  onPlanSlot,
 }: {
   date?: string;
   compact?: boolean;
+  includeAllPlans?: boolean;
+  showEmptySlots?: boolean;
+  onPlanSlot?: (slot: MealPlan['slot']) => void;
 }) {
   const food = useFood();
   const { run } = useApp();
   const [swap, setSwap] = useState<MealPlan>();
   const [check, setCheck] = useState<{ plan: MealPlan; entry?: FoodEntry }>();
+  const [diary, setDiary] = useState<{ plan?: MealPlan; entry?: FoodEntry }>();
   const schedule = activeFoodSchedule(food, date);
   const plans = food.mealPlans
-    .filter((p) => p.date === date && p.scheduleId)
+    .filter((p) => p.date === date && (includeAllPlans || p.scheduleId))
     .sort((a, b) => mealSlots.indexOf(a.slot) - mealSlots.indexOf(b.slot));
-  if (!schedule && !plans.length)
+  const otherEntries = includeAllPlans
+    ? food.foodEntries.filter(
+        (entry) =>
+          entry.date === date &&
+          !plans.some((plan) => entry.occurrenceId === (plan.occurrenceId ?? plan.id)),
+      )
+    : [];
+  if (!schedule && !plans.length && !showEmptySlots)
     return (
       <div className="programme-day">
         <p className="muted">No programme planned for {date}.</p>
@@ -1026,9 +1048,20 @@ export function ProgrammeDay({
     );
   return (
     <div className={'programme-day ' + (compact ? 'compact' : '')}>
-      <p className="small-text muted">
-        {schedule?.snapshot.name ?? 'Planned programme meals'} · {date}
-      </p>
+      {schedule ? (
+        <p className="small-text muted">
+          {schedule.snapshot.name} · {date}
+        </p>
+      ) : showEmptySlots && !plans.length && !otherEntries.length ? (
+        <p>
+          Choose a programme to fill your meals, or plan them individually.{' '}
+          <a href="#/food-programmes">Choose a food programme</a>
+        </p>
+      ) : (
+        <p className="small-text muted">
+          {includeAllPlans ? 'Your meals' : 'Planned programme meals'} · {date}
+        </p>
+      )}
       {!plans.length && schedule && (
         <AsyncButton
           variant="secondary"
@@ -1037,78 +1070,133 @@ export function ProgrammeDay({
           Plan this week
         </AsyncButton>
       )}
-      {plans.map((plan) => {
-        const recipe = food.recipes.find((r) => r.id === plan.recipeId);
-        const entry = food.foodEntries.find(
-          (e) => e.occurrenceId === (plan.occurrenceId ?? plan.id),
-        );
+      {mealSlots.map((slot) => {
+        const slotPlans = plans.filter((plan) => plan.slot === slot);
+        const slotEntries = otherEntries.filter((entry) => entry.slot === slot);
         return (
-          <div className="programme-meal-row" key={plan.id}>
-            <div>
-              <span className="eyebrow">{plan.slot}</span>
-              <h3>{entry?.name ?? recipe?.name ?? 'Meal unavailable'}</h3>
-              <span className="small-text muted">
-                {entry
-                  ? entry.unmeasured
-                    ? 'Checked in · unmeasured'
-                    : 'Checked in · recorded portion'
-                  : 'Planned'}
-              </span>
-            </div>
-            <div className="programme-meal-actions">
-              <Button
-                variant="secondary"
-                disabled={!recipe}
-                onClick={() => setCheck({ plan, entry })}
-              >
-                {entry ? (
-                  <>
-                    <Check size={14} />
-                    Edit check-in
-                  </>
-                ) : (
-                  'Ate this'
-                )}
-              </Button>
-              {!entry && (
+          <Fragment key={slot}>
+            {showEmptySlots && slot !== 'Snacks' && !slotPlans.length && !slotEntries.length && (
+              <div className="programme-meal-row programme-empty-meal">
+                <h3>{slot}</h3>
+                <p className="small-text muted">No meal planned.</p>
                 <Button
-                  variant="ghost"
-                  aria-label={`Swap ${recipe?.name}`}
-                  onClick={() => setSwap(plan)}
+                  variant="secondary"
+                  onClick={() => (onPlanSlot ? onPlanSlot(slot) : go('food-planner?date=' + date))}
                 >
-                  <ArrowLeftRight size={14} />
-                  Swap
+                  Plan {slot.toLowerCase()}
                 </Button>
-              )}
-              {entry && (
-                <AsyncButton
-                  variant="ghost"
-                  aria-label={`Undo ${entry.name}`}
-                  onAction={() => run(() => removeFoodEntry(entry.id), 'Check-in removed')}
-                >
-                  <Undo2 size={14} />
-                  Undo
-                </AsyncButton>
-              )}
-            </div>
-            {recipe && (
-              <details>
-                <summary>View meal</summary>
-                <MealComposition
-                  recipe={
-                    entry?.composition
-                      ? {
+              </div>
+            )}
+            {slotPlans.map((plan) => {
+              const recipe = food.recipes.find((r) => r.id === plan.recipeId);
+              const entry = food.foodEntries.find(
+                (e) => e.occurrenceId === (plan.occurrenceId ?? plan.id),
+              );
+              return (
+                <div className="programme-meal-row" key={plan.id}>
+                  <div>
+                    <span className="eyebrow">{plan.slot}</span>
+                    <h3>{entry?.name ?? recipe?.name ?? 'Meal unavailable'}</h3>
+                    <span className="small-text muted">
+                      {entry
+                        ? entry.unmeasured
+                          ? 'Checked in · unmeasured'
+                          : 'Checked in · recorded portion'
+                        : 'Planned'}
+                    </span>
+                  </div>
+                  <div className="programme-meal-actions">
+                    <Button
+                      variant="secondary"
+                      disabled={!recipe}
+                      onClick={() =>
+                        plan.batchId || entry?.batchId
+                          ? setDiary({ plan, entry })
+                          : setCheck({ plan, entry })
+                      }
+                    >
+                      {entry ? (
+                        <>
+                          <Check size={14} />
+                          Edit check-in
+                        </>
+                      ) : (
+                        'Ate this'
+                      )}
+                    </Button>
+                    {!entry && (
+                      <Button
+                        variant="ghost"
+                        aria-label={`Swap ${recipe?.name}`}
+                        onClick={() => setSwap(plan)}
+                      >
+                        <ArrowLeftRight size={14} />
+                        Swap
+                      </Button>
+                    )}
+                    {entry && (
+                      <AsyncButton
+                        variant="ghost"
+                        aria-label={`Undo ${entry.name}`}
+                        onAction={() => run(() => removeFoodEntry(entry.id), 'Check-in removed')}
+                      >
+                        <Undo2 size={14} />
+                        Undo
+                      </AsyncButton>
+                    )}
+                  </div>
+                  {recipe && (
+                    <details>
+                      <summary>View meal</summary>
+                      <MealComposition
+                        headingLevel="h4"
+                        recipe={
+                          entry?.composition
+                            ? {
+                                ...recipe,
+                                name: entry.name,
+                                composition: entry.composition,
+                                unmeasured: entry.unmeasured,
+                              }
+                            : recipe
+                        }
+                      />
+                    </details>
+                  )}
+                </div>
+              );
+            })}
+            {slotEntries.map((entry) => {
+              const recipe = food.recipes.find((recipe) => recipe.id === entry.recipeId);
+              return (
+                <div className="programme-meal-row diary-meal-row" key={entry.id}>
+                  <span className="eyebrow">{slot}</span>
+                  <h3>{entry.name}</h3>
+                  <span className="small-text muted">Recorded in your food diary</span>
+                  <div className="programme-meal-actions">
+                    <Button variant="secondary" onClick={() => setDiary({ entry })}>
+                      Edit diary entry
+                    </Button>
+                  </div>
+                  {recipe && (
+                    <details>
+                      <summary>View meal</summary>
+                      <MealComposition
+                        headingLevel="h4"
+                        recipe={{
                           ...recipe,
                           name: entry.name,
-                          composition: entry.composition,
+                          composition: entry.composition ?? recipe.composition,
                           unmeasured: entry.unmeasured,
-                        }
-                      : recipe
-                  }
-                />
-              </details>
-            )}
-          </div>
+                        }}
+                      />
+                    </details>
+                  )}
+                  {entry.notes && <p className="small-text muted">{entry.notes}</p>}
+                </div>
+              );
+            })}
+          </Fragment>
         );
       })}
       {schedule && schedule.habits.length > 0 && (
@@ -1130,11 +1218,23 @@ export function ProgrammeDay({
       )}
       {swap && <SwapProgrammeMeal plan={swap} onClose={() => setSwap(undefined)} />}
       {check && <ProgrammeCheckIn {...check} onClose={() => setCheck(undefined)} />}
+      {diary && (
+        <FoodEntryEditor
+          date={date}
+          initial={diary.entry}
+          recipeId={diary.entry ? undefined : diary.plan?.recipeId}
+          batchId={diary.entry ? undefined : diary.plan?.batchId}
+          occurrenceId={diary.plan?.occurrenceId ?? diary.plan?.id}
+          defaultSlot={diary.plan?.slot}
+          defaultServings={diary.plan?.servings}
+          onClose={() => setDiary(undefined)}
+        />
+      )}
     </div>
   );
 }
 
-export function FoodProgrammes() {
+export function FoodProgrammes({ onShowHelp }: { onShowHelp?: () => void }) {
   const food = useFood();
   const { run } = useApp();
   const [editor, setEditor] = useState<FoodProgramme | null>();
@@ -1145,6 +1245,7 @@ export function FoodProgrammes() {
   const [error, setError] = useState('');
   const [date, setDate] = useState(foodDay());
   const [showArchived, setShowArchived] = useState(false);
+  const [avoiding, setAvoiding] = useState<string>();
   const starter = fillingBowlStarter();
   const installed = food.foodProgrammes.some((p) => p.id === starter.programmes[0].id);
   const preview = incoming ? programmeImportPreview(food, incoming) : [];
@@ -1161,13 +1262,20 @@ export function FoodProgrammes() {
       <FoodNav />
       <PageTitle
         eyebrow="YOUR EATING PATTERN"
-        title="Food programmes"
-        description="Plan meals your way. Check in without weighing, or record portions when useful."
+        title="Manage programmes"
+        description="Choose, start, edit or share your eating pattern. Your daily meals are on Today."
         action={
-          <Button onClick={() => setEditor(null)}>
-            <Plus size={16} />
-            Create programme
-          </Button>
+          <div className="inline-actions">
+            {onShowHelp && (
+              <Button variant="secondary" onClick={onShowHelp}>
+                Show me how
+              </Button>
+            )}
+            <Button onClick={() => setEditor(null)}>
+              <Plus size={16} />
+              Create programme
+            </Button>
+          </div>
         }
       />
       <div className="food-actions">
@@ -1201,13 +1309,14 @@ export function FoodProgrammes() {
         </Button>
       </div>
       {error && <p role="alert">{error}</p>}
-      <Card>
+      <details className="food-programme-day-preview">
+        <summary>Preview programme day</summary>
         <h2>Programme meals</h2>
         <Field label="Programme day">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value || foodDay())} />
         </Field>
         <ProgrammeDay date={date} />
-      </Card>
+      </details>
       {!installed && (
         <Card>
           <h2>Filling bowls — 30 days</h2>
@@ -1228,6 +1337,7 @@ export function FoodProgrammes() {
       {food.foodSchedules.length > 0 && (
         <details>
           <summary>My schedules ({food.foodSchedules.length})</summary>
+          <h2>Programme schedules</h2>
           {food.foodSchedules.map((s) => (
             <Card key={s.id}>
               <h3>{s.snapshot.name}</h3>
@@ -1240,6 +1350,11 @@ export function FoodProgrammes() {
                 the original calendar cycle.
               </p>
               <div className="food-actions">
+                {s.status !== 'completed' && (
+                  <Button variant="secondary" onClick={() => setAvoiding(s.id)}>
+                    Foods I avoid
+                  </Button>
+                )}
                 <AsyncButton
                   variant="secondary"
                   onAction={() =>
@@ -1319,6 +1434,7 @@ export function FoodProgrammes() {
         />
         Show archived programmes
       </label>
+      {avoiding && <FoodAvoidances scheduleId={avoiding} onClose={() => setAvoiding(undefined)} />}
       <div className="food-grid">
         {food.foodProgrammes
           .filter((p) => showArchived || !p.archived)
@@ -1434,7 +1550,7 @@ export function FoodProgrammes() {
                               {i ? 'Swap: ' : ''}
                               {recipe.name}
                             </h4>
-                            <MealComposition recipe={recipe} />
+                            <MealComposition recipe={recipe} headingLevel="h5" />
                           </div>
                         )
                       );

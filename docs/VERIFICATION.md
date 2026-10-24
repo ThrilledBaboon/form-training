@@ -1,5 +1,41 @@
 # Implementation and verification record
 
+## Food daily screen, cooking guides and preferences — 24 October 2026, local
+
+Food now opens on today's breakfast, lunch and dinner with View meal, Swap and Ate this.
+Manage programmes contains setup, editing and sharing; More groups the optional food tools.
+The existing food widget layout is retained in a disclosure. Show me how is an optional,
+skippable four-step guide that can be replayed; it does not change records itself.
+
+All 18 starter meals have individual ingredient preparation, numbered methods, equipment and
+estimated times. Suggestions display ingredients as well as steps. Exact untouched legacy
+starter guides refresh automatically; personal edits, notes, photos, favourites and recorded
+history are preserved. These are original home-cooking guides, not tested publisher recipes.
+
+Foods I avoid is available during setup and on active or paused schedules. Its review replaces
+only affected unchecked programme meals from today, or explicitly leaves a slot empty when
+no alternative fits. Safe swaps, manual plans, diary snapshots and past meals remain intact.
+Transactions reject changed reviews and keep shopping lists consistent. An external schedule
+change blocks an already-open preferences form until it is reopened, preventing an older tab
+from clearing a newer choice. A two-tab browser check verifies this, including Enter submission.
+See the
+[programme guide](FOOD-PROGRAMMES.md) for the user flow and preference scope.
+
+Verification uses isolated synthetic profiles, including original starter imports, custom
+methods, prepared-batch consumption/undo, manual plans, guide navigation, retained widgets,
+food goals and hidden calories. The full unit/IndexedDB suite passes 290 tests across 30 files.
+The focused production browser runs pass 84 distinct checks across desktop Chromium, phone Chromium
+and phone WebKit. Automated accessibility and narrow-layout checks pass; these are emulated
+phones rather than a physical iPhone test.
+
+TypeScript, formatting, whitespace, root production/PWA and repository-subpath production/PWA
+builds pass. The subpath build uses `/form-test/` and stays in an ignored `.local/` directory.
+The established local preview at
+http://127.0.0.1:4174/ was updated using its Update & reload control and the daily screen was
+visually inspected in the user's app. No meals were logged or ingredient preferences changed
+in the user's profile during verification. Cooking guides and the daily-food interface are
+separate local commits. Nothing in this update was pushed or deployed.
+
 ## Food programmes — 24 October 2026, local
 
 The [7,570-word implementation prompt](prompts/FORM-food-programmes-mega-prompt.md) was saved

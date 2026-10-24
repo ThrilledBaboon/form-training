@@ -124,7 +124,7 @@ test('each activity has its own calendar and widget, while food has no streak', 
     page.getByRole('button', { name: 'Open workout streak, 1 workout day', exact: true }),
   ).toBeVisible();
   await page.goto(base + '#/food-home');
-  await expect(page.getByRole('heading', { name: 'Food overview', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today’s food', exact: true })).toBeVisible();
   await expect(page.locator('.streak-trigger')).toHaveCount(0);
   await expect(page.locator('.streak-card')).toHaveCount(0);
 });

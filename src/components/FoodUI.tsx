@@ -22,22 +22,27 @@ import { Button, Field, Modal } from './ui';
 
 export const useFood = () => useApp().data.food ?? emptyFood;
 export const foodLinks = [
-  ['food-home', 'Overview'],
-  ['food-programmes', 'Programmes'],
-  ['food-menu', 'Menu'],
+  ['food-home', 'Today'],
+  ['food-programmes', 'Manage programmes'],
   ['food-diary', 'Food diary'],
-  ['food-kitchen', 'Kitchen'],
-  ['food-planner', 'Meal planner'],
-  ['food-shopping', 'Shopping'],
-  ['food-budget', 'Spending'],
-  ['food-ingredients', 'Ingredients'],
+  ['food-more', 'More'],
 ] as const;
+const foodToolRoutes = new Set([
+  'food-menu',
+  'food-planner',
+  'food-kitchen',
+  'food-shopping',
+  'food-budget',
+  'food-ingredients',
+  'food-suggest',
+]);
 export function FoodNav() {
   const route = location.hash.split('?')[0].replace('#/', '');
+  const selected = foodToolRoutes.has(route) ? 'food-more' : route;
   return (
     <nav className="food-tabs" aria-label="Food navigation">
       {foodLinks.map(([id, label]) => (
-        <a key={id} href={'#/' + id} aria-current={route === id ? 'page' : undefined}>
+        <a key={id} href={'#/' + id} aria-current={selected === id ? 'page' : undefined}>
           {label}
         </a>
       ))}

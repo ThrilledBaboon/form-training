@@ -1,16 +1,28 @@
 # Food in FORM
 
 Open **Food** in the sidebar, **More** on a phone, or the food links on Overview.
+**Today** is the daily screen: breakfast, lunch and dinner with **View meal**, **Swap** and
+**Ate this**. **Manage programmes** holds setup, editing, sharing and imports; **Food diary**
+holds recorded meals. **More** groups the optional planning, shopping, stock, spending and
+ingredient tools. Your existing custom food layout remains under **My food widgets**.
+Choose **Show me how** for a short, skippable guide that you can replay whenever needed.
+
 Ingredients, recipes, stock, purchases and meals start empty. Existing training history,
 routines, streaks and bodyweight records remain in the same database.
 
 ## Food programmes
 
-Open **Food → Programmes** for the optional filling-bowl starter, editable rotations, bowl
+Open **Food → Manage programmes** for the optional filling-bowl starter, editable rotations, bowl
 builder, quick unmeasured check-ins and programme sharing. See the [programme guide](FOOD-PROGRAMMES.md)
 for activation, swaps, shopping checklists, widgets and backup compatibility.
 
-## Get started
+For disliked ingredients, choose **Foods I avoid** during setup or under **My schedules**
+after starting. Review the upcoming replacements before saving. Recorded meals stay intact;
+if the programme has no suitable alternative, the review shows that the slot will be left empty.
+
+## Optional food tools
+
+Open **More** to reach these tools. They are not prerequisites for following a programme.
 
 1. **Ingredients → Add ingredient**: enter the food state and macros per 100 g or 100 ml.
    Blank means unknown. Record whether the information is manual, estimated or verified;
@@ -29,7 +41,7 @@ for activation, swaps, shopping checklists, widgets and backup compatibility.
    variation before logging, planning or cooking it.
 4. **Food diary** records actual meals. Choose a recipe, prepared batch or a manual meal;
    adjust servings, date, meal slot and notes. Protein, carbohydrate, fat and fibre targets can
-   each be enabled independently. Food overview offers reviewed goal estimates. Calories
+   each be enabled independently. **More → Food preferences** offers reviewed goal estimates. Calories
    stay hidden unless explicitly enabled in Food preferences; see [onboarding](ONBOARDING.md). Batch-entry corrections return/reassign portions.
 5. **Kitchen → Add stock** records quantities at home, location, expiry, opening date and
    confidence. **I cooked this recipe** explicitly deducts ingredients and creates prepared

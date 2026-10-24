@@ -1,0 +1,26 @@
+.food-home-day-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.food-home-day-heading h2,
+.food-home-day-heading p {
+  margin: 0;
+}
+.food-home-check-in-hint {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.food-home-widgets {
+  margin-top: 1.25rem;
+}
+.food-home-widgets > summary {
+  padding: 0.85rem 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+.food-home-widgets .workspace-actions {
+  margin-bottom: 1rem;
+}
