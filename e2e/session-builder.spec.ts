@@ -39,6 +39,7 @@ test('builds a balanced session, saves priorities and keeps individual replaceme
   await dialog.getByRole('button', { name: 'Regenerate unlocked exercises', exact: true }).click();
   await expect(regions.first().getByRole('heading', { level: 4 })).toHaveText(replacedNames[0]);
   await dialog.getByRole('button', { name: 'Save suggestion defaults', exact: true }).click();
+  await expect(page.locator('.toast')).toContainText('Suggestion defaults saved');
   await page.keyboard.press('Escape');
   await page.reload();
   dialog = await openSuggestion(page);
